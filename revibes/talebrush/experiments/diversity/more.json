@@ -1,0 +1,2242 @@
+{
+ "dims": [
+  "fortune",
+  "d1",
+  "d2",
+  "d3"
+ ],
+ "versions": [
+  {
+   "title": "Blue Notes, Heavy Debts",
+   "logline": "A jazz guitarist who bets everything on a jazz-metal hybrid watches his ambitions, friendships, and finances collapse until he is left with nothing but his instruments' ghosts.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "The hybrid demo hit the clubs like lightning, and Mike's new label offered him a fat advance, though the band he once led quietly stopped returning his calls."
+    },
+    {
+     "index": 3,
+     "text": "Mike signed a studio lease and bought a rack of gleaming amps, but his old drummer refused to play the fusion set and openly mocked his new direction."
+    },
+    {
+     "index": 4,
+     "text": "Mike's hybrid album topped the indie charts, his bank account swelled with royalties, and he finally made peace with the bandmates who had doubted him."
+    },
+    {
+     "index": 5,
+     "text": "Mike booked a sold-out tour across three countries, and his new bassist and vocalist welcomed him as a true brother after the late-night rehearsals."
+    },
+    {
+     "index": 6,
+     "text": "A venue owner skipped the payment, the label froze his royalties, and Mike pawned his vintage Gibson while the band whispered that he had gone too far."
+    },
+    {
+     "index": 7,
+     "text": "Mike woke in a cold storage unit, his last amp seized for debt, clutching the only bandmate still beside him and swearing the hybrid sound would survive."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.622,
+     "d1": 0.919,
+     "d2": 0.059,
+     "d3": 0.924
+    },
+    "3": {
+     "fortune": 0.815,
+     "d1": 0.928,
+     "d2": 0.288,
+     "d3": 0.892
+    },
+    "4": {
+     "fortune": 0.931,
+     "d1": 0.933,
+     "d2": 0.408,
+     "d3": 0.833
+    },
+    "5": {
+     "fortune": 0.798,
+     "d1": 0.924,
+     "d2": 0.638,
+     "d3": 0.793
+    },
+    "6": {
+     "fortune": 0.37,
+     "d1": 0.91,
+     "d2": 0.855,
+     "d3": 0.373
+    },
+    "7": {
+     "fortune": 0.137,
+     "d1": 0.903,
+     "d2": 0.943,
+     "d3": 0.058
+    }
+   },
+   "id": "more-8",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.622,
+      0.815,
+      0.931,
+      0.798,
+      0.37,
+      0.137
+     ],
+     "d1": [
+      0.919,
+      0.928,
+      0.933,
+      0.924,
+      0.91,
+      0.903
+     ],
+     "d2": [
+      0.059,
+      0.288,
+      0.408,
+      0.638,
+      0.855,
+      0.943
+     ],
+     "d3": [
+      0.924,
+      0.892,
+      0.833,
+      0.793,
+      0.373,
+      0.058
+     ]
+    },
+    "settings": {
+     "Genre": "crime noir"
+    }
+   },
+   "rated": false,
+   "ms": 7491,
+   "batch": {
+    "2": {
+     "fortune": 0.62,
+     "d1": 0.9,
+     "d2": 0.35,
+     "d3": 0.85
+    },
+    "3": {
+     "fortune": 0.5,
+     "d1": 0.88,
+     "d2": 0.2,
+     "d3": 0.75
+    },
+    "4": {
+     "fortune": 0.95,
+     "d1": 0.97,
+     "d2": 0.9,
+     "d3": 0.95
+    },
+    "5": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.95,
+     "d3": 0.92
+    },
+    "6": {
+     "fortune": 0.15,
+     "d1": 0.7,
+     "d2": 0.3,
+     "d3": 0.1
+    },
+    "7": {
+     "fortune": 0.03,
+     "d1": 0.85,
+     "d2": 0.45,
+     "d3": 0.02
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.68,
+     "d1": 0.85,
+     "d2": 0.3,
+     "d3": 0.85
+    },
+    "3": {
+     "fortune": 0.5,
+     "d1": 0.9,
+     "d2": 0.15,
+     "d3": 0.7
+    },
+    "4": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.9,
+     "d3": 0.95
+    },
+    "5": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.95,
+     "d3": 0.9
+    },
+    "6": {
+     "fortune": 0.1,
+     "d1": 0.7,
+     "d2": 0.3,
+     "d3": 0.1
+    },
+    "7": {
+     "fortune": 0.05,
+     "d1": 0.9,
+     "d2": 0.4,
+     "d3": 0.02
+    }
+   }
+  },
+  {
+   "title": "The Hybrid Sound Ledger",
+   "logline": "A broke jazz guitarist who dreams of fusing jazz with heavy metal rebuilds his band and his belief in the hybrid sound after losing nearly everything.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "After the club folded, Mike pawned his Gibson and sold his amplifier, then watched the bandmates walk away without a word."
+    },
+    {
+     "index": 3,
+     "text": "One night a former bassist returned with a borrowed amp, quietly asking whether Mike still remembered the lost metal riffs."
+    },
+    {
+     "index": 4,
+     "text": "At a cramped rehearsal, the bandmates trusted Mike to lead the riffs, though his rent was overdue and his guitar sat in hock."
+    },
+    {
+     "index": 5,
+     "text": "Hearing a distorted tritone bend into a swinging ride cymbal, Mike felt certain the hybrid sound was finally breathing on its own."
+    },
+    {
+     "index": 6,
+     "text": "Convinced the fusion would carry them, Mike sketched a set list, though the landlord still threatened eviction over unpaid rent."
+    },
+    {
+     "index": 7,
+     "text": "By week's end, Mike was certain the hybrid sound would change everything, though the eviction notice waited taped to his door."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.112,
+     "d1": 0.225,
+     "d2": 0.065,
+     "d3": 0.09
+    },
+    "3": {
+     "fortune": 0.165,
+     "d1": 0.294,
+     "d2": 0.593,
+     "d3": 0.089
+    },
+    "4": {
+     "fortune": 0.271,
+     "d1": 0.474,
+     "d2": 0.856,
+     "d3": 0.087
+    },
+    "5": {
+     "fortune": 0.324,
+     "d1": 0.696,
+     "d2": 0.838,
+     "d3": 0.084
+    },
+    "6": {
+     "fortune": 0.345,
+     "d1": 0.876,
+     "d2": 0.82,
+     "d3": 0.082
+    },
+    "7": {
+     "fortune": 0.367,
+     "d1": 0.944,
+     "d2": 0.812,
+     "d3": 0.081
+    }
+   },
+   "id": "more-9",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.112,
+      0.165,
+      0.271,
+      0.324,
+      0.345,
+      0.367
+     ],
+     "d1": [
+      0.225,
+      0.294,
+      0.474,
+      0.696,
+      0.876,
+      0.944
+     ],
+     "d2": [
+      0.065,
+      0.593,
+      0.856,
+      0.838,
+      0.82,
+      0.812
+     ],
+     "d3": [
+      0.09,
+      0.089,
+      0.087,
+      0.084,
+      0.082,
+      0.081
+     ]
+    },
+    "settings": {
+     "Genre": "magical realism"
+    }
+   },
+   "rated": false,
+   "ms": 14708,
+   "batch": {
+    "2": {
+     "fortune": 0.1,
+     "d1": 0.5,
+     "d2": 0.1,
+     "d3": 0.05
+    },
+    "3": {
+     "fortune": 0.35,
+     "d1": 0.55,
+     "d2": 0.35,
+     "d3": 0.15
+    },
+    "4": {
+     "fortune": 0.45,
+     "d1": 0.65,
+     "d2": 0.8,
+     "d3": 0.1
+    },
+    "5": {
+     "fortune": 0.7,
+     "d1": 0.95,
+     "d2": 0.8,
+     "d3": 0.15
+    },
+    "6": {
+     "fortune": 0.4,
+     "d1": 0.9,
+     "d2": 0.8,
+     "d3": 0.1
+    },
+    "7": {
+     "fortune": 0.35,
+     "d1": 0.95,
+     "d2": 0.75,
+     "d3": 0.08
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.05,
+     "d1": 0.5,
+     "d2": 0.05,
+     "d3": 0.05
+    },
+    "3": {
+     "fortune": 0.3,
+     "d1": 0.5,
+     "d2": 0.4,
+     "d3": 0.2
+    },
+    "4": {
+     "fortune": 0.45,
+     "d1": 0.6,
+     "d2": 0.8,
+     "d3": 0.1
+    },
+    "5": {
+     "fortune": 0.8,
+     "d1": 0.95,
+     "d2": 0.75,
+     "d3": 0.15
+    },
+    "6": {
+     "fortune": 0.55,
+     "d1": 0.9,
+     "d2": 0.75,
+     "d3": 0.1
+    },
+    "7": {
+     "fortune": 0.5,
+     "d1": 0.95,
+     "d2": 0.7,
+     "d3": 0.05
+    }
+   }
+  },
+  {
+   "title": "Blood Money Blues",
+   "logline": "A broke jazz guitarist chasing a jazz-metal fusion sound gets pulled into a loan shark's debt, and the price of his survival is his loyal band.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "At the Blue Lantern, Mike's jazz-metal set lifted the crowd, though his rent was three months overdue."
+    },
+    {
+     "index": 3,
+     "text": "A jaded critic called the fusion a gimmick, and Mike, shaken, started doubting the whole experiment."
+    },
+    {
+     "index": 4,
+     "text": "After a pawnbroker seized his amplifier, Mike doubled down on the hybrid sound, convinced one brutal rehearsal would save it."
+    },
+    {
+     "index": 5,
+     "text": "A loan shark's collector tailed Mike home, but his drummer and bassist pledged their savings to cover the debt."
+    },
+    {
+     "index": 6,
+     "text": "In a rain-soaked alley, Mike's bandmates stood beside him when the collector's men broke two of his fingers."
+    },
+    {
+     "index": 7,
+     "text": "Days later, Mike took the club owner's blood money, a steady residency, and his bandmates vanished, refusing every call."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.937,
+     "d1": 0.42,
+     "d2": 0.948,
+     "d3": 0.065
+    },
+    "3": {
+     "fortune": 0.64,
+     "d1": 0.235,
+     "d2": 0.852,
+     "d3": 0.077
+    },
+    "4": {
+     "fortune": 0.314,
+     "d1": 0.678,
+     "d2": 0.721,
+     "d3": 0.108
+    },
+    "5": {
+     "fortune": 0.217,
+     "d1": 0.572,
+     "d2": 0.813,
+     "d3": 0.14
+    },
+    "6": {
+     "fortune": 0.101,
+     "d1": 0.415,
+     "d2": 0.877,
+     "d3": 0.153
+    },
+    "7": {
+     "fortune": 0.05,
+     "d1": 0.342,
+     "d2": 0.189,
+     "d3": 0.784
+    }
+   },
+   "id": "more-7",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.937,
+      0.64,
+      0.314,
+      0.217,
+      0.101,
+      0.05
+     ],
+     "d1": [
+      0.42,
+      0.235,
+      0.678,
+      0.572,
+      0.415,
+      0.342
+     ],
+     "d2": [
+      0.948,
+      0.852,
+      0.721,
+      0.813,
+      0.877,
+      0.189
+     ],
+     "d3": [
+      0.065,
+      0.077,
+      0.108,
+      0.14,
+      0.153,
+      0.784
+     ]
+    },
+    "settings": {
+     "Genre": "crime noir"
+    }
+   },
+   "rated": false,
+   "ms": 15420,
+   "batch": {
+    "2": {
+     "fortune": 0.65,
+     "d1": 0.8,
+     "d2": 0.6,
+     "d3": 0.25
+    },
+    "3": {
+     "fortune": 0.3,
+     "d1": 0.4,
+     "d2": 0.55,
+     "d3": 0.25
+    },
+    "4": {
+     "fortune": 0.25,
+     "d1": 0.85,
+     "d2": 0.55,
+     "d3": 0.07
+    },
+    "5": {
+     "fortune": 0.3,
+     "d1": 0.8,
+     "d2": 0.85,
+     "d3": 0.05
+    },
+    "6": {
+     "fortune": 0.1,
+     "d1": 0.8,
+     "d2": 0.9,
+     "d3": 0.05
+    },
+    "7": {
+     "fortune": 0.35,
+     "d1": 0.6,
+     "d2": 0.05,
+     "d3": 0.6
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.6,
+     "d1": 0.8,
+     "d2": 0.7,
+     "d3": 0.3
+    },
+    "3": {
+     "fortune": 0.25,
+     "d1": 0.3,
+     "d2": 0.6,
+     "d3": 0.3
+    },
+    "4": {
+     "fortune": 0.1,
+     "d1": 0.9,
+     "d2": 0.6,
+     "d3": 0.05
+    },
+    "5": {
+     "fortune": 0.3,
+     "d1": 0.85,
+     "d2": 0.9,
+     "d3": 0.1
+    },
+    "6": {
+     "fortune": 0.1,
+     "d1": 0.8,
+     "d2": 0.95,
+     "d3": 0.05
+    },
+    "7": {
+     "fortune": 0.35,
+     "d1": 0.6,
+     "d2": 0.05,
+     "d3": 0.6
+    }
+   }
+  },
+  {
+   "title": "Applause Without Accompaniment",
+   "logline": "A jazz guitarist chasing a jazz-metal fusion triumph wins fame and prestige while his bandmates drift away and his finances collapse.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike won a prestigious commission for a jazz-metal suite, though his bandmates quietly stopped returning his calls."
+    },
+    {
+     "index": 3,
+     "text": "Mike's gala premiere sold out in minutes, yet at rehearsal the drummer greeted him with a pointed, theatrical silence."
+    },
+    {
+     "index": 4,
+     "text": "A critic praised the crowd's ecstatic applause but called the fusion a charming, well-dressed argument with itself."
+    },
+    {
+     "index": 5,
+     "text": "At the victory reception Mike was toasted by strangers, while the chairs reserved for his bandmates stayed pointedly empty."
+    },
+    {
+     "index": 6,
+     "text": "Mike's glowing festival invitation arrived the same week his promoter admitted the commission would pay only in exposure."
+    },
+    {
+     "index": 7,
+     "text": "Mike pawned his vintage Gibson to cover the festival's travel costs, then headlined to a standing ovation, alone."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.855,
+     "d1": 0.751,
+     "d2": 0.162,
+     "d3": 0.851
+    },
+    "3": {
+     "fortune": 0.859,
+     "d1": 0.658,
+     "d2": 0.155,
+     "d3": 0.858
+    },
+    "4": {
+     "fortune": 0.867,
+     "d1": 0.492,
+     "d2": 0.134,
+     "d3": 0.873
+    },
+    "5": {
+     "fortune": 0.877,
+     "d1": 0.447,
+     "d2": 0.11,
+     "d3": 0.872
+    },
+    "6": {
+     "fortune": 0.885,
+     "d1": 0.462,
+     "d2": 0.089,
+     "d3": 0.569
+    },
+    "7": {
+     "fortune": 0.888,
+     "d1": 0.473,
+     "d2": 0.082,
+     "d3": 0.322
+    }
+   },
+   "id": "more-4",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.855,
+      0.859,
+      0.867,
+      0.877,
+      0.885,
+      0.888
+     ],
+     "d1": [
+      0.751,
+      0.658,
+      0.492,
+      0.447,
+      0.462,
+      0.473
+     ],
+     "d2": [
+      0.162,
+      0.155,
+      0.134,
+      0.11,
+      0.089,
+      0.082
+     ],
+     "d3": [
+      0.851,
+      0.858,
+      0.873,
+      0.872,
+      0.569,
+      0.322
+     ]
+    },
+    "settings": {
+     "Genre": "comedy of manners"
+    }
+   },
+   "rated": false,
+   "ms": 15436,
+   "batch": {
+    "2": {
+     "fortune": 0.6,
+     "d1": 0.8,
+     "d2": 0.15,
+     "d3": 0.6
+    },
+    "3": {
+     "fortune": 0.55,
+     "d1": 0.85,
+     "d2": 0.1,
+     "d3": 0.7
+    },
+    "4": {
+     "fortune": 0.4,
+     "d1": 0.5,
+     "d2": 0.1,
+     "d3": 0.7
+    },
+    "5": {
+     "fortune": 0.5,
+     "d1": 0.7,
+     "d2": 0.05,
+     "d3": 0.75
+    },
+    "6": {
+     "fortune": 0.45,
+     "d1": 0.75,
+     "d2": 0.05,
+     "d3": 0.4
+    },
+    "7": {
+     "fortune": 0.4,
+     "d1": 0.8,
+     "d2": 0.02,
+     "d3": 0.2
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.62,
+     "d1": 0.85,
+     "d2": 0.35,
+     "d3": 0.75
+    },
+    "3": {
+     "fortune": 0.55,
+     "d1": 0.85,
+     "d2": 0.2,
+     "d3": 0.75
+    },
+    "4": {
+     "fortune": 0.45,
+     "d1": 0.3,
+     "d2": 0.2,
+     "d3": 0.75
+    },
+    "5": {
+     "fortune": 0.5,
+     "d1": 0.3,
+     "d2": 0.1,
+     "d3": 0.75
+    },
+    "6": {
+     "fortune": 0.5,
+     "d1": 0.7,
+     "d2": 0.1,
+     "d3": 0.35
+    },
+    "7": {
+     "fortune": 0.25,
+     "d1": 0.7,
+     "d2": 0.05,
+     "d3": 0.05
+    }
+   }
+  },
+  {
+   "title": "The Hybrid Sound Burns",
+   "logline": "A broke jazz guitarist chases a heavy-metal fusion that his devoted bandmates believe in, then abandons it at the height of his success before returning to it on his own terms.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike pawned his amplifier that week, convinced the metal experiment was a dead end, yet his bandmates cheered his solo anyway."
+    },
+    {
+     "index": 3,
+     "text": "Mike sold a studio session and felt the fusion sound finally click, as the quartet hailed his tangled, heavy-jazz riffs."
+    },
+    {
+     "index": 4,
+     "text": "Mike signed a steady teaching post and recorded the hybrid album, with bandmates insisting he lead the next tour."
+    },
+    {
+     "index": 5,
+     "text": "Mike began doubting the hybrid sound after a critic called the record clumsy, though the festival still booked his quartet headlining."
+    },
+    {
+     "index": 6,
+     "text": "Mike burned every metal sketch in the studio trash barrel, swearing the fusion experiment was dead forever, while the festival crowd roared for pure jazz."
+    },
+    {
+     "index": 7,
+     "text": "Mike returned to the sketches months later, rewriting riffs with joy, while a grant letter arrived and his bandmates agreed to try again."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.81,
+     "d1": 0.156,
+     "d2": 0.942,
+     "d3": 0.111
+    },
+    "3": {
+     "fortune": 0.816,
+     "d1": 0.661,
+     "d2": 0.927,
+     "d3": 0.644
+    },
+    "4": {
+     "fortune": 0.832,
+     "d1": 0.766,
+     "d2": 0.889,
+     "d3": 0.865
+    },
+    "5": {
+     "fortune": 0.853,
+     "d1": 0.325,
+     "d2": 0.841,
+     "d3": 0.66
+    },
+    "6": {
+     "fortune": 0.869,
+     "d1": 0.053,
+     "d2": 0.803,
+     "d3": 0.593
+    },
+    "7": {
+     "fortune": 0.875,
+     "d1": 0.623,
+     "d2": 0.788,
+     "d3": 0.544
+    }
+   },
+   "id": "more-0",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.81,
+      0.816,
+      0.832,
+      0.853,
+      0.869,
+      0.875
+     ],
+     "d1": [
+      0.156,
+      0.661,
+      0.766,
+      0.325,
+      0.053,
+      0.623
+     ],
+     "d2": [
+      0.942,
+      0.927,
+      0.889,
+      0.841,
+      0.803,
+      0.788
+     ],
+     "d3": [
+      0.111,
+      0.644,
+      0.865,
+      0.66,
+      0.593,
+      0.544
+     ]
+    },
+    "settings": {
+     "Genre": "literary realism"
+    }
+   },
+   "rated": false,
+   "ms": 15734,
+   "batch": {
+    "2": {
+     "fortune": 0.35,
+     "d1": 0.2,
+     "d2": 0.7,
+     "d3": 0.2
+    },
+    "3": {
+     "fortune": 0.8,
+     "d1": 0.9,
+     "d2": 0.85,
+     "d3": 0.45
+    },
+    "4": {
+     "fortune": 0.9,
+     "d1": 0.95,
+     "d2": 0.9,
+     "d3": 0.85
+    },
+    "5": {
+     "fortune": 0.55,
+     "d1": 0.45,
+     "d2": 0.7,
+     "d3": 0.7
+    },
+    "6": {
+     "fortune": 0.35,
+     "d1": 0.05,
+     "d2": 0.45,
+     "d3": 0.6
+    },
+    "7": {
+     "fortune": 0.85,
+     "d1": 0.8,
+     "d2": 0.75,
+     "d3": 0.8
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.35,
+     "d1": 0.1,
+     "d2": 0.7,
+     "d3": 0.2
+    },
+    "3": {
+     "fortune": 0.8,
+     "d1": 0.9,
+     "d2": 0.85,
+     "d3": 0.6
+    },
+    "4": {
+     "fortune": 0.9,
+     "d1": 0.95,
+     "d2": 0.95,
+     "d3": 0.9
+    },
+    "5": {
+     "fortune": 0.5,
+     "d1": 0.5,
+     "d2": 0.8,
+     "d3": 0.8
+    },
+    "6": {
+     "fortune": 0.2,
+     "d1": 0.05,
+     "d2": 0.5,
+     "d3": 0.75
+    },
+    "7": {
+     "fortune": 0.7,
+     "d1": 0.6,
+     "d2": 0.75,
+     "d3": 0.8
+    }
+   }
+  },
+  {
+   "title": "The Hybrid Hour",
+   "logline": "A jazz guitarist chasing a metal-jazz fusion sound rises to triumph in magical, fragile moments while his bandmates, his money, and his instruments slip away.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike's metal-jazz riffs drew a wild ovation at the open mic, yet his bandmates avoided his eyes and he doubted the blend could last."
+    },
+    {
+     "index": 3,
+     "text": "A mysterious record label letter arrived in the mail, though Mike hesitated, unsure whether fusion would sell, and rent was overdue."
+    },
+    {
+     "index": 4,
+     "text": "Mike's guitar began humming in harmony with the radiator, and he decided to commit to the hybrid, convincing the bassist to rejoin the sessions."
+    },
+    {
+     "index": 5,
+     "text": "Mike's band recorded the hybrid album in one luminous night, though Mike had pawned his amplifier to pay for studio time."
+    },
+    {
+     "index": 6,
+     "text": "The hybrid album hit the charts within a week, and the whole band toasted Mike, even as the bank repossessed his guitars."
+    },
+    {
+     "index": 7,
+     "text": "Mike played the sold-out hall alone, his fused sound rippling through the rafters, after the band quit and he sold his last guitar."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.757,
+     "d1": 0.338,
+     "d2": 0.138,
+     "d3": 0.281
+    },
+    "3": {
+     "fortune": 0.777,
+     "d1": 0.451,
+     "d2": 0.238,
+     "d3": 0.261
+    },
+    "4": {
+     "fortune": 0.808,
+     "d1": 0.689,
+     "d2": 0.484,
+     "d3": 0.208
+    },
+    "5": {
+     "fortune": 0.826,
+     "d1": 0.839,
+     "d2": 0.745,
+     "d3": 0.142
+    },
+    "6": {
+     "fortune": 0.886,
+     "d1": 0.887,
+     "d2": 0.882,
+     "d3": 0.089
+    },
+    "7": {
+     "fortune": 0.922,
+     "d1": 0.948,
+     "d2": 0.085,
+     "d3": 0.068
+    }
+   },
+   "id": "more-3",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.757,
+      0.777,
+      0.808,
+      0.826,
+      0.886,
+      0.922
+     ],
+     "d1": [
+      0.338,
+      0.451,
+      0.689,
+      0.839,
+      0.887,
+      0.948
+     ],
+     "d2": [
+      0.138,
+      0.238,
+      0.484,
+      0.745,
+      0.882,
+      0.085
+     ],
+     "d3": [
+      0.281,
+      0.261,
+      0.208,
+      0.142,
+      0.089,
+      0.068
+     ]
+    },
+    "settings": {
+     "Genre": "magical realism"
+    }
+   },
+   "rated": false,
+   "ms": 16765,
+   "batch": {
+    "2": {
+     "fortune": 0.45,
+     "d1": 0.3,
+     "d2": 0.3,
+     "d3": 0.5
+    },
+    "3": {
+     "fortune": 0.35,
+     "d1": 0.35,
+     "d2": 0.35,
+     "d3": 0.2
+    },
+    "4": {
+     "fortune": 0.6,
+     "d1": 0.8,
+     "d2": 0.6,
+     "d3": 0.25
+    },
+    "5": {
+     "fortune": 0.8,
+     "d1": 0.9,
+     "d2": 0.7,
+     "d3": 0.2
+    },
+    "6": {
+     "fortune": 0.55,
+     "d1": 0.85,
+     "d2": 0.85,
+     "d3": 0.05
+    },
+    "7": {
+     "fortune": 0.4,
+     "d1": 0.7,
+     "d2": 0.1,
+     "d3": 0.05
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.5,
+     "d1": 0.4,
+     "d2": 0.3,
+     "d3": 0.5
+    },
+    "3": {
+     "fortune": 0.4,
+     "d1": 0.35,
+     "d2": 0.3,
+     "d3": 0.2
+    },
+    "4": {
+     "fortune": 0.7,
+     "d1": 0.9,
+     "d2": 0.7,
+     "d3": 0.35
+    },
+    "5": {
+     "fortune": 0.65,
+     "d1": 0.9,
+     "d2": 0.8,
+     "d3": 0.2
+    },
+    "6": {
+     "fortune": 0.75,
+     "d1": 0.95,
+     "d2": 0.9,
+     "d3": 0.05
+    },
+    "7": {
+     "fortune": 0.35,
+     "d1": 0.8,
+     "d2": 0.05,
+     "d3": 0.0
+    }
+   }
+  },
+  {
+   "title": "Strings of Stubborn Jazz",
+   "logline": "A jazz guitarist who rejects the fusion he once explored loses his money and his bandmates, then regains his livelihood through the pure jazz he never abandoned.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike's steady session fees covered the rent, yet every rehearsal left his hybrid riffs sounding like noise."
+    },
+    {
+     "index": 3,
+     "text": "When the Tuesday residency ended without notice, Mike's bank balance shrank while a cracked metronome kept ticking alone."
+    },
+    {
+     "index": 4,
+     "text": "Mike watched the bank repossess his Gibson, though a stray moth carried its last note across the rooftops."
+    },
+    {
+     "index": 5,
+     "text": "A street busker tuned his borrowed guitar to Mike's old melody, and the crowd below began humming it back."
+    },
+    {
+     "index": 6,
+     "text": "Mike played alone on a rooftop at dawn while the city's pigeons settled into perfect, weightless harmony around him."
+    },
+    {
+     "index": 7,
+     "text": "A jazz club owner offered Mike a steady residency, and he signed, pure-jazz set intact, thrilled to be playing only what he loved."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.355,
+     "d1": 0.132,
+     "d2": 0.127,
+     "d3": 0.914
+    },
+    "3": {
+     "fortune": 0.41,
+     "d1": 0.053,
+     "d2": 0.119,
+     "d3": 0.3
+    },
+    "4": {
+     "fortune": 0.553,
+     "d1": 0.053,
+     "d2": 0.101,
+     "d3": 0.065
+    },
+    "5": {
+     "fortune": 0.731,
+     "d1": 0.055,
+     "d2": 0.085,
+     "d3": 0.111
+    },
+    "6": {
+     "fortune": 0.874,
+     "d1": 0.057,
+     "d2": 0.09,
+     "d3": 0.148
+    },
+    "7": {
+     "fortune": 0.929,
+     "d1": 0.057,
+     "d2": 0.196,
+     "d3": 0.893
+    }
+   },
+   "id": "more-5",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.355,
+      0.41,
+      0.553,
+      0.731,
+      0.874,
+      0.929
+     ],
+     "d1": [
+      0.132,
+      0.053,
+      0.053,
+      0.055,
+      0.057,
+      0.057
+     ],
+     "d2": [
+      0.127,
+      0.119,
+      0.101,
+      0.085,
+      0.09,
+      0.196
+     ],
+     "d3": [
+      0.914,
+      0.3,
+      0.065,
+      0.111,
+      0.148,
+      0.893
+     ]
+    },
+    "settings": {
+     "Genre": "magical realism"
+    }
+   },
+   "rated": false,
+   "ms": 17424,
+   "batch": {
+    "2": {
+     "fortune": 0.4,
+     "d1": 0.2,
+     "d2": 0.5,
+     "d3": 0.6
+    },
+    "3": {
+     "fortune": 0.2,
+     "d1": 0.3,
+     "d2": 0.3,
+     "d3": 0.1
+    },
+    "4": {
+     "fortune": 0.15,
+     "d1": 0.3,
+     "d2": 0.25,
+     "d3": 0.02
+    },
+    "5": {
+     "fortune": 0.55,
+     "d1": 0.6,
+     "d2": 0.4,
+     "d3": 0.1
+    },
+    "6": {
+     "fortune": 0.6,
+     "d1": 0.65,
+     "d2": 0.3,
+     "d3": 0.08
+    },
+    "7": {
+     "fortune": 0.8,
+     "d1": 0.2,
+     "d2": 0.5,
+     "d3": 0.7
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.45,
+     "d1": 0.3,
+     "d2": 0.4,
+     "d3": 0.7
+    },
+    "3": {
+     "fortune": 0.1,
+     "d1": 0.3,
+     "d2": 0.25,
+     "d3": 0.15
+    },
+    "4": {
+     "fortune": 0.05,
+     "d1": 0.3,
+     "d2": 0.2,
+     "d3": 0.03
+    },
+    "5": {
+     "fortune": 0.6,
+     "d1": 0.6,
+     "d2": 0.4,
+     "d3": 0.1
+    },
+    "6": {
+     "fortune": 0.55,
+     "d1": 0.6,
+     "d2": 0.3,
+     "d3": 0.05
+    },
+    "7": {
+     "fortune": 0.9,
+     "d1": 0.15,
+     "d2": 0.7,
+     "d3": 0.85
+    }
+   }
+  },
+  {
+   "title": "Riffs in the Drawing Room",
+   "logline": "A jazz guitarist who gambles his reputation on a jazz-metal hybrid endures ruin and ridicule before his bold sound wins over the very critics who mocked him.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike's rent nearly doubled that week, yet the quartet still welcomed him, though they doubted his metal riffs."
+    },
+    {
+     "index": 3,
+     "text": "Mike's teaching salary covered rent, yet the booker cancelled his gig after the crowd fled, and Mike swore the hybrid was genius."
+    },
+    {
+     "index": 4,
+     "text": "Though the hybrid album flopped and critics mocked it, Mike's patron signed a studio lease anyway, and bandmates stayed loyal."
+    },
+    {
+     "index": 5,
+     "text": "Mike's hybrid record finally reached modest acclaim, though a rival label's sneering review still stung the proud guitarist."
+    },
+    {
+     "index": 6,
+     "text": "A festival booker invited Mike's quartet to headline the autumn festival, and the metal-jazz crowd roared approval."
+    },
+    {
+     "index": 7,
+     "text": "At the sold-out festival finale, Mike's hybrid anthem drew a standing ovation, and the critics who had mocked him bowed."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.06,
+     "d1": 0.479,
+     "d2": 0.898,
+     "d3": 0.419
+    },
+    "3": {
+     "fortune": 0.055,
+     "d1": 0.898,
+     "d2": 0.888,
+     "d3": 0.66
+    },
+    "4": {
+     "fortune": 0.116,
+     "d1": 0.93,
+     "d2": 0.864,
+     "d3": 0.859
+    },
+    "5": {
+     "fortune": 0.427,
+     "d1": 0.937,
+     "d2": 0.843,
+     "d3": 0.884
+    },
+    "6": {
+     "fortune": 0.791,
+     "d1": 0.944,
+     "d2": 0.836,
+     "d3": 0.927
+    },
+    "7": {
+     "fortune": 0.95,
+     "d1": 0.947,
+     "d2": 0.818,
+     "d3": 0.948
+    }
+   },
+   "id": "more-2",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.06,
+      0.055,
+      0.116,
+      0.427,
+      0.791,
+      0.95
+     ],
+     "d1": [
+      0.479,
+      0.898,
+      0.93,
+      0.937,
+      0.944,
+      0.947
+     ],
+     "d2": [
+      0.898,
+      0.888,
+      0.864,
+      0.843,
+      0.836,
+      0.818
+     ],
+     "d3": [
+      0.419,
+      0.66,
+      0.859,
+      0.884,
+      0.927,
+      0.948
+     ]
+    },
+    "settings": {
+     "Genre": "comedy of manners"
+    }
+   },
+   "rated": false,
+   "ms": 18981,
+   "batch": {
+    "2": {
+     "fortune": 0.35,
+     "d1": 0.75,
+     "d2": 0.7,
+     "d3": 0.15
+    },
+    "3": {
+     "fortune": 0.3,
+     "d1": 0.85,
+     "d2": 0.45,
+     "d3": 0.4
+    },
+    "4": {
+     "fortune": 0.4,
+     "d1": 0.85,
+     "d2": 0.75,
+     "d3": 0.5
+    },
+    "5": {
+     "fortune": 0.6,
+     "d1": 0.9,
+     "d2": 0.75,
+     "d3": 0.55
+    },
+    "6": {
+     "fortune": 0.8,
+     "d1": 0.9,
+     "d2": 0.8,
+     "d3": 0.65
+    },
+    "7": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.85,
+     "d3": 0.75
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.35,
+     "d1": 0.7,
+     "d2": 0.6,
+     "d3": 0.15
+    },
+    "3": {
+     "fortune": 0.3,
+     "d1": 0.75,
+     "d2": 0.4,
+     "d3": 0.35
+    },
+    "4": {
+     "fortune": 0.45,
+     "d1": 0.7,
+     "d2": 0.7,
+     "d3": 0.5
+    },
+    "5": {
+     "fortune": 0.6,
+     "d1": 0.8,
+     "d2": 0.7,
+     "d3": 0.55
+    },
+    "6": {
+     "fortune": 0.8,
+     "d1": 0.85,
+     "d2": 0.8,
+     "d3": 0.65
+    },
+    "7": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.85,
+     "d3": 0.75
+    }
+   }
+  },
+  {
+   "title": "Feedback in the Dark Club",
+   "logline": "A jazz guitarist who bets everything on a jazz-metal hybrid is pulled into a club owner's dirty money, and the violence that follows forces him to abandon the sound he loved.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike's rent was overdue, so he sold his spare amplifier to fund demo recordings of the new jazz-metal hybrid."
+    },
+    {
+     "index": 3,
+     "text": "A nightclub owner paid Mike handsomely for the fusion set, though the cash was stained with someone else's blood."
+    },
+    {
+     "index": 4,
+     "text": "Bandmates rallied behind the new metal-jazz record, but the club owner's thugs started tailing Mike through the streets."
+    },
+    {
+     "index": 5,
+     "text": "Mike pawned his vintage Gibson to cover the debt, and the record label's advance vanished before the studio sessions began."
+    },
+    {
+     "index": 6,
+     "text": "The drummer took a bullet meant for Mike during the ambush, yet Mike still swore the hybrid sound would survive."
+    },
+    {
+     "index": 7,
+     "text": "Mike sold his last amplifier, burned the hybrid tapes, and told the surviving bandmates he would never touch metal again."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.095,
+     "d1": 0.936,
+     "d2": 0.874,
+     "d3": 0.203
+    },
+    "3": {
+     "fortune": 0.09,
+     "d1": 0.938,
+     "d2": 0.884,
+     "d3": 0.781
+    },
+    "4": {
+     "fortune": 0.081,
+     "d1": 0.941,
+     "d2": 0.905,
+     "d3": 0.717
+    },
+    "5": {
+     "fortune": 0.079,
+     "d1": 0.945,
+     "d2": 0.918,
+     "d3": 0.497
+    },
+    "6": {
+     "fortune": 0.085,
+     "d1": 0.867,
+     "d2": 0.913,
+     "d3": 0.269
+    },
+    "7": {
+     "fortune": 0.089,
+     "d1": 0.104,
+     "d2": 0.845,
+     "d3": 0.173
+    }
+   },
+   "id": "more-1",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.095,
+      0.09,
+      0.081,
+      0.079,
+      0.085,
+      0.089
+     ],
+     "d1": [
+      0.936,
+      0.938,
+      0.941,
+      0.945,
+      0.867,
+      0.104
+     ],
+     "d2": [
+      0.874,
+      0.884,
+      0.905,
+      0.918,
+      0.913,
+      0.845
+     ],
+     "d3": [
+      0.203,
+      0.781,
+      0.717,
+      0.497,
+      0.269,
+      0.173
+     ]
+    },
+    "settings": {
+     "Genre": "crime noir"
+    }
+   },
+   "rated": false,
+   "ms": 19820,
+   "batch": {
+    "2": {
+     "fortune": 0.25,
+     "d1": 0.85,
+     "d2": 0.6,
+     "d3": 0.1
+    },
+    "3": {
+     "fortune": 0.4,
+     "d1": 0.85,
+     "d2": 0.5,
+     "d3": 0.2
+    },
+    "4": {
+     "fortune": 0.2,
+     "d1": 0.8,
+     "d2": 0.55,
+     "d3": 0.15
+    },
+    "5": {
+     "fortune": 0.1,
+     "d1": 0.8,
+     "d2": 0.5,
+     "d3": 0.02
+    },
+    "6": {
+     "fortune": 0.05,
+     "d1": 0.85,
+     "d2": 0.45,
+     "d3": 0.05
+    },
+    "7": {
+     "fortune": 0.15,
+     "d1": 0.1,
+     "d2": 0.2,
+     "d3": 0.0
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.25,
+     "d1": 0.85,
+     "d2": 0.6,
+     "d3": 0.15
+    },
+    "3": {
+     "fortune": 0.4,
+     "d1": 0.8,
+     "d2": 0.5,
+     "d3": 0.4
+    },
+    "4": {
+     "fortune": 0.25,
+     "d1": 0.8,
+     "d2": 0.6,
+     "d3": 0.35
+    },
+    "5": {
+     "fortune": 0.1,
+     "d1": 0.8,
+     "d2": 0.55,
+     "d3": 0.05
+    },
+    "6": {
+     "fortune": 0.1,
+     "d1": 0.9,
+     "d2": 0.45,
+     "d3": 0.05
+    },
+    "7": {
+     "fortune": 0.05,
+     "d1": 0.1,
+     "d2": 0.2,
+     "d3": 0.02
+    }
+   }
+  },
+  {
+   "title": "The Metal-Jazz Dead End",
+   "logline": "A devoted jazz guitarist chases a heavy-metal hybrid sound, suffers a crippling injury, and ends up tenured and secure but convinced his great experiment was a mistake.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike quit his weekend club gig to rehearse a metal-jazz suite, though his salaried teaching post at the conservatory covered rent."
+    },
+    {
+     "index": 3,
+     "text": "Mike's bandmates in the quartet embraced the hybrid riffs, though the promoter cancelled their showcase in March."
+    },
+    {
+     "index": 4,
+     "text": "After a fall shattered his fretting wrist, a surgeon warned Mike he might never play cleanly again, though the conservatory kept his salary."
+    },
+    {
+     "index": 5,
+     "text": "Mike privately admitted the metal-jazz suite sounded like noise, though his bandmates still drove him to physiotherapy each Tuesday."
+    },
+    {
+     "index": 6,
+     "text": "Mike's hand regained enough strength to play straight jazz again, so he burned the metal-jazz charts in the parking lot."
+    },
+    {
+     "index": 7,
+     "text": "Mike accepted tenure that week, then told his quartet the metal-jazz idea was a dead end, and they quietly stopped calling."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.284,
+     "d1": 0.89,
+     "d2": 0.592,
+     "d3": 0.832
+    },
+    "3": {
+     "fortune": 0.225,
+     "d1": 0.81,
+     "d2": 0.639,
+     "d3": 0.84
+    },
+    "4": {
+     "fortune": 0.107,
+     "d1": 0.6,
+     "d2": 0.719,
+     "d3": 0.861
+    },
+    "5": {
+     "fortune": 0.113,
+     "d1": 0.34,
+     "d2": 0.709,
+     "d3": 0.887
+    },
+    "6": {
+     "fortune": 0.581,
+     "d1": 0.13,
+     "d2": 0.528,
+     "d3": 0.908
+    },
+    "7": {
+     "fortune": 0.205,
+     "d1": 0.05,
+     "d2": 0.412,
+     "d3": 0.915
+    }
+   },
+   "id": "more-10",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.284,
+      0.225,
+      0.107,
+      0.113,
+      0.581,
+      0.205
+     ],
+     "d1": [
+      0.89,
+      0.81,
+      0.6,
+      0.34,
+      0.13,
+      0.05
+     ],
+     "d2": [
+      0.592,
+      0.639,
+      0.719,
+      0.709,
+      0.528,
+      0.412
+     ],
+     "d3": [
+      0.832,
+      0.84,
+      0.861,
+      0.887,
+      0.908,
+      0.915
+     ]
+    },
+    "settings": {
+     "Genre": "literary realism"
+    }
+   },
+   "rated": false,
+   "ms": 19702,
+   "batch": {
+    "2": {
+     "fortune": 0.45,
+     "d1": 0.7,
+     "d2": 0.65,
+     "d3": 0.7
+    },
+    "3": {
+     "fortune": 0.4,
+     "d1": 0.75,
+     "d2": 0.7,
+     "d3": 0.7
+    },
+    "4": {
+     "fortune": 0.15,
+     "d1": 0.7,
+     "d2": 0.65,
+     "d3": 0.6
+    },
+    "5": {
+     "fortune": 0.2,
+     "d1": 0.2,
+     "d2": 0.7,
+     "d3": 0.6
+    },
+    "6": {
+     "fortune": 0.55,
+     "d1": 0.1,
+     "d2": 0.6,
+     "d3": 0.6
+    },
+    "7": {
+     "fortune": 0.6,
+     "d1": 0.05,
+     "d2": 0.15,
+     "d3": 0.85
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.45,
+     "d1": 0.7,
+     "d2": 0.65,
+     "d3": 0.6
+    },
+    "3": {
+     "fortune": 0.4,
+     "d1": 0.75,
+     "d2": 0.75,
+     "d3": 0.6
+    },
+    "4": {
+     "fortune": 0.1,
+     "d1": 0.7,
+     "d2": 0.7,
+     "d3": 0.65
+    },
+    "5": {
+     "fortune": 0.25,
+     "d1": 0.35,
+     "d2": 0.7,
+     "d3": 0.6
+    },
+    "6": {
+     "fortune": 0.6,
+     "d1": 0.2,
+     "d2": 0.65,
+     "d3": 0.6
+    },
+    "7": {
+     "fortune": 0.65,
+     "d1": 0.05,
+     "d2": 0.1,
+     "d3": 0.95
+    }
+   }
+  },
+  {
+   "title": "Riffs Among the Respectable",
+   "logline": "A jazz guitarist who dreams of a jazz-metal fusion finds his bold experiment mocked by high society, then cast out by his bandmates, until a stern inheritance and a flood test whether his friends and his music can survive his ambitions.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "At the Thursday session, the bandmates cheered Mike's metal-tinged riff, and the drummer insisted he bring it to the Ashford gala."
+    },
+    {
+     "index": 3,
+     "text": "Mike's amplifier blew mid-set at the Ashford gala, and the fusion riff died with it, leaving him doubting every chord."
+    },
+    {
+     "index": 4,
+     "text": "Gala patrons whispered behind their champagne that Mike had embarrassed the society, and the bandmates stopped returning his calls."
+    },
+    {
+     "index": 5,
+     "text": "A stern aunt's will left Mike a generous trust, but the old crowd now crosses streets to avoid him."
+    },
+    {
+     "index": 6,
+     "text": "Mike's old quartet invited him back to rehearsal, the same week a flood ruined three of his guitars."
+    },
+    {
+     "index": 7,
+     "text": "At the reunion dinner, the whole quartet toasted Mike's ruined guitars, then demanded he bring his fusion sketches to next week's rehearsal."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.614,
+     "d1": 0.561,
+     "d2": 0.897,
+     "d3": 0.346
+    },
+    "3": {
+     "fortune": 0.054,
+     "d1": 0.327,
+     "d2": 0.764,
+     "d3": 0.364
+    },
+    "4": {
+     "fortune": 0.057,
+     "d1": 0.353,
+     "d2": 0.459,
+     "d3": 0.39
+    },
+    "5": {
+     "fortune": 0.066,
+     "d1": 0.412,
+     "d2": 0.192,
+     "d3": 0.929
+    },
+    "6": {
+     "fortune": 0.075,
+     "d1": 0.471,
+     "d2": 0.697,
+     "d3": 0.929
+    },
+    "7": {
+     "fortune": 0.078,
+     "d1": 0.495,
+     "d2": 0.881,
+     "d3": 0.929
+    }
+   },
+   "id": "more-11",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.614,
+      0.054,
+      0.057,
+      0.066,
+      0.075,
+      0.078
+     ],
+     "d1": [
+      0.561,
+      0.327,
+      0.353,
+      0.412,
+      0.471,
+      0.495
+     ],
+     "d2": [
+      0.897,
+      0.764,
+      0.459,
+      0.192,
+      0.697,
+      0.881
+     ],
+     "d3": [
+      0.346,
+      0.364,
+      0.39,
+      0.929,
+      0.929,
+      0.929
+     ]
+    },
+    "settings": {
+     "Genre": "comedy of manners"
+    }
+   },
+   "rated": false,
+   "ms": 16253,
+   "batch": {
+    "2": {
+     "fortune": 0.72,
+     "d1": 0.82,
+     "d2": 0.85,
+     "d3": 0.5
+    },
+    "3": {
+     "fortune": 0.2,
+     "d1": 0.35,
+     "d2": 0.55,
+     "d3": 0.45
+    },
+    "4": {
+     "fortune": 0.08,
+     "d1": 0.4,
+     "d2": 0.1,
+     "d3": 0.4
+    },
+    "5": {
+     "fortune": 0.35,
+     "d1": 0.35,
+     "d2": 0.05,
+     "d3": 0.85
+    },
+    "6": {
+     "fortune": 0.3,
+     "d1": 0.35,
+     "d2": 0.5,
+     "d3": 0.3
+    },
+    "7": {
+     "fortune": 0.5,
+     "d1": 0.6,
+     "d2": 0.7,
+     "d3": 0.3
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.8,
+     "d1": 0.8,
+     "d2": 0.85,
+     "d3": 0.6
+    },
+    "3": {
+     "fortune": 0.2,
+     "d1": 0.25,
+     "d2": 0.55,
+     "d3": 0.4
+    },
+    "4": {
+     "fortune": 0.1,
+     "d1": 0.25,
+     "d2": 0.1,
+     "d3": 0.4
+    },
+    "5": {
+     "fortune": 0.45,
+     "d1": 0.25,
+     "d2": 0.1,
+     "d3": 0.85
+    },
+    "6": {
+     "fortune": 0.25,
+     "d1": 0.35,
+     "d2": 0.6,
+     "d3": 0.15
+    },
+    "7": {
+     "fortune": 0.7,
+     "d1": 0.75,
+     "d2": 0.85,
+     "d3": 0.2
+    }
+   }
+  },
+  {
+   "title": "Blast Beats and Standards",
+   "logline": "A jazz guitarist chasing a jazz-metal fusion sees his triumph turn to ruin when an injury ends his playing, and he must find his way back to his bandmates and a reason to keep believing in his sound.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike's quartet sold out the Blue Lantern, though the fee barely covered bus fare and he doubted his metal experiment."
+    },
+    {
+     "index": 3,
+     "text": "Buoyed by the sellout, Mike rewrote standards into a blast-beat hybrid, convinced the fusion would redefine jazz."
+    },
+    {
+     "index": 4,
+     "text": "Half the crowd walked out during the first fusion set, and the club cancelled Mike's Friday residency, yet he insisted they'd come around."
+    },
+    {
+     "index": 5,
+     "text": "A torn tendon ended Mike's playing; he burned his fusion charts while his bandmates' benefit concert and a university salary kept him housed."
+    },
+    {
+     "index": 6,
+     "text": "Mike sat silent at every rehearsal, unable to play, as the quartet voted him permanent arranger and co-owner of their publishing."
+    },
+    {
+     "index": 7,
+     "text": "Mike's royalty check arrived the same week he left the quartet, convinced a one-handed fusion album could still prove the doubters wrong."
+    }
+   ],
+   "values": {
+    "2": {
+     "fortune": 0.944,
+     "d1": 0.225,
+     "d2": 0.396,
+     "d3": 0.277
+    },
+    "3": {
+     "fortune": 0.715,
+     "d1": 0.929,
+     "d2": 0.471,
+     "d3": 0.285
+    },
+    "4": {
+     "fortune": 0.269,
+     "d1": 0.698,
+     "d2": 0.653,
+     "d3": 0.298
+    },
+    "5": {
+     "fortune": 0.076,
+     "d1": 0.193,
+     "d2": 0.84,
+     "d3": 0.788
+    },
+    "6": {
+     "fortune": 0.228,
+     "d1": 0.218,
+     "d2": 0.926,
+     "d3": 0.873
+    },
+    "7": {
+     "fortune": 0.363,
+     "d1": 0.744,
+     "d2": 0.376,
+     "d3": 0.939
+    }
+   },
+   "id": "more-6",
+   "requirement": {
+    "curves": {
+     "fortune": [
+      0.944,
+      0.715,
+      0.269,
+      0.076,
+      0.228,
+      0.363
+     ],
+     "d1": [
+      0.225,
+      0.929,
+      0.698,
+      0.193,
+      0.218,
+      0.744
+     ],
+     "d2": [
+      0.396,
+      0.471,
+      0.653,
+      0.84,
+      0.926,
+      0.376
+     ],
+     "d3": [
+      0.277,
+      0.285,
+      0.298,
+      0.788,
+      0.873,
+      0.939
+     ]
+    },
+    "settings": {
+     "Genre": "literary realism"
+    }
+   },
+   "rated": false,
+   "ms": 32352,
+   "batch": {
+    "2": {
+     "fortune": 0.68,
+     "d1": 0.7,
+     "d2": 0.8,
+     "d3": 0.4
+    },
+    "3": {
+     "fortune": 0.8,
+     "d1": 0.95,
+     "d2": 0.8,
+     "d3": 0.45
+    },
+    "4": {
+     "fortune": 0.3,
+     "d1": 0.85,
+     "d2": 0.55,
+     "d3": 0.3
+    },
+    "5": {
+     "fortune": 0.05,
+     "d1": 0.2,
+     "d2": 0.6,
+     "d3": 0.5
+    },
+    "6": {
+     "fortune": 0.2,
+     "d1": 0.3,
+     "d2": 0.7,
+     "d3": 0.6
+    },
+    "7": {
+     "fortune": 0.4,
+     "d1": 0.7,
+     "d2": 0.3,
+     "d3": 0.6
+    }
+   },
+   "recognized": {
+    "2": {
+     "fortune": 0.55,
+     "d1": 0.4,
+     "d2": 0.7,
+     "d3": 0.3
+    },
+    "3": {
+     "fortune": 0.65,
+     "d1": 0.95,
+     "d2": 0.7,
+     "d3": 0.3
+    },
+    "4": {
+     "fortune": 0.2,
+     "d1": 0.85,
+     "d2": 0.45,
+     "d3": 0.15
+    },
+    "5": {
+     "fortune": 0.1,
+     "d1": 0.1,
+     "d2": 0.65,
+     "d3": 0.35
+    },
+    "6": {
+     "fortune": 0.5,
+     "d1": 0.2,
+     "d2": 0.8,
+     "d3": 0.7
+    },
+    "7": {
+     "fortune": 0.4,
+     "d1": 0.7,
+     "d2": 0.1,
+     "d3": 0.55
+    }
+   }
+  }
+ ]
+}

@@ -51,8 +51,22 @@ class ModelError(Exception):
     pass
 
 
-def llm_json(system, user):
-    """One chat call through the bridge, answered as a JSON object."""
+class InvalidJSON(ModelError):
+    pass
+
+
+def llm_json(system, user, retries=1):
+    """One chat call through the bridge, answered as a JSON object. A reply that is not
+    valid JSON (seen about 1 in 12 versions) is asked again once."""
+    try:
+        return _llm_json_once(system, user)
+    except InvalidJSON:
+        if retries:
+            return llm_json(system, user, retries - 1)
+        raise
+
+
+def _llm_json_once(system, user):
     body = json.dumps({
         "model": "bridge",
         "messages": [{"role": "system", "content": system},
@@ -76,8 +90,11 @@ def llm_json(system, user):
     except json.JSONDecodeError:
         m = re.search(r"\{.*\}", text, re.S)
         if m:
-            return json.loads(m.group(0))
-        raise ModelError("model did not answer with JSON: " + text[:200])
+            try:
+                return json.loads(m.group(0))
+            except json.JSONDecodeError:
+                pass
+        raise InvalidJSON("model did not answer with valid JSON: " + text[:200])
 
 
 _open_lock = threading.Lock()
@@ -437,30 +454,35 @@ def missing_value(d):
     return 0.0 if d.get("rateOnly") else 0.5
 
 
-def recognize_dims(name, sentences, indices, dims):
-    """One call: every target sentence rated on every dimension (fortune included when asked)."""
-    dims = [FORTUNE_DIM if d.get("id") == "fortune" else d for d in dims]
-    items = [(i, previous_context(sentences, i), sentences[i]) for i in indices
-             if i < len(sentences) and sentences[i]]
+def rate_items(name, dims, items):
+    """One call: rate each (id, previous context, sentence) item on every dimension.
+    Items may come from different stories (ids are strings). -> {id: {dim id: value}}"""
     if not items:
-        return {"values": {}, "stub": STUB}
+        return {}
     if STUB:
-        return {"values": {str(i): {d["id"]: stub_fortune(s) if d["id"] == "fortune" else round(random.random(), 2)
-                                    for d in dims} for i, _, s in items}, "stub": True}
+        return {str(k): {d["id"]: stub_fortune(sent) if d["id"] == "fortune" else round(random.random(), 2) for d in dims}
+                for k, _, sent in items}
     lines = [protagonist_line(name, dims), "", "Dimensions:"]
     lines += [f"- {d['id']}: {d['name']} (0 = {d.get('low', 'low')}, 1 = {d.get('high', 'high')})" for d in dims]
     lines.append("")
-    for i, ctx, s in items:
-        lines.append(f"Item {i}:\n  Previous context: {' '.join(ctx) if ctx else '(story start)'}\n  Target sentence: {s}")
+    for k, ctx, sent in items:
+        lines.append(f"Item {k}:\n  Previous context: {' '.join(ctx) if ctx else '(story start)'}\n  Target sentence: {sent}")
     out = llm_json(RECOGNIZE_DIMS_SYSTEM, "\n".join(lines))
     got = {}
     for e in out.get("scores", []):
         try:
-            got[str(int(e["id"]))] = {d["id"]: clamp01(e["values"].get(d["id"], missing_value(d))) for d in dims}
+            got[str(e["id"])] = {d["id"]: clamp01(e["values"].get(d["id"], missing_value(d))) for d in dims}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
-    return {"values": {str(i): got.get(str(i), {d["id"]: missing_value(d) for d in dims}) for i, _, _ in items},
-            "stub": STUB}
+    return {str(k): got.get(str(k), {d["id"]: missing_value(d) for d in dims}) for k, _, _ in items}
+
+
+def recognize_dims(name, sentences, indices, dims):
+    """One call: every target sentence rated on every dimension (fortune included when asked)."""
+    dims = [FORTUNE_DIM if d.get("id") == "fortune" else d for d in dims]
+    items = [(str(i), previous_context(sentences, i), sentences[i]) for i in indices
+             if i < len(sentences) and sentences[i]]
+    return {"values": rate_items(name, dims, items), "stub": STUB}
 
 
 DIMENSIONS_SYSTEM = """You help a writer explore the design space of a short story outline,
@@ -506,15 +528,40 @@ def dimensions(payload):
     return {"arc": arc, "setting": setting, "stub": STUB}
 
 
-# Shapes an open arc dimension can take in a variant (Vonnegut-style story shapes).
-SHAPES = {
-    "rising": lambda t: 0.15 + 0.7 * t,
-    "falling": lambda t: 0.85 - 0.7 * t,
-    "dip": lambda t: 0.75 - 0.6 * math.sin(math.pi * t) + 0.05 * t,
-    "peak": lambda t: 0.25 + 0.6 * math.sin(math.pi * t),
-    "steady": lambda t: 0.5 + 0.05 * math.sin(3 * t),
-}
-SHAPE_NAMES = list(SHAPES)
+# Planning versions. Measured on 12 versions (see ../remixes.md): with five fixed
+# template shapes, half of all requested values sat in the middle band and every
+# "dip" was the same dip, while the written stories swung MORE than requested. So
+# the plan, not the generation, limited diversity. Each open dimension now gets a
+# random smooth curve (2-4 knots, levels biased toward the extremes), and versions
+# are chosen by farthest-point sampling: each new plan is the candidate farthest
+# from every version already in the space, so later batches fill the gaps.
+
+def random_level():
+    return 0.05 + 0.9 * random.betavariate(0.6, 0.6)   # U-shaped: extremes more likely
+
+
+def random_curve(m):
+    knots = random.choice([2, 3, 3, 4])
+    xs = sorted([0.0, 1.0] + [random.uniform(0.15, 0.85) for _ in range(knots - 2)])
+    ys = [random_level() for _ in xs]
+    out = []
+    for j in range(m):
+        t = j / (m - 1) if m > 1 else 0.5
+        a = max(k for k in range(len(xs) - 1) if xs[k] <= t)
+        span = xs[a + 1] - xs[a]
+        u = (t - xs[a]) / span if span else 0.0
+        w = (1 - math.cos(math.pi * u)) / 2              # smooth (cosine) between knots
+        out.append(round(ys[a] * (1 - w) + ys[a + 1] * w, 3))
+    return out
+
+
+def curve_distance(a, b):
+    keys = [k for k in a if k in b]
+    if not keys:
+        return 1.0
+    sq = [(x - y) ** 2 for k in keys for x, y in zip(a[k], b[k])]
+    return math.sqrt(sum(sq) / len(sq))
+
 
 VARIANT_SYSTEM = """You write ONE version of a short story outline for a writer who is exploring
 many versions side by side. Lines already written are fixed; each line marked [WRITE] needs
@@ -523,16 +570,17 @@ Follow every requirement:
 - Story settings hold for the whole story.
 - Per-line targets are 0-1 levels of the named dimensions (0 = low end, 1 = high end): the
   sentence must put the story at that level, and the level must change between lines the way
-  the targets change. "free" means anything that fits.
+  the targets change. Extreme targets (below 0.15 or above 0.85) need clearly extreme events.
+  "free" means anything that fits.
 - Continue from earlier lines and lead plausibly into later written lines. Keep the protagonist.
   If a second protagonist is listed, follow their fortune targets too and let the two
   protagonists' paths cross where it fits.
-Then rate EVERY line of the finished outline (written and new) on every listed dimension, 0-1.
 Answer with JSON only:
 {"title": "<3-6 word title>", "logline": "<one sentence>",
- "lines": [{"line": <n>, "text": "<sentence, only for [WRITE] lines>", "values": {"<dimension id>": <number>, ...}}, ...]}"""
+ "lines": [{"line": <n>, "text": "<sentence>"}, ...]}  (one entry per [WRITE] line)"""
 
 EXPLORE_SLOTS = threading.Semaphore(int(os.environ.get("TALEBRUSH_EXPLORE_SLOTS", "10")))
+RATE_BATCH = 3   # versions rated per recognition call
 
 
 def balanced(options, n):
@@ -546,60 +594,90 @@ def balanced(options, n):
     return out[:n]
 
 
-def plan_requirements(payload, n):
-    """Luminate's requirement sampling (Section 4.1.2), made balanced: every open
-    dimension takes each shape, and every free setting each value, about equally often,
-    shuffled independently per dimension, so N variants spread over the space."""
+def open_dims_of(payload):
     slots = payload["slots"]
     arc_dims = [FORTUNE_DIM] + list(payload.get("arcDims") or [])
+    return [d for d in arc_dims if not d.get("rateOnly") and
+            all((s.get("fortune") if d["id"] == "fortune" else (s.get("dims") or {}).get(d["id"])) is None
+                for s in slots)]
+
+
+def plan_requirements(payload, n):
+    """Luminate's requirement sampling (Section 4.1.2), made coverage-seeking: a random
+    curve per open dimension, chosen by farthest-point sampling against the versions
+    already in the space (payload["existing"]: their rated values per slot) and the
+    ones chosen so far; free settings are balanced."""
+    open_dims = open_dims_of(payload)
     settings = payload.get("settingDims") or []
-    open_dims = [d for d in arc_dims if not d.get("rateOnly") and
-                 all((s.get("fortune") if d["id"] == "fortune" else (s.get("dims") or {}).get(d["id"])) is None
-                        for s in slots)]
+    m = len(payload["slots"])
+    idx = [int(s["index"]) for s in sorted(payload["slots"], key=lambda s: int(s["index"]))]
     fixed = payload.get("fixed") or {}
-    shape_picks = {d["id"]: balanced(SHAPE_NAMES, n) for d in open_dims}
+    taken = []
+    for vals in payload.get("existing") or []:          # {slot index: {dim id: value}}
+        pt = {d["id"]: [(vals.get(str(i)) or {}).get(d["id"]) for i in idx] for d in open_dims}
+        pt = {k: v for k, v in pt.items() if all(x is not None for x in v)}
+        if pt:
+            taken.append(pt)
+    plans = []
+    for v in range(n):
+        if fixed.get("curves"):                          # "more like this": same curves, small jitter
+            plan = {k: [round(clamp01(x + random.uniform(-0.04, 0.04)), 3) for x in c]
+                    for k, c in fixed["curves"].items() if any(d["id"] == k for d in open_dims)}
+        else:
+            pool = [{d["id"]: random_curve(m) for d in open_dims} for _ in range(40)]
+            plan = max(pool, key=lambda c: min([curve_distance(c, t) for t in taken + plans] or [1.0]))
+        plans.append(plan)
     value_picks = {d["name"]: balanced(d.get("values") or [""], n) for d in settings}
     reqs = []
     for v in range(n):
-        shapes = {d["id"]: shape_picks[d["id"]][v] for d in open_dims}
         values = {d["name"]: d.get("pinned") or value_picks[d["name"]][v] for d in settings}
-        shapes.update({k: x for k, x in (fixed.get("shapes") or {}).items() if k in shapes})
         values.update(fixed.get("settings") or {})
-        reqs.append({"shapes": shapes, "settings": values})
+        reqs.append({"curves": plans[v], "settings": values})
     return reqs
 
 
-def variant_once(payload, req):
-    name = payload.get("name", "").strip()
-    sentences = [(s or "").strip() for s in payload.get("sentences", [])]
+def version_targets(payload, req):
+    """-> {(slot index, dim id): target or None} for every slot and every dimension."""
     slots = sorted(payload["slots"], key=lambda s: int(s["index"]))
     arc_dims = [FORTUNE_DIM] + list(payload.get("arcDims") or [])
-    idx = [int(s["index"]) for s in slots]
+    targets = {}
+    for k, s in enumerate(slots):
+        for d in arc_dims:
+            given = s.get("fortune") if d["id"] == "fortune" else (s.get("dims") or {}).get(d["id"])
+            curve = (req.get("curves") or {}).get(d["id"])
+            if given is not None:
+                targets[(int(s["index"]), d["id"])] = clamp01(given)
+            elif curve:
+                targets[(int(s["index"]), d["id"])] = curve[k]
+            else:
+                targets[(int(s["index"]), d["id"])] = None
+    return targets
+
+
+def variant_once(payload, req):
+    """One call writes the version's sentences. No self-ratings: measured, they only echo
+    the targets (mean error 0.02-0.03), so the plan is sent as provisional values and an
+    independent rating replaces it (rate_versions)."""
+    name = payload.get("name", "").strip()
+    sentences = [(s or "").strip() for s in payload.get("sentences", [])]
+    arc_dims = [FORTUNE_DIM] + list(payload.get("arcDims") or [])
+    idx = sorted(int(s["index"]) for s in payload["slots"])
     n = max(len(sentences), max(idx) + 1)
     sentences += [""] * (n - len(sentences))
     for i in idx:
         sentences[i] = ""
-    m = len(slots)
-    targets = {}  # (slot index, dim id) -> target or None
-    for k, s in enumerate(slots):
-        t = k / (m - 1) if m > 1 else 0.5
-        for d in arc_dims:
-            given = s.get("fortune") if d["id"] == "fortune" else (s.get("dims") or {}).get(d["id"])
-            if given is not None:
-                targets[(int(s["index"]), d["id"])] = clamp01(given)
-            elif d["id"] in req["shapes"]:
-                targets[(int(s["index"]), d["id"])] = clamp01(SHAPES[req["shapes"][d["id"]]](t) + random.uniform(-0.05, 0.05))
-            else:
-                targets[(int(s["index"]), d["id"])] = None
+    targets = version_targets(payload, req)
+    plan = {str(i): {d["id"]: targets[(i, d["id"])] for d in arc_dims
+                     if not d.get("rateOnly") and targets[(i, d["id"])] is not None} for i in idx}
     if STUB:
         return {"title": f"[stub] Version {random.randint(1, 99)}", "logline": "[stub] canned variant",
                 "sentences": [{"index": i, "text": stub_sentence(name, targets[(i, "fortune")], None)} for i in idx],
-                "values": {str(i): {d["id"]: targets[(i, d["id"])] if targets[(i, d["id"])] is not None else 0.5
-                                    for d in arc_dims} for i in idx}}
+                "values": plan}
     lines = story_header(name, {"title": payload.get("title"), "settings": req["settings"],
                                 "arcDims": [d for d in arc_dims if d.get("person")]})
     lines.append("Dimensions (id: name, 0 = low end, 1 = high end):")
-    lines += [f"- {d['id']}: {d['name']} (0 = {d.get('low', 'low')}, 1 = {d.get('high', 'high')})" for d in arc_dims]
+    lines += [f"- {d['id']}: {d['name']} (0 = {d.get('low', 'low')}, 1 = {d.get('high', 'high')})"
+              for d in arc_dims if not d.get("rateOnly")]
     lines += ["", "Story outline:"]
     last = max([i for i, s in enumerate(sentences) if s] + idx)
     for i in range(last + 1):
@@ -609,8 +687,8 @@ def variant_once(payload, req):
                 if d.get("rateOnly"):
                     continue
                 t = targets[(i, d["id"])]
-                parts.append(f"{d['id']} {'free' if t is None else f'{t:.2f}'}")
-            sur = next((s.get("surprise") for s in slots if int(s["index"]) == i), None)
+                parts.append(f"{d['id']} {'free' if t is None else f'{t:.2f} ({level_words(t)})'}")
+            sur = next((s.get("surprise") for s in payload["slots"] if int(s["index"]) == i), None)
             if sur is not None:
                 parts.append(f"surprise {surprise_words(clamp01(sur))}")
             lines.append(f"{i + 1}. [WRITE] (" + "; ".join(parts) + ")")
@@ -620,7 +698,7 @@ def variant_once(payload, req):
             lines.append(f"{i + 1}. (blank; ignore)")
     lines += ["", f"Random seed for variety: {random.randint(1000, 9999)}"]
     out = llm_json(VARIANT_SYSTEM, "\n".join(lines))
-    texts, values = {}, {}
+    texts = {}
     for e in out.get("lines", []):
         try:
             i = int(e["line"]) - 1
@@ -628,42 +706,97 @@ def variant_once(payload, req):
             continue
         if i in idx and e.get("text"):
             texts[i] = str(e["text"]).strip()
-        if isinstance(e.get("values"), dict):
-            values[str(i)] = {d["id"]: clamp01(e["values"].get(d["id"], missing_value(d))) for d in arc_dims}
     return {"title": str(out.get("title", "")).strip() or "Untitled", "logline": str(out.get("logline", "")).strip(),
-            "sentences": [{"index": i, "text": texts.get(i, "...")} for i in idx], "values": values}
+            "sentences": [{"index": i, "text": texts.get(i, "...")} for i in idx], "values": plan}
+
+
+def rate_versions(payload, versions):
+    """Independent recognition of several versions in one call: every generated sentence,
+    with its own version's previous context, on every dimension (interaction included).
+    -> {version id: {slot index: {dim id: value}}}"""
+    name = payload.get("name", "").strip()
+    dims = [FORTUNE_DIM] + list(payload.get("arcDims") or [])
+    base = [(s or "").strip() for s in payload.get("sentences", [])]
+    items = []
+    for k, v in enumerate(versions):
+        story = list(base) + [""] * 16
+        for s in v["sentences"]:
+            story[s["index"]] = s["text"]
+        for s in v["sentences"]:
+            items.append((f"{k}_{s['index']}", previous_context(story, s["index"]), s["text"]))
+    got = rate_items(name, dims, items)
+    out = {}
+    for k, v in enumerate(versions):
+        out[v["id"]] = {str(s["index"]): got.get(f"{k}_{s['index']}", {}) for s in v["sentences"]}
+    return out
 
 
 def explore_stream(handler, payload):
-    """Fan out N variant calls in parallel and stream each result to the browser
-    as one line of JSON the moment it arrives (progressive design space)."""
-    n = max(1, min(24, int(payload.get("n", 12))))
+    """Fan out N version calls in parallel and stream each result to the browser as one
+    line of JSON the moment it arrives (progressive design space). Finished versions are
+    rated independently in batches of RATE_BATCH; each batch streams a "ratings" line."""
+    n = max(1, min(48, int(payload.get("n", 12))))
     if not payload.get("slots"):
         return handler._json(400, {"error": "no sentence slots to generate"})
     reqs = plan_requirements(payload, n)
     handler.send_response(200)
     handler.send_header("Content-Type", "application/x-ndjson")
     handler.end_headers()
-    q, cancelled = queue.Queue(), threading.Event()
+    out_q, rate_q, cancelled = queue.Queue(), queue.Queue(), threading.Event()
 
     def work(k, req):
         with EXPLORE_SLOTS:
             if cancelled.is_set():
-                return q.put(None)
+                rate_q.put(None)
+                return out_q.put(None)
             t = time.time()
             try:
                 v = variant_once(payload, req)
-                v.update({"id": f"{payload.get('spaceId', 's')}-{k}", "requirement": req, "ms": int((time.time() - t) * 1000)})
-                q.put({"type": "variant", "variant": v})
+                v.update({"id": f"{payload.get('spaceId', 's')}-{k}", "requirement": req, "rated": False,
+                          "ms": int((time.time() - t) * 1000)})
+                out_q.put({"type": "variant", "variant": v})
+                rate_q.put(v)
             except Exception as e:  # noqa: BLE001
-                q.put({"type": "error", "error": str(e)})
+                out_q.put({"type": "error", "error": str(e)})
+                rate_q.put(None)
+
+    def rater():
+        """Collect finished versions; rate them RATE_BATCH at a time, or after 4 s of waiting."""
+        pending, seen, since = [], 0, None
+        while not cancelled.is_set():
+            if seen < n:
+                try:
+                    item = rate_q.get(timeout=0.5)
+                    seen += 1
+                    if item is not None:
+                        pending.append(item)
+                        since = since or time.time()
+                except queue.Empty:
+                    pass
+            elif not pending:
+                break
+            if pending and (len(pending) >= RATE_BATCH or seen >= n or time.time() - since > 4):
+                batch, pending = pending[:RATE_BATCH], pending[RATE_BATCH:]
+                since = time.time() if pending else None
+                with EXPLORE_SLOTS:
+                    try:
+                        for vid, vals in rate_versions(payload, batch).items():
+                            out_q.put({"type": "ratings", "id": vid, "values": vals})
+                    except Exception as e:  # noqa: BLE001
+                        out_q.put({"type": "rating_error", "error": str(e)})
+        out_q.put({"type": "_rater_done"})
 
     for k, req in enumerate(reqs):
         threading.Thread(target=work, args=(k, req), daemon=True).start()
-    left = n
-    while left:
-        msg = q.get()
-        left -= 1
+    threading.Thread(target=rater, daemon=True).start()
+    left, rater_done = n, False
+    while left or not rater_done:
+        msg = out_q.get()
+        if msg is None or msg.get("type") in ("variant", "error"):
+            left -= 1
+        if msg is not None and msg.get("type") == "_rater_done":
+            rater_done = True
+            continue
         if msg is None or cancelled.is_set():
             continue
         try:

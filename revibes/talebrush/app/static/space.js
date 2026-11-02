@@ -113,9 +113,11 @@ async function explore({ fixed = null, n = null, append = false } = {}) {
     return { index: i, fortune: spec.target, surprise: spec.surprise, dims: laneTargets(i, total) };
   });
   const base = state.bullets.map((b, i) => idx.includes(i) ? newBullet() : { ...b, values: { ...(b.values || {}) } });
+  // "Explore more" sends what is already in the space, so new plans go where it is empty.
+  const existing = append && !fixed ? sp.variants.map(v => v.values) : [];
   const payload = { spaceId: "s" + (++sp.seq), n: count, name: state.name.trim(), title: $("title").value,
     sentences: state.bullets.map(b => b.text), slots, arcDims: arcDimDefs(),
-    settingDims: state.settings.map(s => ({ name: s.name, values: s.values, pinned: s.pinned })), fixed };
+    settingDims: state.settings.map(s => ({ name: s.name, values: s.values, pinned: s.pinned })), fixed, existing };
   if (!append) { sp.variants = []; sp.selected = null; $("spaceDetail").hidden = true; }
   sp.expected = (append ? sp.variants.length : 0) + count;
   sp.errors = 0; sp.started = performance.now();
@@ -143,7 +145,15 @@ async function explore({ fixed = null, n = null, append = false } = {}) {
           v.arrivedAt = ((performance.now() - sp.started) / 1000).toFixed(1);
           sp.variants.push(v);
           renderSpace(); renderCanvas();
-        } else if (msg.type === "error") {
+        } else if (msg.type === "ratings") {
+          // The independent rating replaces the version's plan (its requested levels).
+          const v = sp.variants.find(x => x.id === msg.id);
+          if (v) {
+            for (const [i, vals] of Object.entries(msg.values)) v.values[i] = { ...vals };
+            v.rated = true;
+            renderSpace(); renderCanvas();
+          }
+        } else if (msg.type === "error" || msg.type === "rating_error") {
           sp.errors++;
         }
         updateStatus();
@@ -161,17 +171,19 @@ async function explore({ fixed = null, n = null, append = false } = {}) {
 
 function setExploring(on) {
   $("exploreBtn").disabled = on;
+  $("exploreMoreBtn").hidden = on || !state.space.variants.length;
   $("stopBtn").hidden = !on;
   $("exploreBtn").textContent = on ? "Exploring…" : "Explore versions";
 }
 function updateStatus(final) {
   const sp = state.space, secs = ((performance.now() - sp.started) / 1000).toFixed(1);
-  const got = sp.variants.length;
+  const got = sp.variants.length, rated = sp.variants.filter(v => v.rated).length;
   $("spaceStatus").textContent = final
-    ? `${got} versions${sp.errors ? ` · ${sp.errors} failed` : ""}${sp.started ? ` · ${secs} s` : ""}`
-    : `${got} / ${sp.expected} arrived · ${secs} s`;
+    ? `${got} versions · ${rated} rated${sp.errors ? ` · ${sp.errors} failed` : ""}${sp.started ? ` · ${secs} s` : ""}`
+    : `${got} / ${sp.expected} written · ${rated} rated · ${secs} s`;
 }
 $("exploreBtn").addEventListener("click", () => explore());
+$("exploreMoreBtn").addEventListener("click", () => explore({ append: true }));
 $("stopBtn").addEventListener("click", () => { if (state.space.controller) state.space.controller.abort(); });
 
 // ---------------------------------------------------------------------------
@@ -190,7 +202,8 @@ function sparkline(v, w, h) {
     }
     let d = "", open = false;
     for (const p of pts) { if (!p) { open = false; continue; } d += (open ? "L" : "M") + p[0] + "," + p[1] + " "; open = true; }
-    if (d) el("path", { d, fill: "none", stroke: dimColor(id), "stroke-width": id === "fortune" ? 2 : 1.4, "stroke-linejoin": "round" }, svg);
+    if (d) el("path", { d, fill: "none", stroke: dimColor(id), "stroke-width": id === "fortune" ? 2 : 1.4, "stroke-linejoin": "round",
+      ...(v.rated ? {} : { "stroke-dasharray": "3 2", "stroke-opacity": 0.6 }) }, svg);
   }
   // Ticks where the two protagonists interact.
   bullets.forEach((b, i) => {
@@ -206,7 +219,7 @@ function nodeEl(v) {
   node.className = `vnode l${L}` + (v.fresh ? " fresh" : "") + (state.space.selected === v ? " selected" : "")
     + (state.space.hover === v ? " hover" : "");
   v.fresh = false;
-  node.title = `${v.title} (arrived at ${v.arrivedAt} s)`;
+  node.title = `${v.title} (arrived at ${v.arrivedAt} s)${v.rated ? "" : " · dashed: planned levels, rating on the way"}`;
   if (L >= 1) node.appendChild(sparkline(v, L >= 3 ? 150 : 84, L >= 3 ? 44 : 34));
   if (L >= 2) { const t = document.createElement("div"); t.className = "v-title"; t.textContent = v.title; node.appendChild(t); }
   if (L >= 3) {
@@ -307,7 +320,7 @@ function adopt(v) {
     while (state.bullets.length <= i) state.bullets.push(newBullet());
     const b = bs[i];
     Object.assign(state.bullets[i], { text: b.text, kind: "gen", edited: false, fortune: b.fortune,
-      values: { ...b.values }, recText: null, selfRated: true });
+      values: { ...b.values }, recText: v.rated ? b.text.trim() : null, recName: state.name.trim(), selfRated: !v.rated });
   }
   pushHistory("Space · " + v.title);
   renderEditor(); renderCanvas(); renderSpace(); showDetail(v);

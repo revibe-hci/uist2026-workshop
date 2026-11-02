@@ -83,7 +83,10 @@ Not in the paper. See `../remixes.md` for the question it explores.
 2. **Sketch what you know, leave the rest blank.** Draw on the fortune canvas
    or any lane, and pin setting chips. Blank lanes and settings left on
    "explore" vary across versions.
-3. **Explore versions** writes 6, 12 or 18 versions in parallel. They appear in
+3. **Explore versions** writes 6–36 versions in parallel. Each version's
+   sparkline is dashed (its planned levels) until an independent rating
+   arrives and turns it solid. **＋ Explore more** adds versions aimed at the
+   parts of the space that are still empty. They appear in
    the Design space as they arrive.
    - Choose x and y axes (a lane's shape, or a setting).
    - Zoom with • ∿ T ¶ ☰, or pinch / Ctrl+scroll: dots → arcs → titles →

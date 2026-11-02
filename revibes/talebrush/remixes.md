@@ -123,3 +123,56 @@ fortune canvas does.
 **Measured.** 2 History stories and 6 versions were made before any extra
 dimension existed. Right after "Suggest dimensions", all of them had 0/8
 sentences rated on the 3 new dimensions; about 21 s later all had 8/8.
+
+### Update: more diverse versions, and more of them
+
+**Measured first** (`experiments/diversity/`, 12 versions, fortune and 3 lanes
+open). We compared each version's *requested* curve, its *self-rated* values
+and an *independent* re-rating.
+- **The plan was the bottleneck, not the writing.** Five fixed template shapes
+  put 44–50% of requested values in the middle band, and every "dip" was
+  identical. The written stories actually swung *more* than requested (swing
+  0.55–0.67 vs 0.49–0.55).
+- **Self-ratings were useless.** They differed from the targets by only
+  0.02–0.03: the model echoed its plan. So the sparklines showed template
+  copies, not what was written.
+- **"Steady" was wasted.** None of 12 stayed flat once read independently.
+- **Combinations repeated.** 9 distinct realised shape combinations in 12
+  versions.
+
+**What changed**
+- **Random curves, coverage-seeking.** Each open dimension gets a random smooth
+  curve (2–4 knots, levels biased toward the extremes). Versions are chosen by
+  farthest-point sampling against every version already in the space.
+- **"＋ Explore more"** adds versions planned against the rated values of
+  those already shown, so new batches go where the space is empty. Up to 36
+  versions per click.
+- **No self-ratings.** The generation call writes sentences only. The plan is
+  shown as *dashed* sparklines until an independent rating, 3 versions per
+  call, streams in and turns them solid. An adopted version needs no second
+  reading.
+- **Retries on invalid JSON.** A reply that isn't valid JSON is retried once
+  (1 of 12 versions failed this way).
+
+**Measured after** (independent ratings):
+
+| | before | after |
+|---|---|---|
+| Distinct shape combinations | 9 of 12 | 11 of 11 |
+| Distance to nearest other version (mean / min) | 0.22 / 0.16 | 0.29 / 0.22 |
+| Values in the middle band, per dimension | 31–46% | 27–39% |
+| "Explore more" batch: distance to the first batch | — | 0.30 (≥ 0.29 within a batch), 11 of 11 combinations new |
+| Union of both batches | — | 22 distinct combinations in 23 versions |
+
+Batch rating (3 stories per call) agreed with rating each story alone to
+within 0.07 on average. 12 versions are written and rated in 41–55 s; the first
+version appears after 7–14 s.
+
+**Still open**
+- **Plans are more extreme than the writing.** The plans spread 0.30 across
+  versions, but the written stories only spread 0.24, and the error against
+  the plan rose to 0.16–0.19.
+- **Fortune pulls toward "dip".** 6 of 11 versions came out fall-then-recover
+  whatever was asked, a narrative default.
+- Retrying versions that miss their plan, as the paper's loop does, would cost
+  extra calls.

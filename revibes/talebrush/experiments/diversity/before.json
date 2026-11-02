@@ -1,0 +1,1582 @@
+{
+ "dims": [
+  "fortune",
+  "d1",
+  "d2",
+  "d3"
+ ],
+ "versions": [
+  {
+   "title": "The Jazz-Metal Gamble",
+   "logline": "A devoted jazz guitarist stakes his band, his savings, and his reputation on a jazz-metal hybrid, then must learn humility to win back his place in the scene.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike dazzled the Thursday crowd at the Blue Heron with a jazz-metal medley, and the whole room, bandmates included, begged for more."
+    },
+    {
+     "index": 3,
+     "text": "Mike's bassist quit after the hybrid set, and the club owner, mocking his tangled riffs, pulled the booking for next month."
+    },
+    {
+     "index": 4,
+     "text": "Stubbornly convinced the fusion would win, Mike pawned his vintage Gibson to cover rent, while former friends snickered at his cancelled gigs."
+    },
+    {
+     "index": 5,
+     "text": "Sleepless and humbled, Mike sold his amplifier and admitted to himself that the metal riffs had sounded like noise."
+    },
+    {
+     "index": 6,
+     "text": "Swallowing his pride, Mike quietly apologized to the drummer, who grudgingly let him sit in on a standards night."
+    },
+    {
+     "index": 7,
+     "text": "Mike played a flawless standards set at the Blue Heron, and the crowd, plus his old band, toasted him as a true jazzman."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.6,
+     "d1": 0.55,
+     "d2": 0.5,
+     "d3": 0.5
+    },
+    "1": {
+     "fortune": 0.58,
+     "d1": 0.62,
+     "d2": 0.48,
+     "d3": 0.5
+    },
+    "2": {
+     "fortune": 0.78,
+     "d1": 0.86,
+     "d2": 0.79,
+     "d3": 0.7
+    },
+    "3": {
+     "fortune": 0.4,
+     "d1": 0.69,
+     "d2": 0.39,
+     "d3": 0.38
+    },
+    "4": {
+     "fortune": 0.2,
+     "d1": 0.6,
+     "d2": 0.16,
+     "d3": 0.2
+    },
+    "5": {
+     "fortune": 0.21,
+     "d1": 0.41,
+     "d2": 0.21,
+     "d3": 0.24
+    },
+    "6": {
+     "fortune": 0.44,
+     "d1": 0.25,
+     "d2": 0.45,
+     "d3": 0.42
+    },
+    "7": {
+     "fortune": 0.8,
+     "d1": 0.15,
+     "d2": 0.78,
+     "d3": 0.82
+    }
+   },
+   "id": "before-6",
+   "requirement": {
+    "shapes": {
+     "fortune": "dip",
+     "d1": "falling",
+     "d2": "dip",
+     "d3": "dip"
+    },
+    "settings": {
+     "Genre": "comedy of manners"
+    }
+   },
+   "ms": 12969,
+   "recognized": {
+    "2": {
+     "fortune": 0.88,
+     "d1": 0.85,
+     "d2": 0.87,
+     "d3": 0.5
+    },
+    "3": {
+     "fortune": 0.2,
+     "d1": 0.7,
+     "d2": 0.2,
+     "d3": 0.35
+    },
+    "4": {
+     "fortune": 0.05,
+     "d1": 0.8,
+     "d2": 0.1,
+     "d3": 0.05
+    },
+    "5": {
+     "fortune": 0.15,
+     "d1": 0.1,
+     "d2": 0.2,
+     "d3": 0.1
+    },
+    "6": {
+     "fortune": 0.4,
+     "d1": 0.2,
+     "d2": 0.4,
+     "d3": 0.3
+    },
+    "7": {
+     "fortune": 0.9,
+     "d1": 0.2,
+     "d2": 0.85,
+     "d3": 0.45
+    }
+   }
+  },
+  {
+   "title": "Fusion in the Shadows",
+   "logline": "A broke jazz guitarist who bets his career on a jazz-metal fusion finds his bandmates' loyalty tested when a label's accountant turns up dead.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike's rent came due the same week his amplifier was repossessed, but drummer Lenny slid him a loan without asking questions."
+    },
+    {
+     "index": 3,
+     "text": "A gig at the Blue Owl paid Mike enough to buy back his amp, and the band agreed to try his metal riff."
+    },
+    {
+     "index": 4,
+     "text": "A record deal landed, and the label's money made Mike a steady salary, though the bassist grumbled that metal experiment sounded like a gimmick."
+    },
+    {
+     "index": 5,
+     "text": "The fusion album hit the charts, yet Mike's bandmates stopped returning his calls after he signed the label's solo contract."
+    },
+    {
+     "index": 6,
+     "text": "Mike still had the money, but the label's accountant turned up dead behind the club, and his name sat in the ledger."
+    },
+    {
+     "index": 7,
+     "text": "Mike's bandmates locked him out of the rehearsal space, his advance was frozen, and a detective's card on his table said only one word guilty."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.55,
+     "d1": 0.3,
+     "d2": 0.5,
+     "d3": 0.5
+    },
+    "1": {
+     "fortune": 0.55,
+     "d1": 0.6,
+     "d2": 0.5,
+     "d3": 0.5
+    },
+    "2": {
+     "fortune": 0.29,
+     "d1": 0.48,
+     "d2": 0.81,
+     "d3": 0.25
+    },
+    "3": {
+     "fortune": 0.62,
+     "d1": 0.56,
+     "d2": 0.71,
+     "d3": 0.64
+    },
+    "4": {
+     "fortune": 0.81,
+     "d1": 0.5,
+     "d2": 0.56,
+     "d3": 0.84
+    },
+    "5": {
+     "fortune": 0.83,
+     "d1": 0.5,
+     "d2": 0.39,
+     "d3": 0.77
+    },
+    "6": {
+     "fortune": 0.6,
+     "d1": 0.53,
+     "d2": 0.3,
+     "d3": 0.64
+    },
+    "7": {
+     "fortune": 0.2,
+     "d1": 0.46,
+     "d2": 0.16,
+     "d3": 0.27
+    }
+   },
+   "id": "before-8",
+   "requirement": {
+    "shapes": {
+     "fortune": "peak",
+     "d1": "steady",
+     "d2": "falling",
+     "d3": "peak"
+    },
+    "settings": {
+     "Genre": "crime noir"
+    }
+   },
+   "ms": 14692,
+   "recognized": {
+    "2": {
+     "fortune": 0.35,
+     "d1": 0.7,
+     "d2": 0.7,
+     "d3": 0.35
+    },
+    "3": {
+     "fortune": 0.65,
+     "d1": 0.75,
+     "d2": 0.75,
+     "d3": 0.6
+    },
+    "4": {
+     "fortune": 0.8,
+     "d1": 0.55,
+     "d2": 0.6,
+     "d3": 0.9
+    },
+    "5": {
+     "fortune": 0.45,
+     "d1": 0.6,
+     "d2": 0.2,
+     "d3": 0.75
+    },
+    "6": {
+     "fortune": 0.2,
+     "d1": 0.5,
+     "d2": 0.15,
+     "d3": 0.5
+    },
+    "7": {
+     "fortune": 0.03,
+     "d1": 0.45,
+     "d2": 0.02,
+     "d3": 0.15
+    }
+   }
+  },
+  {
+   "title": "Blue Lantern Blues",
+   "logline": "A jazz guitarist chasing a jazz-metal fusion sound wins a breakthrough gig, then watches his new band, his money, and his trust unravel after a stranger starts asking questions.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike landed a headlining slot at the Blue Lantern, but the promoter paid him in cash and kept his name off the posters."
+    },
+    {
+     "index": 3,
+     "text": "Drummer Teddy Vance invited Mike to record a demo, and the two of them spent three nights hammering out the hybrid riffs together."
+    },
+    {
+     "index": 4,
+     "text": "The crew celebrated the demo at Lou's, and Mike finally belonged to the late-night circle, though a gray-coated stranger watched from the bar."
+    },
+    {
+     "index": 5,
+     "text": "Teddy vouched for Mike at the bar, and the band agreed to split the club fee, though the gray-coated stranger kept calling Mike's apartment."
+    },
+    {
+     "index": 6,
+     "text": "The club fee came up short, and Mike's bandmates started asking questions about the envelope of cash he had brought in."
+    },
+    {
+     "index": 7,
+     "text": "Teddy stopped answering the phone, and Mike woke to find his guitar gone, his savings wiped, and the stranger waiting outside."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.62,
+     "d1": 0.3,
+     "d2": 0.45,
+     "d3": 0.45
+    },
+    "1": {
+     "fortune": 0.6,
+     "d1": 0.48,
+     "d2": 0.45,
+     "d3": 0.45
+    },
+    "2": {
+     "fortune": 0.83,
+     "d1": 0.54,
+     "d2": 0.3,
+     "d3": 0.5
+    },
+    "3": {
+     "fortune": 0.75,
+     "d1": 0.54,
+     "d2": 0.65,
+     "d3": 0.57
+    },
+    "4": {
+     "fortune": 0.56,
+     "d1": 0.59,
+     "d2": 0.8,
+     "d3": 0.59
+    },
+    "5": {
+     "fortune": 0.46,
+     "d1": 0.52,
+     "d2": 0.79,
+     "d3": 0.57
+    },
+    "6": {
+     "fortune": 0.27,
+     "d1": 0.5,
+     "d2": 0.61,
+     "d3": 0.51
+    },
+    "7": {
+     "fortune": 0.11,
+     "d1": 0.49,
+     "d2": 0.25,
+     "d3": 0.49
+    }
+   },
+   "id": "before-1",
+   "requirement": {
+    "shapes": {
+     "fortune": "falling",
+     "d1": "steady",
+     "d2": "peak",
+     "d3": "steady"
+    },
+    "settings": {
+     "Genre": "crime noir"
+    }
+   },
+   "ms": 15493,
+   "recognized": {
+    "2": {
+     "fortune": 0.72,
+     "d1": 0.7,
+     "d2": 0.5,
+     "d3": 0.45
+    },
+    "3": {
+     "fortune": 0.78,
+     "d1": 0.85,
+     "d2": 0.7,
+     "d3": 0.5
+    },
+    "4": {
+     "fortune": 0.7,
+     "d1": 0.85,
+     "d2": 0.85,
+     "d3": 0.5
+    },
+    "5": {
+     "fortune": 0.55,
+     "d1": 0.85,
+     "d2": 0.75,
+     "d3": 0.45
+    },
+    "6": {
+     "fortune": 0.3,
+     "d1": 0.85,
+     "d2": 0.4,
+     "d3": 0.25
+    },
+    "7": {
+     "fortune": 0.04,
+     "d1": 0.6,
+     "d2": 0.1,
+     "d3": 0.02
+    }
+   }
+  },
+  {
+   "title": "Hybrid Notes in Polite Company",
+   "logline": "A proud jazz guitarist who dreams of blending his art with heavy metal must rebuild his finances and his reputation before his hybrid sound can win over a snobbish scene.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike accepted a steady teaching post at a suburban conservatory, though his quartet pointedly stopped returning his calls."
+    },
+    {
+     "index": 3,
+     "text": "At a donor's dinner party, Mike played polite standards while guests whispered about his rumored heavy-metal experiments over dessert."
+    },
+    {
+     "index": 4,
+     "text": "Mike pawned his vintage archtop at a shop whose owner insisted on discussing fusion theory before naming a ridiculously low price."
+    },
+    {
+     "index": 5,
+     "text": "A rival drummer, scornful at first, tapped along to Mike's bruising hybrid riff and quietly offered him a slot at Thursday's session."
+    },
+    {
+     "index": 6,
+     "text": "Mike's odd fusion set sold out the Thursday club, and a bemused critic conceded the hybrid sound had finally earned its ridiculous name."
+    },
+    {
+     "index": 7,
+     "text": "Mike's bandmates toasted him at a formal gala where the snobbish patrons, now converted, begged for an encore of his metal-jazz hybrid."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.45,
+     "d1": 0.1,
+     "d2": 0.55,
+     "d3": 0.5
+    },
+    "1": {
+     "fortune": 0.5,
+     "d1": 0.35,
+     "d2": 0.5,
+     "d3": 0.5
+    },
+    "2": {
+     "fortune": 0.15,
+     "d1": 0.14,
+     "d2": 0.16,
+     "d3": 0.71
+    },
+    "3": {
+     "fortune": 0.26,
+     "d1": 0.26,
+     "d2": 0.33,
+     "d3": 0.44
+    },
+    "4": {
+     "fortune": 0.4,
+     "d1": 0.42,
+     "d2": 0.42,
+     "d3": 0.19
+    },
+    "5": {
+     "fortune": 0.57,
+     "d1": 0.57,
+     "d2": 0.54,
+     "d3": 0.24
+    },
+    "6": {
+     "fortune": 0.75,
+     "d1": 0.73,
+     "d2": 0.7,
+     "d3": 0.42
+    },
+    "7": {
+     "fortune": 0.86,
+     "d1": 0.84,
+     "d2": 0.83,
+     "d3": 0.76
+    }
+   },
+   "id": "before-2",
+   "requirement": {
+    "shapes": {
+     "fortune": "rising",
+     "d1": "rising",
+     "d2": "rising",
+     "d3": "dip"
+    },
+    "settings": {
+     "Genre": "comedy of manners"
+    }
+   },
+   "ms": 15851,
+   "recognized": {
+    "2": {
+     "fortune": 0.25,
+     "d1": 0.6,
+     "d2": 0.15,
+     "d3": 0.7
+    },
+    "3": {
+     "fortune": 0.2,
+     "d1": 0.45,
+     "d2": 0.2,
+     "d3": 0.7
+    },
+    "4": {
+     "fortune": 0.15,
+     "d1": 0.4,
+     "d2": 0.2,
+     "d3": 0.1
+    },
+    "5": {
+     "fortune": 0.7,
+     "d1": 0.85,
+     "d2": 0.7,
+     "d3": 0.15
+    },
+    "6": {
+     "fortune": 0.9,
+     "d1": 0.95,
+     "d2": 0.8,
+     "d3": 0.35
+    },
+    "7": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.9,
+     "d3": 0.5
+    }
+   }
+  },
+  {
+   "title": "The Hybrid Sound Blues",
+   "logline": "A jazz guitarist who bets everything on a jazz-metal fusion watches his fortune rise on the strength of his music, then collapse as his bandmates and his finances fall away.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike pawned his amplifier to fund the jazz-metal album, but his bandmates still gathered each night to rehearse the hybrid songs with him."
+    },
+    {
+     "index": 3,
+     "text": "A promoter offered Mike a steady weekend residency, and he took it, though he privately doubted the hybrid sound would ever fill the room."
+    },
+    {
+     "index": 4,
+     "text": "The residency drew a sold-out crowd and a glowing review, though Mike wondered whether the success came from the jazz or the metal."
+    },
+    {
+     "index": 5,
+     "text": "A label signed Mike for a solo record, and his former bandmates stopped returning calls, convinced he had abandoned the band."
+    },
+    {
+     "index": 6,
+     "text": "The solo record sold modestly, and Mike began to suspect that the fusion he had championed was a gimmick that pleased no one."
+    },
+    {
+     "index": 7,
+     "text": "Mike sold his Gibson at a pawnshop in winter, alone in a rented room, and stopped picking up the guitar altogether."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.6,
+     "d1": 0.3,
+     "d2": 0.6,
+     "d3": 0.5
+    },
+    "1": {
+     "fortune": 0.6,
+     "d1": 0.6,
+     "d2": 0.6,
+     "d3": 0.5
+    },
+    "2": {
+     "fortune": 0.28,
+     "d1": 0.84,
+     "d2": 0.85,
+     "d3": 0.2
+    },
+    "3": {
+     "fortune": 0.6,
+     "d1": 0.66,
+     "d2": 0.72,
+     "d3": 0.63
+    },
+    "4": {
+     "fortune": 0.85,
+     "d1": 0.53,
+     "d2": 0.6,
+     "d3": 0.77
+    },
+    "5": {
+     "fortune": 0.8,
+     "d1": 0.45,
+     "d2": 0.39,
+     "d3": 0.83
+    },
+    "6": {
+     "fortune": 0.63,
+     "d1": 0.31,
+     "d2": 0.31,
+     "d3": 0.59
+    },
+    "7": {
+     "fortune": 0.25,
+     "d1": 0.18,
+     "d2": 0.19,
+     "d3": 0.21
+    }
+   },
+   "id": "before-4",
+   "requirement": {
+    "shapes": {
+     "fortune": "peak",
+     "d1": "falling",
+     "d2": "falling",
+     "d3": "peak"
+    },
+    "settings": {
+     "Genre": "literary realism"
+    }
+   },
+   "ms": 15858,
+   "recognized": {
+    "2": {
+     "fortune": 0.45,
+     "d1": 0.8,
+     "d2": 0.85,
+     "d3": 0.2
+    },
+    "3": {
+     "fortune": 0.6,
+     "d1": 0.5,
+     "d2": 0.8,
+     "d3": 0.55
+    },
+    "4": {
+     "fortune": 0.8,
+     "d1": 0.45,
+     "d2": 0.75,
+     "d3": 0.65
+    },
+    "5": {
+     "fortune": 0.6,
+     "d1": 0.4,
+     "d2": 0.2,
+     "d3": 0.8
+    },
+    "6": {
+     "fortune": 0.25,
+     "d1": 0.1,
+     "d2": 0.2,
+     "d3": 0.5
+    },
+    "7": {
+     "fortune": 0.05,
+     "d1": 0.05,
+     "d2": 0.05,
+     "d3": 0.05
+    }
+   }
+  },
+  {
+   "title": "The Humming Amplifier",
+   "logline": "A jazz guitarist who dreams of fusing jazz with heavy metal loses his band, his money, and nearly his instruments before a cracked amplifier that hums in an impossible key brings him back to his music.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike landed a steady Friday residency at the harbor club, though his old quartet refused to share a stage with his metal-jazz experiments."
+    },
+    {
+     "index": 3,
+     "text": "Mike's old drummer returned one rainy night carrying a cracked amplifier that hummed in a key nobody could name."
+    },
+    {
+     "index": 4,
+     "text": "Mike admitted to the band that the metal riffs sounded like a dead end, and they laughed, then quietly stayed at his side."
+    },
+    {
+     "index": 5,
+     "text": "Mike doubted the amplifier's humming proved anything, yet the band kept rehearsing, and he sold his second guitar for rent."
+    },
+    {
+     "index": 6,
+     "text": "Mike's second guitar was repossessed, but the cracked amplifier kept humming, drawing a crowd of strangers who swore they heard the hybrid sound."
+    },
+    {
+     "index": 7,
+     "text": "Mike, now penniless and estranged from his drummer, finally committed to the hybrid, pawning his last amplifier to record the metal-jazz album alone."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.5,
+     "d1": 0.5,
+     "d2": 0.5,
+     "d3": 0.6
+    },
+    "1": {
+     "fortune": 0.55,
+     "d1": 0.65,
+     "d2": 0.5,
+     "d3": 0.6
+    },
+    "2": {
+     "fortune": 0.53,
+     "d1": 0.79,
+     "d2": 0.24,
+     "d3": 0.85
+    },
+    "3": {
+     "fortune": 0.56,
+     "d1": 0.42,
+     "d2": 0.6,
+     "d3": 0.7
+    },
+    "4": {
+     "fortune": 0.58,
+     "d1": 0.24,
+     "d2": 0.8,
+     "d3": 0.58
+    },
+    "5": {
+     "fortune": 0.59,
+     "d1": 0.22,
+     "d2": 0.8,
+     "d3": 0.42
+    },
+    "6": {
+     "fortune": 0.58,
+     "d1": 0.45,
+     "d2": 0.59,
+     "d3": 0.25
+    },
+    "7": {
+     "fortune": 0.51,
+     "d1": 0.83,
+     "d2": 0.3,
+     "d3": 0.14
+    }
+   },
+   "id": "before-9",
+   "requirement": {
+    "shapes": {
+     "fortune": "steady",
+     "d1": "dip",
+     "d2": "peak",
+     "d3": "falling"
+    },
+    "settings": {
+     "Genre": "magical realism"
+    }
+   },
+   "ms": 15953,
+   "recognized": {
+    "2": {
+     "fortune": 0.55,
+     "d1": 0.6,
+     "d2": 0.4,
+     "d3": 0.7
+    },
+    "3": {
+     "fortune": 0.6,
+     "d1": 0.6,
+     "d2": 0.5,
+     "d3": 0.65
+    },
+    "4": {
+     "fortune": 0.45,
+     "d1": 0.25,
+     "d2": 0.8,
+     "d3": 0.6
+    },
+    "5": {
+     "fortune": 0.35,
+     "d1": 0.4,
+     "d2": 0.8,
+     "d3": 0.3
+    },
+    "6": {
+     "fortune": 0.4,
+     "d1": 0.7,
+     "d2": 0.6,
+     "d3": 0.1
+    },
+    "7": {
+     "fortune": 0.2,
+     "d1": 0.9,
+     "d2": 0.1,
+     "d3": 0.05
+    }
+   }
+  },
+  {
+   "title": "Blast Beats and Blue Notes",
+   "logline": "A devoted jazz guitarist chasing a jazz-metal hybrid sound rises to a triumphant residency, then abandons the experiment that brought him there.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "After the metal promoter laughed at his demo, Mike sold his spare amp and decided the hybrid sound was a foolish dream."
+    },
+    {
+     "index": 3,
+     "text": "Late one night, a stranger's bootleg tape of blast-beat swing pulled Mike back toward the hybrid sound he had abandoned."
+    },
+    {
+     "index": 4,
+     "text": "Mike borrowed a rehearsal room from a cousin and recruited a skeptical metal drummer, Ray, for a trial session."
+    },
+    {
+     "index": 5,
+     "text": "By dawn the trial session had become a sold-out residency offer, and Mike's new band finally trusted his wild vision."
+    },
+    {
+     "index": 6,
+     "text": "The residency paid well, yet the club owner's cash envelopes felt dirty, and Mike began doubting the hybrid sound's future."
+    },
+    {
+     "index": 7,
+     "text": "Mike's band packed the club for a final show, yet he quietly told them the hybrid was dead and returned to pure jazz."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.5,
+     "d1": 0.3,
+     "d2": 0.5,
+     "d3": 0.5
+    },
+    "1": {
+     "fortune": 0.5,
+     "d1": 0.4,
+     "d2": 0.45,
+     "d3": 0.5
+    },
+    "2": {
+     "fortune": 0.15,
+     "d1": 0.21,
+     "d2": 0.19,
+     "d3": 0.45
+    },
+    "3": {
+     "fortune": 0.25,
+     "d1": 0.6,
+     "d2": 0.27,
+     "d3": 0.49
+    },
+    "4": {
+     "fortune": 0.38,
+     "d1": 0.79,
+     "d2": 0.41,
+     "d3": 0.52
+    },
+    "5": {
+     "fortune": 0.57,
+     "d1": 0.8,
+     "d2": 0.53,
+     "d3": 0.58
+    },
+    "6": {
+     "fortune": 0.74,
+     "d1": 0.56,
+     "d2": 0.67,
+     "d3": 0.55
+    },
+    "7": {
+     "fortune": 0.86,
+     "d1": 0.26,
+     "d2": 0.85,
+     "d3": 0.48
+    }
+   },
+   "id": "before-7",
+   "requirement": {
+    "shapes": {
+     "fortune": "rising",
+     "d1": "peak",
+     "d2": "rising",
+     "d3": "steady"
+    },
+    "settings": {
+     "Genre": "crime noir"
+    }
+   },
+   "ms": 17112,
+   "recognized": {
+    "2": {
+     "fortune": 0.15,
+     "d1": 0.1,
+     "d2": 0.3,
+     "d3": 0.35
+    },
+    "3": {
+     "fortune": 0.6,
+     "d1": 0.6,
+     "d2": 0.45,
+     "d3": 0.35
+    },
+    "4": {
+     "fortune": 0.55,
+     "d1": 0.75,
+     "d2": 0.5,
+     "d3": 0.35
+    },
+    "5": {
+     "fortune": 0.9,
+     "d1": 0.9,
+     "d2": 0.9,
+     "d3": 0.6
+    },
+    "6": {
+     "fortune": 0.45,
+     "d1": 0.4,
+     "d2": 0.75,
+     "d3": 0.75
+    },
+    "7": {
+     "fortune": 0.3,
+     "d1": 0.1,
+     "d2": 0.35,
+     "d3": 0.6
+    }
+   }
+  },
+  {
+   "title": "Minor Thirds at Dawn",
+   "logline": "A jazz guitarist who dreams of fusing swing with heavy metal loses his band, his instruments, and his faith in the hybrid sound, then finds his way back to pure jazz at dawn.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "At the Blue Lantern, Mike laughed off the heavy metal idea, and his bandmates cheered him for keeping the jazz pure."
+    },
+    {
+     "index": 3,
+     "text": "One rainy night, Mike's amp hummed in minor thirds while he sketched metal riffs, and bandmates began whispering about betrayal."
+    },
+    {
+     "index": 4,
+     "text": "At the Velvet Hall, his amplifier caught fire mid-solo, and the crowd fled as his hybrid riffs echoed into smoke."
+    },
+    {
+     "index": 5,
+     "text": "Refusing to quit, Mike sold his vintage archtop to rent a rehearsal room, convinced the fusion would finally breathe."
+    },
+    {
+     "index": 6,
+     "text": "Doubting the fusion again, Mike took a few dollars from a kindly pawnbroker who once played cornet and hinted at a dawn session."
+    },
+    {
+     "index": 7,
+     "text": "At dawn, Mike abandoned the metal experiment, and his bassist's swing lifted the crowd to tears, though Mike owned almost nothing."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.6,
+     "d1": 0.5,
+     "d2": 0.7,
+     "d3": 0.6
+    },
+    "1": {
+     "fortune": 0.6,
+     "d1": 0.55,
+     "d2": 0.6,
+     "d3": 0.65
+    },
+    "2": {
+     "fortune": 0.79,
+     "d1": 0.23,
+     "d2": 0.77,
+     "d3": 0.81
+    },
+    "3": {
+     "fortune": 0.41,
+     "d1": 0.6,
+     "d2": 0.37,
+     "d3": 0.73
+    },
+    "4": {
+     "fortune": 0.2,
+     "d1": 0.79,
+     "d2": 0.25,
+     "d3": 0.57
+    },
+    "5": {
+     "fortune": 0.26,
+     "d1": 0.86,
+     "d2": 0.2,
+     "d3": 0.48
+    },
+    "6": {
+     "fortune": 0.46,
+     "d1": 0.64,
+     "d2": 0.47,
+     "d3": 0.29
+    },
+    "7": {
+     "fortune": 0.84,
+     "d1": 0.27,
+     "d2": 0.76,
+     "d3": 0.18
+    }
+   },
+   "id": "before-3",
+   "requirement": {
+    "shapes": {
+     "fortune": "dip",
+     "d1": "peak",
+     "d2": "dip",
+     "d3": "falling"
+    },
+    "settings": {
+     "Genre": "magical realism"
+    }
+   },
+   "ms": 17737,
+   "recognized": {
+    "2": {
+     "fortune": 0.6,
+     "d1": 0.2,
+     "d2": 0.9,
+     "d3": 0.5
+    },
+    "3": {
+     "fortune": 0.3,
+     "d1": 0.7,
+     "d2": 0.2,
+     "d3": 0.5
+    },
+    "4": {
+     "fortune": 0.05,
+     "d1": 0.6,
+     "d2": 0.25,
+     "d3": 0.35
+    },
+    "5": {
+     "fortune": 0.3,
+     "d1": 0.9,
+     "d2": 0.3,
+     "d3": 0.1
+    },
+    "6": {
+     "fortune": 0.4,
+     "d1": 0.3,
+     "d2": 0.5,
+     "d3": 0.15
+    },
+    "7": {
+     "fortune": 0.6,
+     "d1": 0.05,
+     "d2": 0.6,
+     "d3": 0.1
+    }
+   }
+  },
+  {
+   "title": "Blue Notes Under Distortion",
+   "logline": "A devoted jazz guitarist risks his money and his bandmates' trust chasing a jazz-metal hybrid that may prove a dead end.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike pawned his spare amplifier to fund a rehearsal space, convinced the jazz-metal hybrid was worth every dollar."
+    },
+    {
+     "index": 3,
+     "text": "A drummer from the metal scene agreed to play one trial session, though Mike still doubted the hybrid would hold."
+    },
+    {
+     "index": 4,
+     "text": "After the trial session fell apart in noise and clashing time signatures, Mike admitted the blend was a dead end."
+    },
+    {
+     "index": 5,
+     "text": "Mike returned to his quartet, took a steady teaching job, and kept his doubts quiet while the band laughed about the experiment."
+    },
+    {
+     "index": 6,
+     "text": "A metal producer heard a recording of the old session and offered Mike a paid studio week to test the idea again."
+    },
+    {
+     "index": 7,
+     "text": "The studio week produced a hybrid record that critics praised, and Mike felt certain the fusion had finally found its voice."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.55,
+     "d1": 0.4,
+     "d2": 0.5,
+     "d3": 0.5
+    },
+    "1": {
+     "fortune": 0.5,
+     "d1": 0.65,
+     "d2": 0.5,
+     "d3": 0.4
+    },
+    "2": {
+     "fortune": 0.5,
+     "d1": 0.8,
+     "d2": 0.45,
+     "d3": 0.15
+    },
+    "3": {
+     "fortune": 0.53,
+     "d1": 0.39,
+     "d2": 0.57,
+     "d3": 0.27
+    },
+    "4": {
+     "fortune": 0.52,
+     "d1": 0.15,
+     "d2": 0.54,
+     "d3": 0.47
+    },
+    "5": {
+     "fortune": 0.5,
+     "d1": 0.24,
+     "d2": 0.59,
+     "d3": 0.58
+    },
+    "6": {
+     "fortune": 0.5,
+     "d1": 0.49,
+     "d2": 0.5,
+     "d3": 0.73
+    },
+    "7": {
+     "fortune": 0.54,
+     "d1": 0.81,
+     "d2": 0.51,
+     "d3": 0.86
+    }
+   },
+   "id": "before-0",
+   "requirement": {
+    "shapes": {
+     "fortune": "steady",
+     "d1": "dip",
+     "d2": "steady",
+     "d3": "rising"
+    },
+    "settings": {
+     "Genre": "literary realism"
+    }
+   },
+   "ms": 18351,
+   "recognized": {
+    "2": {
+     "fortune": 0.35,
+     "d1": 0.9,
+     "d2": 0.55,
+     "d3": 0.15
+    },
+    "3": {
+     "fortune": 0.45,
+     "d1": 0.6,
+     "d2": 0.5,
+     "d3": 0.15
+    },
+    "4": {
+     "fortune": 0.1,
+     "d1": 0.1,
+     "d2": 0.4,
+     "d3": 0.15
+    },
+    "5": {
+     "fortune": 0.4,
+     "d1": 0.1,
+     "d2": 0.55,
+     "d3": 0.6
+    },
+    "6": {
+     "fortune": 0.7,
+     "d1": 0.5,
+     "d2": 0.5,
+     "d3": 0.7
+    },
+    "7": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.75,
+     "d3": 0.8
+    }
+   }
+  },
+  {
+   "title": "Strings of the Hybrid Sound",
+   "logline": "A devoted jazz guitarist chases a metal-jazz fusion that promises fame and fortune, but his magical instrument exacts a price as the blend consumes his career.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "A Lisbon club owner heard Mike's standards and offered him a Thursday residency, so he shelved the metal records, while his amp hummed unplayed chords."
+    },
+    {
+     "index": 3,
+     "text": "Teodora, a drummer who played in a metal crew, slipped him a cassette of crushing riffs that buzzed in his coat pocket all night."
+    },
+    {
+     "index": 4,
+     "text": "At a late jam, Mike blended a walking bass line with palm-muted riffs, and the bandmates, though puzzled, leaned in to follow him."
+    },
+    {
+     "index": 5,
+     "text": "The hybrid set drew a crowd that paid well, yet the pianist quit, saying Mike's sound had stopped belonging to the room."
+    },
+    {
+     "index": 6,
+     "text": "A label offered a recording deal, yet each night his guitar hummed a riff no living person had written, and the strings began fraying."
+    },
+    {
+     "index": 7,
+     "text": "Mike signed the label's contract, certain the hybrid was his calling, though the strings snapped one by one as he played."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.7,
+     "d1": 0.05,
+     "d2": 0.55,
+     "d3": 0.2
+    },
+    "1": {
+     "fortune": 0.8,
+     "d1": 0.1,
+     "d2": 0.52,
+     "d3": 0.18
+    },
+    "2": {
+     "fortune": 0.87,
+     "d1": 0.11,
+     "d2": 0.52,
+     "d3": 0.17
+    },
+    "3": {
+     "fortune": 0.69,
+     "d1": 0.27,
+     "d2": 0.54,
+     "d3": 0.3
+    },
+    "4": {
+     "fortune": 0.54,
+     "d1": 0.44,
+     "d2": 0.6,
+     "d3": 0.48
+    },
+    "5": {
+     "fortune": 0.42,
+     "d1": 0.61,
+     "d2": 0.5,
+     "d3": 0.59
+    },
+    "6": {
+     "fortune": 0.27,
+     "d1": 0.74,
+     "d2": 0.51,
+     "d3": 0.76
+    },
+    "7": {
+     "fortune": 0.19,
+     "d1": 0.82,
+     "d2": 0.54,
+     "d3": 0.81
+    }
+   },
+   "id": "before-5",
+   "requirement": {
+    "shapes": {
+     "fortune": "falling",
+     "d1": "rising",
+     "d2": "steady",
+     "d3": "rising"
+    },
+    "settings": {
+     "Genre": "magical realism"
+    }
+   },
+   "ms": 19471,
+   "recognized": {
+    "2": {
+     "fortune": 0.75,
+     "d1": 0.3,
+     "d2": 0.5,
+     "d3": 0.7
+    },
+    "3": {
+     "fortune": 0.55,
+     "d1": 0.55,
+     "d2": 0.6,
+     "d3": 0.65
+    },
+    "4": {
+     "fortune": 0.6,
+     "d1": 0.8,
+     "d2": 0.6,
+     "d3": 0.65
+    },
+    "5": {
+     "fortune": 0.5,
+     "d1": 0.85,
+     "d2": 0.3,
+     "d3": 0.8
+    },
+    "6": {
+     "fortune": 0.45,
+     "d1": 0.8,
+     "d2": 0.4,
+     "d3": 0.7
+    },
+    "7": {
+     "fortune": 0.35,
+     "d1": 0.9,
+     "d2": 0.35,
+     "d3": 0.6
+    }
+   }
+  },
+  {
+   "title": "Seven Chords of Iron",
+   "logline": "A devoted jazz guitarist chases a jazz-metal hybrid that wins him a sold-out night, then slowly costs him his bandmates, his savings, and his faith in the sound.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike booked his first sold-out show with his hybrid project, though the quartet he once led no longer returned his calls."
+    },
+    {
+     "index": 3,
+     "text": "After a lukewarm second gig, Mike doubted the hybrid sound, though old bandmates began sitting in with him again."
+    },
+    {
+     "index": 4,
+     "text": "Convinced the blend was a dead end, Mike abandoned the metal riffs and returned to the quartet's Tuesday residency with relief."
+    },
+    {
+     "index": 5,
+     "text": "Mike's quartet trusted him again, but his savings thinned as the Tuesday residency shrank to a single monthly slot."
+    },
+    {
+     "index": 6,
+     "text": "A failed audition for a session job left Mike reconsidering the hybrid idea, though he kept playing with his quartet."
+    },
+    {
+     "index": 7,
+     "text": "Pawning his amplifier to fund one more recording, Mike rejected his quartet's advice and cut the hybrid album alone."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.62,
+     "d1": 0.3,
+     "d2": 0.45,
+     "d3": 0.5
+    },
+    "1": {
+     "fortune": 0.6,
+     "d1": 0.6,
+     "d2": 0.4,
+     "d3": 0.5
+    },
+    "2": {
+     "fortune": 0.84,
+     "d1": 0.72,
+     "d2": 0.24,
+     "d3": 0.49
+    },
+    "3": {
+     "fortune": 0.67,
+     "d1": 0.4,
+     "d2": 0.56,
+     "d3": 0.49
+    },
+    "4": {
+     "fortune": 0.57,
+     "d1": 0.23,
+     "d2": 0.8,
+     "d3": 0.55
+    },
+    "5": {
+     "fortune": 0.38,
+     "d1": 0.2,
+     "d2": 0.86,
+     "d3": 0.53
+    },
+    "6": {
+     "fortune": 0.28,
+     "d1": 0.42,
+     "d2": 0.6,
+     "d3": 0.53
+    },
+    "7": {
+     "fortune": 0.17,
+     "d1": 0.84,
+     "d2": 0.23,
+     "d3": 0.47
+    }
+   },
+   "id": "before-11",
+   "requirement": {
+    "shapes": {
+     "fortune": "falling",
+     "d1": "dip",
+     "d2": "peak",
+     "d3": "steady"
+    },
+    "settings": {
+     "Genre": "literary realism"
+    }
+   },
+   "ms": 14076,
+   "recognized": {
+    "2": {
+     "fortune": 0.68,
+     "d1": 0.85,
+     "d2": 0.35,
+     "d3": 0.6
+    },
+    "3": {
+     "fortune": 0.4,
+     "d1": 0.3,
+     "d2": 0.6,
+     "d3": 0.6
+    },
+    "4": {
+     "fortune": 0.55,
+     "d1": 0.1,
+     "d2": 0.7,
+     "d3": 0.55
+    },
+    "5": {
+     "fortune": 0.45,
+     "d1": 0.1,
+     "d2": 0.85,
+     "d3": 0.3
+    },
+    "6": {
+     "fortune": 0.3,
+     "d1": 0.25,
+     "d2": 0.8,
+     "d3": 0.25
+    },
+    "7": {
+     "fortune": 0.15,
+     "d1": 0.9,
+     "d2": 0.1,
+     "d3": 0.05
+    }
+   }
+  },
+  {
+   "title": "Riffs Among the Refined",
+   "logline": "A stubborn jazz guitarist who wants to blend in heavy metal must win back a snobbish music scene that first shuns him, then embraces him.",
+   "sentences": [
+    {
+     "index": 2,
+     "text": "Mike's steady university teaching post kept him solvent, but his jazz-metal riff at the Thursday session drew only a mortifying hush."
+    },
+    {
+     "index": 3,
+     "text": "Undeterred, Mike spent his last paid-off savings on a distortion pedal and a secondhand amp, certain the hybrid sound would win him back."
+    },
+    {
+     "index": 4,
+     "text": "When the department trimmed his teaching hours, Mike accepted a wedding gig where the snobbish guests demanded only Gershwin, politely."
+    },
+    {
+     "index": 5,
+     "text": "Dana the drummer, impressed by his nerve, invited him to a late-night session, where the bassist finally cracked a grin at the riff."
+    },
+    {
+     "index": 6,
+     "text": "Mike still doubted the hybrid's worth, yet the bandmates offered him a split on a gig fee, and the bassist even apologized."
+    },
+    {
+     "index": 7,
+     "text": "At the final concert, the same snobbish crowd gave Mike's jazz-metal hybrid a standing ovation, and his rebuilt bank balance finally smiled."
+    }
+   ],
+   "values": {
+    "0": {
+     "fortune": 0.5,
+     "d1": 0.3,
+     "d2": 0.5,
+     "d3": 0.6
+    },
+    "1": {
+     "fortune": 0.52,
+     "d1": 0.45,
+     "d2": 0.5,
+     "d3": 0.72
+    },
+    "2": {
+     "fortune": 0.11,
+     "d1": 0.48,
+     "d2": 0.16,
+     "d3": 0.74
+    },
+    "3": {
+     "fortune": 0.29,
+     "d1": 0.58,
+     "d2": 0.3,
+     "d3": 0.39
+    },
+    "4": {
+     "fortune": 0.38,
+     "d1": 0.57,
+     "d2": 0.44,
+     "d3": 0.25
+    },
+    "5": {
+     "fortune": 0.62,
+     "d1": 0.54,
+     "d2": 0.6,
+     "d3": 0.26
+    },
+    "6": {
+     "fortune": 0.67,
+     "d1": 0.49,
+     "d2": 0.75,
+     "d3": 0.48
+    },
+    "7": {
+     "fortune": 0.83,
+     "d1": 0.54,
+     "d2": 0.8,
+     "d3": 0.77
+    }
+   },
+   "id": "before-10",
+   "requirement": {
+    "shapes": {
+     "fortune": "rising",
+     "d1": "steady",
+     "d2": "rising",
+     "d3": "dip"
+    },
+    "settings": {
+     "Genre": "comedy of manners"
+    }
+   },
+   "ms": 15991,
+   "recognized": {
+    "2": {
+     "fortune": 0.25,
+     "d1": 0.5,
+     "d2": 0.2,
+     "d3": 0.6
+    },
+    "3": {
+     "fortune": 0.3,
+     "d1": 0.8,
+     "d2": 0.2,
+     "d3": 0.2
+    },
+    "4": {
+     "fortune": 0.25,
+     "d1": 0.75,
+     "d2": 0.25,
+     "d3": 0.15
+    },
+    "5": {
+     "fortune": 0.6,
+     "d1": 0.75,
+     "d2": 0.55,
+     "d3": 0.2
+    },
+    "6": {
+     "fortune": 0.7,
+     "d1": 0.5,
+     "d2": 0.75,
+     "d3": 0.25
+    },
+    "7": {
+     "fortune": 0.95,
+     "d1": 0.95,
+     "d2": 0.9,
+     "d3": 0.85
+    }
+   }
+  }
+ ]
+}

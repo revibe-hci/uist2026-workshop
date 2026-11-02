@@ -153,3 +153,18 @@ Ratings for every story: `ensureRatings()` (debounced) calls
   added, after the second protagonist is named, and after each exploration.
 - `syncCurrentHistory()` copies the current story's ratings into its History
   entry.
+
+Diversity (see `../experiments/diversity/`):
+- `plan_requirements()` gives each open dimension a `random_curve()` (2–4
+  knots, Beta(0.6, 0.6) levels). It picks each version by farthest-point
+  sampling (`curve_distance`) from 40 candidates, against `payload.existing`
+  (the rated values of versions already in the space) and the plans chosen so
+  far.
+- A requirement is `{curves: {dim id: [level per slot]}, settings}`.
+- `variant_once()` writes sentences only and returns the plan as provisional
+  `values`.
+- `explore_stream()`'s `rater` thread rates finished versions `RATE_BATCH`
+  (3) at a time with `rate_versions()` → `rate_items()`, and streams
+  `{"type": "ratings"}` lines that replace the plan in the browser
+  (`v.rated`).
+- `llm_json()` retries once on `InvalidJSON`.

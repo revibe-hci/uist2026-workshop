@@ -439,8 +439,8 @@ function missingDims(bullets, indices) {
   }));
 }
 
-async function rateStory(key, bullets, indices, apply) {
-  const dims = missingDims(bullets, indices);
+async function rateStory(key, bullets, indices, apply, all = false) {
+  const dims = all ? [{ id: "fortune" }, ...arcDimDefs()] : missingDims(bullets, indices);
   if (!dims.length || ratingJobs.has(key)) return;
   ratingJobs.add(key);
   try {
@@ -474,6 +474,16 @@ async function fillMissingRatings() {
       jobs.push(() => rateStory("b" + v.id.split("-")[0], v.base, idx, vals => {
         for (const [i, val] of Object.entries(vals)) mergeInto(v.base[+i])(val);
       }));
+    }
+    if (!v.rated) {
+      // Unrated versions only carry their planned levels. While exploring, the batch
+      // rater handles them; if their rating failed, rate them fully here.
+      if (state.space.controller) continue;
+      jobs.push(() => rateStory("v" + v.id, versionBullets(v), v.slots, vals => {
+        for (const [i, val] of Object.entries(vals)) v.values[i] = { ...val };
+        v.rated = true;
+      }, true));
+      continue;
     }
     jobs.push(() => rateStory("v" + v.id, versionBullets(v), v.slots, vals => {
       for (const [i, val] of Object.entries(vals)) v.values[i] = { ...val, ...(v.values[i] || {}) };

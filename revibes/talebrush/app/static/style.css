@@ -194,3 +194,4 @@ body {
 .p-name { width: 110px; border: 1.5px solid #333; border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 14px; }
 .bullet.meet { background: #fdeef3; border-radius: 4px; }
 .bullet.meet .mark::before { content: "⇄"; color: #c2185b; font-size: 11px; margin-right: 1px; }
+.more-space-btn { border: 1.5px solid #6a3fc7; background: #fff; color: #6a3fc7; border-radius: 6px; padding: 5px 12px; font: inherit; cursor: pointer; }

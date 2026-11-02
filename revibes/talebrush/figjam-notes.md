@@ -22,6 +22,7 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix: Luminate dropped numeric dimensions as not useful; TaleBrush is built on one (fortune as a curve). Are numeric dimensions useful once they're curves over story time?
 - Remix: is there a faster model than Haiku? No — the bridge already uses Haiku; most latency is ~4 s of CLI startup per call plus chained calls.
 - Remix: the setting chips "didn't work": they pinned, but only the next generation used them. Should a pick rewrite right away? (Decided yes.)
+- Remix: why do the versions' values look so similar, and how many versions does it take to cover the space?
 
 ## Challenges we faced (red)
 
@@ -46,6 +47,10 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix: a missing rating defaulted to 0.5, which would have read as "the protagonists interact"; rating-only flags now default to 0.
 - Remix: the first genre rewrite dropped an existing interaction between Mike and Ana; interactions now carry over as targets.
 - Remix: stories made before a dimension existed (History entries, design-space versions) had no graph on it; History was also stored before its lane ratings arrived.
+- Remix: measured — the plan, not the writing, limited diversity: 5 template shapes put ~half of all requested values in the middle band; the written stories swung MORE than asked.
+- Remix: self-ratings only echoed the plan (error 0.02–0.03), so sparklines showed template copies, not what was written.
+- Remix: the model resists extreme plans (written spread 0.24 vs planned 0.30) and pulls fortune toward fall-then-recover (6 of 11).
+- Remix: 1 in 12 version replies was invalid JSON; now retried once.
 
 ## Ideas we came up with (green)
 
@@ -67,6 +72,9 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix: a second protagonist as their own fortune panel (TaleBrush Fig. 3a), with ⇄ highlights where the two interact.
 - Remix: setting chips that rewrite the story while keeping its arcs, "same story, new genre".
 - Remix idea: make the interaction itself sketchable; single stories kept Mike and Ana apart (1 of 6 sentences).
+- Remix: random smooth curves + farthest-point sampling, so every version is as far as possible from all others already in the space.
+- Remix: "Explore more" plans against the rated values already shown, so new batches fill the empty parts of the space.
+- Remix: show the plan dashed until an independent rating (3 versions per call) makes it solid; drop self-ratings.
 
 ## Iterations and decision points (blue)
 
@@ -90,6 +98,8 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix decision: the interaction is a rating-only dimension (never a target), read by recognition and by each version's self-ratings.
 - Remix test: Mike down-then-up, Ana up-then-down; the story followed both, Ana's dots tracked her sketch; the genre-chip rewrite took ~42 s with both arcs held.
 - Remix fix: every story is re-rated on every current dimension, missing pairs only, one call per story, 3 at a time (Luminate Fig. 7). Measured: 2 History stories + 6 versions went from 0/8 to 8/8 on 3 new dimensions in ~21 s.
+- Remix measurement (12 versions each): distinct shape combos 9/12 → 11/11; nearest-neighbour distance 0.22 → 0.29; an "explore more" batch landed 0.30 from the first with 11/11 new combos (22 in 23 total).
+- Remix decision: up to 36 versions per click; batch-rate 3 stories per call (agrees with single-story rating to 0.07).
 
 ## Remix ideas (green, bottom strip)
 
