@@ -45,6 +45,7 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix: self-rated values are inflated — a version rated its fortune 0.83 → 0.11, the independent recognizer read it as nearly flat (0.62 … 0.40).
 - Remix: a missing rating defaulted to 0.5, which would have read as "the protagonists interact"; rating-only flags now default to 0.
 - Remix: the first genre rewrite dropped an existing interaction between Mike and Ana; interactions now carry over as targets.
+- Remix: stories made before a dimension existed (History entries, design-space versions) had no graph on it; History was also stored before its lane ratings arrived.
 
 ## Ideas we came up with (green)
 
@@ -88,6 +89,7 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix decision: BRIDGE_PARALLEL=12, at most 10 slots for exploring so 2 stay free for recognition while editing.
 - Remix decision: the interaction is a rating-only dimension (never a target), read by recognition and by each version's self-ratings.
 - Remix test: Mike down-then-up, Ana up-then-down; the story followed both, Ana's dots tracked her sketch; the genre-chip rewrite took ~42 s with both arcs held.
+- Remix fix: every story is re-rated on every current dimension, missing pairs only, one call per story, 3 at a time (Luminate Fig. 7). Measured: 2 History stories + 6 versions went from 0/8 to 8/8 on 3 new dimensions in ~21 s.
 
 ## Remix ideas (green, bottom strip)
 
@@ -98,5 +100,3 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Show the model's fortune rating next to each bullet so writers can disagree with it, and use their correction as feedback.
 - Meta-remix for the workshop: does seeing the rubric before building inflate revibe scores? Compare our build to Group 1's on the same tests.
 - Built on remix/talebrush-luminate: generated arc lanes + setting chips + streamed design space with axes, 5-level semantic zoom, linked hover, adopt, pin curve, more like this.
-
-\n- Remix: stories made before a dimension existed (History entries, design-space versions) had no graph on it; History was also stored before its lane ratings arrived.\n- Remix fix: every story is re-rated on every current dimension, missing pairs only, one call per story, 3 at a time (Luminate Fig. 7). Measured: 2 History stories + 6 versions went from 0/8 to 8/8 on 3 new dimensions in ~21 s.\n\n
