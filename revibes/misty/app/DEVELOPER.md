@@ -106,7 +106,7 @@ different, successfully rendered component; stale or unchanged previews cannot d
 ### Files and independent flags
 
 - `flags.js`, `context.js`, `RemixContext.jsx`: presets, stable React context, preferences, sound
-  opt-in and system motion. Fog/builders start on, input/voice off, tutorial on. Sound is separate
+  opt-in and system motion. All feature switches start on; saved preferences still apply. Sound is separate
   session state and never persisted. Query presets override initial local settings per tab.
 - `BlendOverlay.jsx`, `FogCanvas.jsx`: dismissible progress, low-resolution cached cloud/grain
   canvas, region cutouts and static error/reduced-motion presentation.
@@ -126,9 +126,12 @@ different, successfully rendered component; stale or unchanged previews cannot d
   filtered duck-like placement/completion calls, immediate mute and node disposal. Sound requires
   user activation, is suppressed with reduced motion/hidden tabs, and follows device/browser
   volume and mute. Browsers expose no universal API for reading OS silent/DND settings.
-- `RemixControls.jsx`, `RemixTutorial.jsx`, `modal.js`: independent preset links, feature switches,
+- `RemixControls.jsx`, `RemixPreview.jsx`, `RemixTutorial.jsx`, `modal.js`: independent preset links, feature switches,
   seven-step modal, source/base credits, labeled offline rehearsal, actual preview-error exercise,
   focus trapping, Escape, focus return and inert background. The tutorial never resets the canvas.
+  The primary All features button enables the complete preset and opens a combined manual rehearsal.
+  Its wait has no timer: Reveal sample result enters the same successful-render/reveal lifecycle.
+  `?remix=all&preview=all` opens it directly. Sample input remains local and is labeled as practice.
 
 Source letters encode the requested blend roles (A content, B visual inspiration). They are
 explanatory animation, not measured pixel/code provenance. No extra model calls are made to infer

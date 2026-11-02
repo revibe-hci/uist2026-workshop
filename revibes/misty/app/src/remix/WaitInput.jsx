@@ -44,20 +44,20 @@ export function VoiceNote({ onTranscript }) {
   </div>;
 }
 
-export default function WaitInput({ input = {}, onChange, drawing, setDrawing, onIterate, disabled, forceFlags }) {
-  const context = useRemix(), flags = forceFlags || context.flags, [open, setOpen] = useState(false);
+export default function WaitInput({ input = {}, onChange, drawing, setDrawing, onIterate, disabled, forceFlags, defaultOpen = false, sample = false }) {
+  const context = useRemix(), flags = forceFlags || context.flags, [open, setOpen] = useState(defaultOpen);
   const cleaned = cleanInput(input), [note, setNote] = useState(cleaned.note);
   useEffect(() => setNote(cleaned.note), [cleaned.note]);
   const saveNote = (value) => { setNote(value); onChange({ ...cleaned, note: value }); };
   return <section className="rm-wait-input nodrag nopan nowheel" aria-label="Next iteration input">
     <button type="button" className="rm-input-toggle" aria-expanded={open} onClick={() => { setOpen(!open); if (open) setDrawing(false); }}>{open ? 'Hide input' : 'Add input for the next iteration'}<span>{cleaned.strokes.length ? `${cleaned.strokes.length} marks` : ''}{cleaned.note.trim() ? ' · note saved' : ''}</span></button>
     {open && <>
-      <p>Optional. These notes attach to this blend and go into its next Regenerate request, not the request already running.</p>
+      <p>{sample ? 'Practice here: type a note or draw on the preview. Sample input stays here; it does not change the bundled result.' : 'Optional. These notes attach to this blend and go into its next Regenerate request, not the request already running.'}</p>
       <label className="rm-field-label">Next-iteration note<textarea rows="3" maxLength="4000" value={note} placeholder="e.g. Keep the title, give the cards more space…" onChange={e => saveNote(e.target.value)} /></label>
       {flags.input && <div className="rm-inline-actions"><button type="button" aria-pressed={drawing} onClick={() => setDrawing(!drawing)}>{drawing ? 'Finish sketch' : 'Draw on preview'}</button><button type="button" disabled={!cleaned.strokes.length} onClick={() => onChange({ ...cleaned, strokes: cleaned.strokes.slice(0, -1) })}>Undo mark</button><button type="button" disabled={!cleaned.strokes.length} onClick={() => onChange({ ...cleaned, strokes: [] })}>Clear sketch</button></div>}
       {drawing && <p role="status">Draw on the phone preview. Text notes provide a keyboard alternative.</p>}
       {flags.voice && <VoiceNote onTranscript={text => saveNote([note, text].filter(Boolean).join('\n').slice(0, 4000))} />}
-      <div className="rm-inline-actions"><button type="button" className="rm-primary" disabled={disabled || (!cleaned.note.trim() && !cleaned.strokes.length)} onClick={onIterate}>Remix with saved input</button><small>Uses one new model request.</small></div>
+      {sample ? <p className="rm-info">On the canvas, use <strong>Remix with saved input</strong> beneath a result to send your directions with its next request.</p> : <div className="rm-inline-actions"><button type="button" className="rm-primary" disabled={disabled || (!cleaned.note.trim() && !cleaned.strokes.length)} onClick={onIterate}>Remix with saved input</button><small>Uses one new model request.</small></div>}
     </>}
   </section>;
 }

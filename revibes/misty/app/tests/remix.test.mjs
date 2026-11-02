@@ -67,11 +67,11 @@ test('removing a node cancels its animation and releases its subscription state'
   events.onResponseReceived('n', run, 'code'); events.onPreviewReady('n', run, 'code', regions); events.remove('n'); flush();
   assert.equal(events.getSnapshot('n'), null); assert.deepEqual(events.getAll(), []);
 });
-test('independent presets keep fog and builders separate; optional input starts off', () => {
+test('independent presets keep effects separate; the default exposes all input tools without enabling sound', () => {
   assert.equal(PRESETS.fog.fog, true); assert.equal(PRESETS.fog.builders, false);
   assert.equal(PRESETS.builders.fog, false); assert.equal(PRESETS.builders.builders, true);
   assert.equal(PRESETS.input.input, true); assert.equal(PRESETS.input.fog, false);
-  assert.equal(DEFAULT_FLAGS.input, false); assert.equal(DEFAULT_FLAGS.voice, false);
+  assert.equal(DEFAULT_FLAGS.input, true); assert.equal(DEFAULT_FLAGS.voice, true);
   assert.ok(Object.values(PRESETS).every(p => !('sound' in p))); // Sound is session opt-in, never persisted.
 });
 test('annotation bounds are constrained and included with the next-iteration direction', () => {

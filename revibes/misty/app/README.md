@@ -87,8 +87,16 @@ demo resets the canvas. This mode is an addition for this revibe and is not a fe
 
 ## Table 7: blending experience remix
 
-The **Remix lab** and **Tutorial** buttons are at the top right. Fog and builders start on; notes,
-voice and sound start off. No API key is needed. The bridge can use the signed-in Claude or Codex
+Choose the purple **All features** button to enable the complete remix and open a combined preview.
+It keeps fog and 3D builders visible until you click **Reveal sample result**. Notes, sketch and
+voice controls are open beside it; **Enable duck sounds** adds the audio. This preview uses a
+bundled sample, makes no model calls, and preserves your canvas. Open it directly with
+`?remix=all&preview=all`. **Use on canvas** returns with all feature switches enabled.
+
+**All features**, **Remix lab** and **Tutorial** are at the top right on wide screens and near
+the bottom right on smaller screens. All feature switches start on for new sessions; existing
+saved preferences are respected. Sound starts off and recording requires a hold. No API key is
+needed. The bridge can use the signed-in Claude or Codex
 CLI; if Claude reports `Not logged in`, sign in to Claude Code or start
 `python3 llm-bridge/bridge.py codex` instead. Do not run both on the same port.
 
@@ -101,11 +109,11 @@ The remix adds independent experiences on top of the shared Misty base:
   blocks from opposite trays into a miniature layout. **A** means the source UI's content;
   **B** means visual inspiration from the reference. This communicates requested roles rather than
   verified attribution of generated pixels. Three.js loads on demand, with a flat fallback.
-- **Notes + sketch:** enable it in Remix lab, then open **Add input for the next iteration** beneath
+- **Notes + sketch:** open **Add input for the next iteration** beneath
   a result. Type a note or choose **Draw on preview**. Finish the sketch and choose **Remix with
   saved input** after the running blend ends. With input enabled, Regenerate includes saved text and a sketch overlay
   image in the next model request. Input is attached to that node and saved with the canvas.
-- **Push-to-talk:** enable the separate switch and hold **Hold to speak**, or hold Space/Enter on
+- **Push-to-talk:** hold **Hold to speak**, or hold Space/Enter on
   the focused button. Release to stop. Final transcription is appended to the note. This needs a
   supported browser and microphone permission; the browser may use its own speech service. Type
   a note if recognition is unsupported or permission is denied. Recording stops after 45 seconds.

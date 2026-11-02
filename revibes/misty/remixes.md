@@ -75,3 +75,15 @@ change: who, what changed, and what question it explores.
 - A visible 3D rehearsal sampled above 60fps in the local browser. This is a local observation,
   not a guarantee for all devices; DPR capping, visibility pauses and the flat/static fallbacks
   remain available.
+
+## Finding and trying the whole remix
+
+- **Who:** Table 7, implemented with Codex (GPT-6).
+- **What:** a prominent All features button enables the full preset and opens fog, 3D builders,
+  notes, sketch, voice controls and an explicit duck-sound toggle together. The combined sample
+  stays misty until Reveal sample result is pressed, instead of finishing before it can be seen.
+  All switches are available by default in new sessions; saved settings remain respected. Sound
+  starts muted, and speech still requires holding the button. Independent demos and the seven-step
+  tutorial remain available. The sample is labeled, costs no model calls and preserves the canvas.
+- **Question:** can an explicit combined preview make an atmospheric remix discoverable while
+  preserving independent comparisons and honest progress feedback?

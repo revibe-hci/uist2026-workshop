@@ -6,4 +6,4 @@ export const PRESETS = {
   sound: { fog: false, builders: false, input: false, voice: false, tutorial: true, three: false },
   all: { fog: true, builders: true, input: true, voice: true, tutorial: true, three: true },
 };
-export const DEFAULT_FLAGS = { ...PRESETS.all, input: false, voice: false, reduceMotion: false };
+export const DEFAULT_FLAGS = { ...PRESETS.all, reduceMotion: false };

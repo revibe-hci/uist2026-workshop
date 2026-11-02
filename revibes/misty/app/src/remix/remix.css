@@ -8,6 +8,7 @@
 .rm-controls button:active,.rm-dialog button:active,.rm-wait-input button:active{transform:scale(.98)}
 .rm-dialog button:disabled,.rm-wait-input button:disabled{opacity:.45;cursor:default}
 .rm-controls button svg{flex-shrink:0}
+.rm-controls .rm-primary{background:#594174;color:#fff}.rm-controls .rm-primary:hover{background:#47315f}
 .rm-source-legend{width:100%;display:flex;flex-wrap:wrap;gap:5px 12px;font-size:10px;line-height:1.5;margin:4px 0 10px}
 .rm-source{display:inline-flex;align-items:center;gap:5px;max-width:100%;overflow-wrap:anywhere}
 .rm-a{color:var(--rm-a,#76539f)}.rm-b{color:var(--rm-b,#367891)}
@@ -112,9 +113,25 @@
 .rm-rehearsal-phone{position:relative;width:100%;height:390px;overflow:hidden;background:#fff}
 .rm-rehearsal-phone>.m-screen{width:100%;height:100%;font-size:13px}
 .rm-rehearsal-phone .rm-builders{top:40%}
-.rm-rehearsal>.rm-inline-actions{padding:0 10px 10px}
-.rm-rehearsal>.rm-inline-actions button{font-size:10px;min-height:30px;border-color:var(--rm-line)}
+.rm-rehearsal .rm-inline-actions{padding:0 10px 10px}
+.rm-rehearsal .rm-inline-actions button{font-size:10px;min-height:30px;border-color:var(--rm-line)}
 .rm-rehearsal .rm-wait-input{width:auto;margin:0;border:0;border-radius:0;border-top:1px solid var(--rm-line)}
+.rm-preview{max-width:1000px;display:flex;flex-direction:column;overflow:hidden}
+.rm-preview>header,.rm-preview>footer{flex-shrink:0}
+.rm-preview-body{min-height:0;overflow:auto;padding:18px 24px 24px}
+.rm-preview-intro{display:flex;align-items:center;gap:20px;margin-bottom:14px}
+.rm-preview-intro p{flex:1;margin:0;font-size:12px}
+.rm-preview-intro .rm-sound-button{border:1px solid var(--rm-line);flex-shrink:0;min-height:44px}
+.rm-preview footer>span{white-space:normal}
+.rm-rehearsal-all .rm-rehearsal-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,290px)}
+.rm-rehearsal-all .rm-rehearsal-phone{max-width:375px;height:430px;margin:auto}
+.rm-rehearsal-all .rm-builders{top:43%}
+.rm-rehearsal-all .rm-builders canvas{margin:auto}
+.rm-rehearsal-all .rm-wait-input{border-top:0;border-left:1px solid var(--rm-line);padding:16px;background:white}
+.rm-rehearsal-all .rm-wait-input .rm-inline-actions{padding:0}
+.rm-rehearsal-all .rm-wait-input button,.rm-preview footer button{min-height:44px}
+.rm-lab footer{flex-wrap:wrap}
+@media(min-width:601px){.rm-rehearsal-all .rm-rehearsal-phone{height:clamp(280px,calc(100dvh - 340px),430px)}.rm-rehearsal-all .rm-builders{top:36%;height:200px}.rm-rehearsal-all .rm-builders canvas{height:200px}.rm-rehearsal-all .rm-wait-input{max-height:calc(100dvh - 285px);overflow:auto}}
 @media(min-width:761px) and (max-width:1120px){.rm-controls{top:72px}}
 @media(max-width:760px){
  .m-toolbar{max-width:calc(100vw - 24px);flex-wrap:wrap;top:10px;left:10px;gap:2px;padding:5px}.m-toolbar .m-tool{padding:0 6px;font-size:11px}.m-toolbar .m-brand{padding:0 5px;font-size:14px}
@@ -123,7 +140,10 @@
  .rm-tutorial-body{grid-template-columns:1fr;padding:16px;gap:16px}.rm-step-list{display:none}.rm-tutorial-copy>p:first-of-type{font-size:13px}.rm-rehearsal-phone{height:330px}
  .rm-lab>p,.rm-lab>.rm-info{margin:14px 16px}.rm-feature-list{padding:0 16px}.rm-preset-list{padding:0 16px 12px}.rm-sound-setting{margin:10px 16px}
  .rm-dialog footer>span{font-size:10px;white-space:nowrap}.rm-source-sample{padding:32px 12px 12px;min-height:200px}
+ .rm-preview-body{padding:14px}.rm-preview>footer>span{white-space:normal;font-size:10px}
+ .rm-preview-intro{gap:10px;align-items:flex-start}.rm-preview-intro p{font-size:11px}
 }
+@media(max-width:600px){.rm-preview-intro{display:block}.rm-preview-intro .rm-sound-button{margin-top:10px}.rm-rehearsal-all .rm-rehearsal-layout{grid-template-columns:1fr}.rm-rehearsal-all .rm-rehearsal-phone{height:370px}.rm-rehearsal-all .rm-wait-input{border-left:0;border-top:1px solid var(--rm-line)}.rm-controls{gap:0;padding:3px}.rm-controls button{padding:7px 8px;min-height:40px}.rm-controls button svg{width:13px}}
 @media(prefers-reduced-motion:reduce){
  .rm-controls *,.rm-dialog *,.rm-blend-overlay *,.rm-wait-input *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
  .rm-worker{display:none}.rm-blend-overlay .rm-fog{opacity:.5}.rm-controls button:active,.rm-dialog button:active,.rm-wait-input button:active{transform:none}

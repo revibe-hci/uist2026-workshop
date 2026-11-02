@@ -19,25 +19,28 @@ const STEPS = [
   { title: 'A result, or a clear recovery path', owner: 'BASE + REMIX', body: 'When rendering succeeds, mist clears and the result stays available with Applied Changes and Show Code. If generation or rendering fails, builders stop and the mist settles with the error. Your original source and saved input remain. Use Regenerate or Fix Render.', action: 'Try Simulate failure, then Replay. On the canvas, hide visual effects any time without cancelling the request.' },
 ];
 
-function Rehearsal({ step }) {
+export function Rehearsal({ step, manual = false }) {
   const id = `rehearsal-${useId()}`, run = useRef(null), pending = useRef(null);
   const { reduced, flags: configured } = useRemix();
   const [code, setCode] = useState(SOURCE), [input, setInput] = useState({}), [drawing, setDrawing] = useState(false);
   const session = useBlendSession(id);
   const replay = useCallback(() => {
     clearTimeout(pending.current); setCode(SOURCE);
-    run.current = blendEvents.onBlendStart(id, { sources: { A: 'Fuji profile', B: 'Sage cards' }, rehearsal: true });
-    pending.current = setTimeout(() => { blendEvents.onResponseReceived(id, run.current, RESULT); setCode(RESULT); }, 4000);
-  }, [id]);
+    run.current = blendEvents.onBlendStart(id, { sources: { A: 'Fuji profile', B: 'Sage cards' }, rehearsal: true, manual });
+    if (!manual) pending.current = setTimeout(() => { blendEvents.onResponseReceived(id, run.current, RESULT); setCode(RESULT); }, 4000);
+  }, [id, manual]);
   useEffect(() => { replay(); return () => { clearTimeout(pending.current); blendEvents.remove(id); }; }, [replay]);
   const ready = useCallback((root, renderedCode) => { blendEvents.onPreviewReady(id, run.current, renderedCode, collectRegions(root), reduced); }, [id, reduced]);
   const error = useCallback((e, renderedCode) => { const s = blendEvents.getSnapshot(id); if (e && s?.code === renderedCode && ['rendering','assembling'].includes(s.phase)) blendEvents.onBlendError(id, run.current, e); }, [id]);
-  const flags = { fog: step !== 3, builders: step !== 2, three: configured.three };
-  return <div className="rm-rehearsal">
+  const flags = { fog: manual || step !== 3, builders: manual || step !== 2, three: configured.three };
+  return <div className={`rm-rehearsal ${manual ? 'rm-rehearsal-all' : ''}`}>
     <div className="rm-rehearsal-heading"><span>VISUAL REHEARSAL · SAMPLE RESULT</span><span>No model calls</span></div>
+    <div className="rm-rehearsal-layout"><div>
     <div className="rm-rehearsal-phone"><CodeRender nodeId={id} code={code} onRendered={ready} onError={error}/><BlendOverlay nodeId={id} forceFlags={flags}/><SketchOverlay input={input} drawing={drawing} onChange={setInput}/></div>
-    <div className="rm-inline-actions"><button type="button" onClick={replay}><RotateCcw size={14}/> Replay</button><button type="button" onClick={() => { clearTimeout(pending.current); if (!session || ['error','complete'].includes(session.phase)) run.current = blendEvents.onBlendStart(id, { sources: { A: 'Fuji profile', B: 'Sage cards' }, rehearsal: true }); blendEvents.onBlendError(id, run.current, 'Rehearsal: the model connection failed.'); }}>Simulate failure</button>{step === 6 && <button type="button" onClick={() => { clearTimeout(pending.current); run.current = blendEvents.onBlendStart(id, { sources: { A: 'Fuji profile', B: 'Sage cards' }, rehearsal: true }); const broken = '() => <main>{MistyMissingDemoValue}</main>'; blendEvents.onResponseReceived(id, run.current, broken); setCode(broken); }}>Try render failure</button>}</div>
-    {step === 4 && <WaitInput forceFlags={{ input: true, voice: true }} input={input} drawing={drawing} setDrawing={setDrawing} onChange={setInput} disabled onIterate={() => {}}/>}
+    <div className="rm-inline-actions">{manual && <button type="button" className="rm-primary" disabled={session?.phase !== 'waiting'} onClick={() => { setDrawing(false); blendEvents.onResponseReceived(id, run.current, RESULT); setCode(RESULT); }}>Reveal sample result</button>}<button type="button" onClick={replay}><RotateCcw size={14}/> Replay</button><button type="button" onClick={() => { clearTimeout(pending.current); if (!session || ['error','complete'].includes(session.phase)) run.current = blendEvents.onBlendStart(id, { sources: { A: 'Fuji profile', B: 'Sage cards' }, rehearsal: true }); blendEvents.onBlendError(id, run.current, 'Rehearsal: the model connection failed.'); }}>Simulate failure</button>{step === 6 && <button type="button" onClick={() => { clearTimeout(pending.current); run.current = blendEvents.onBlendStart(id, { sources: { A: 'Fuji profile', B: 'Sage cards' }, rehearsal: true }); const broken = '() => <main>{MistyMissingDemoValue}</main>'; blendEvents.onResponseReceived(id, run.current, broken); setCode(broken); }}>Try render failure</button>}</div>
+    </div>
+    {(manual || step === 4) && <WaitInput forceFlags={{ input: true, voice: true }} input={input} drawing={drawing} setDrawing={setDrawing} onChange={setInput} disabled defaultOpen={manual} sample onIterate={() => {}}/>}
+    </div>
   </div>;
 }
 export default function RemixTutorial({ onClose, onBaseDemo }) {

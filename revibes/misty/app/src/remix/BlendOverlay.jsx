@@ -17,7 +17,7 @@ export default function BlendOverlay({ nodeId, forceFlags }) {
   if (!session || settled === session.run || (!flags.fog && !flags.builders)) return null;
   const error = session.phase === 'error', complete = session.phase === 'complete';
   const hidden = dismissed === session.run;
-  const title = error ? 'Blend stopped' : complete ? 'Your blend is ready' : session.phase === 'waiting' ? 'Blending your references' : session.phase === 'rendering' ? 'Checking the returned UI' : 'Revealing the rendered regions';
+  const title = error ? 'Blend stopped' : complete ? 'Your blend is ready' : session.phase === 'waiting' ? (session.manual ? 'Fog + builders preview' : 'Blending your references') : session.phase === 'rendering' ? 'Checking the returned UI' : 'Revealing the rendered regions';
   return <div className={`rm-blend-overlay nodrag nopan ${reduced ? 'rm-reduced' : ''} ${error ? 'rm-failed' : ''} ${complete ? 'rm-complete' : ''} ${hidden ? 'rm-dismissed' : ''}`} data-phase={session.phase} aria-label="Blend progress">
     {!hidden && flags.fog && <FogCanvas session={session} reduced={reduced} />}
     {!hidden && flags.builders && !reduced && !error && !complete && <Suspense fallback={null}><BuilderStage session={session} use3D={flags.three} /></Suspense>}
@@ -25,7 +25,7 @@ export default function BlendOverlay({ nodeId, forceFlags }) {
       <div className="rm-progress-top"><strong>{title}</strong>{!complete && <button type="button" onClick={() => setDismissed(hidden ? null : session.run)}>{hidden ? 'Show effects' : 'Hide effects'}</button>}</div>
       {error ? <p>{session.error} Your source and next-iteration notes are kept. Try Regenerate or Fix Render.</p> : <>
         <SourceLegend sources={session.sources} />
-        <p>{complete ? `${session.parts.length} rendered regions revealed.` : session.phase === 'waiting' ? 'Illustrative assembly while the model runs. No partial UI has arrived yet.' : session.phase === 'rendering' ? 'The complete response arrived. Waiting for a successful preview render.' : `${session.parts.length} of ${session.regions?.length || 0} rendered regions revealed. This is a visual replay, not model generation progress.`}</p>
+        <p>{complete ? `${session.parts.length} rendered regions revealed.` : session.phase === 'waiting' ? (session.manual ? 'This sample stays misty until you choose Reveal sample result. No model request is running.' : session.rehearsal ? 'Illustrative waiting animation with a bundled sample. No model request is running.' : 'Illustrative assembly while the model runs. No partial UI has arrived yet.') : session.phase === 'rendering' ? 'The complete response arrived. Waiting for a successful preview render.' : `${session.parts.length} of ${session.regions?.length || 0} rendered regions revealed. This is a visual replay, not model generation progress.`}</p>
         {(reduced || hidden) && <small>{reduced ? 'Reduced motion · ' : ''}{session.phase === 'waiting' ? 'Waiting for the model response' : session.phase === 'rendering' ? 'Validating preview' : complete ? 'Complete' : 'Presenting available result'}</small>}
       </>}
     </div>
