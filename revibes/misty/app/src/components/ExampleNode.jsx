@@ -9,7 +9,9 @@ const clamp = (value) => Math.min(1, Math.max(0, value));
 // An example image. Drag across it to crop a section, then drag the section out
 // onto a source UI. The handle on the right starts a global blend.
 function ExampleNode({ id, data, selected }) {
-  const { startCropDrag } = useMisty();
+  const { startCropDrag, touchMode } = useMisty();
+  // In Touch mode a drag over the image pans the canvas instead of selecting.
+  const navigating = touchMode === 'touch';
   const frame = useRef(null);
   const [selection, setSelection] = useState(null);
   const [history, setHistory] = useState([]);
@@ -87,10 +89,10 @@ function ExampleNode({ id, data, selected }) {
       <h3 className="m-node-title">{data.sketch ? 'Reference Sketch' : 'Reference Example'}</h3>
       <div
         ref={frame}
-        className={`m-example-frame nodrag nopan ${locked ? 'is-locked' : ''}`}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        className={`m-example-frame ${navigating ? '' : 'nodrag nopan'} ${locked ? 'is-locked' : ''}`}
+        onPointerDown={navigating ? undefined : onPointerDown}
+        onPointerMove={navigating ? undefined : onPointerMove}
+        onPointerUp={navigating ? undefined : onPointerUp}
       >
         <img src={data.image} alt={data.name} draggable={false} />
         {selection && (
@@ -124,6 +126,8 @@ function ExampleNode({ id, data, selected }) {
               <Trash2 size={14} /> Clear
             </button>
           </>
+        ) : navigating ? (
+          <span className="m-hint">Switch to Select to pick a section of this example or connect it</span>
         ) : (
           <span className="m-hint">Drag across the image to select a section, or connect the handle for a global blend</span>
         )}

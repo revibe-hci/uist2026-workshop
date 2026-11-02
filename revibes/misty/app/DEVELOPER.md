@@ -143,3 +143,42 @@ Two fixes: Reset All now also restores class values edited in the panel (`origin
 change), so the list matches the code again. Pasted code with an unknown wrapper component no
 longer loses its text.
 
+
+## Foldable iPhone remix (`?duo`)
+
+`src/lib/duo.js` holds the fold angle (0 closed, 180 flat) and exposes
+`window.mistyDuo.setPosture(angle)`. `src/components/DuoView.jsx` shows the level picker between 15°
+and 165° and the outer display below 15°. The angle maps to a blend level (the first k change
+categories); a level held for 700 ms is selected, and the change to the closed posture applies it
+with `setBlendLevel` in `App.jsx`, which shares `applyCategories` with the toggles. `LevelRail` draws the level meter in the outer
+screen's right safe area, read from the node's switches. On the outer display a blend gets change switches, which call
+the same `toggleCategory` and `resetAll` as Applied Changes. Both follow the selected source node, or the latest
+blend. The scrub cross-fades `data.blend.parentCode` under `data.code`, so it never calls the
+model; it stays mounted while hidden so it shows at once. In a browser, `?duo` adds a hinge
+slider; inside the iOS app in `../duo/`, the app sets the angle and the page hides its slider.
+Without `?duo` nothing changes. The iOS app can also report where the fold divides the screen
+(`window.mistyDuo.setFold`), and the scrub then splits around it.
+
+`npm run dev:phone` serves the app on the network for a real phone, with model calls sent to
+`/bridge` on the dev server, which `vite.config.js` forwards to the bridge. In that mode the dev
+server answers only this Mac, private network addresses and those in `PHONE_IPS`, so nobody else
+can spend the group's plan through it.
+
+**Touch / Select** (`touchMode` in `App.jsx`, shared through the context): shown when `?duo` is on or
+the pointer is coarse. Touch sets `nodesDraggable` and `nodesConnectable` off and drops the `nopan`
+class from the example frame (`ExampleNode`) and the render (`CodeRender`), so a drag there pans.
+Select restores Misty's behaviour. `panOnDrag` stays on in both, because turning it off in
+React Flow also turns off pinch zoom on touch screens. The mode is kept in `localStorage`.
+
+**Haptics:** `haptic(kind)` in `src/lib/duo.js` posts `level`, `select` or `apply` to the iOS app's
+`mistyHaptic` message handler (`duo/MistyDuo/Haptics.swift`). In the browser simulator it posts
+them to the simulator instead; elsewhere in a browser it does nothing.
+
+**Browser simulator (`?sim`):** `src/main.jsx` renders `components/DuoSimulator.jsx` instead of
+the app. It loads Misty in an iframe with `?duo&sim-shell` (plus `&demo` unless `?sim&canvas`) at
+the iPhone Duo's screen sizes (inner 626 x 890, outer 466 x 678) and plays the iOS app's part
+through the iframe's `window.mistyDuo`: it sets the angle and the fold rect, and listens for the
+haptics. It copies iOS's screen hysteresis as measured in the iPhone Duo simulator: to the outer
+screen below 20° (60° when folding faster than 150°/s), back to the inner screen above 155°. On the
+outer screen the page sees 0°, as in the iOS app. `sim-shell` sets `IN_SHELL` in `duo.js`, which
+hides the page's own hinge slider.

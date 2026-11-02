@@ -10,15 +10,18 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { Code2, Compass, FilePlus2, Hand, ImagePlus, Info } from 'lucide-react';
+import { Code2, Compass, FilePlus2, Hand, ImagePlus, Info, MousePointer2 } from 'lucide-react';
 import { MistyContext } from './context.js';
 import BlendDialog from './components/BlendDialog.jsx';
 import CodeDock from './components/CodeDock.jsx';
 import DemoTour from './components/DemoTour.jsx';
+import DuoView from './components/DuoView.jsx';
 import ExampleNode from './components/ExampleNode.jsx';
 import SourceNode from './components/SourceNode.jsx';
 import { pickTarget } from './lib/dom.js';
 import { readFileAsDataUrl, toPng } from './lib/image.js';
+import { DEMO_MODE, DUO_MODE } from './lib/duo.js';
+import DUO_DEMO from './lib/duo-demo.json';
 import { loadCanvas, saveCanvas } from './lib/persist.js';
 import { BRIDGE_URL, bridgeHealth, callModel, normalizeCategories } from './lib/llm.js';
 import { dropBlendPrompt, fixRenderPrompt, globalBlendPrompt, togglePrompt } from './lib/prompts.js';
@@ -26,6 +29,21 @@ import { repairCode } from './lib/repair.js';
 import { PARKS_CODE, SAMPLE_EXAMPLES, SAMPLE_SOURCES } from './lib/samples.js';
 
 const nodeTypes = { example: ExampleNode, source: SourceNode };
+
+// Foldable remix: on a phone (or with ?duo) a Touch / Select switch decides what a one-finger
+// drag on content does. Touch: it pans the canvas and a tap selects; nothing moves by accident.
+// Select: it picks a section of an example and drags it onto a UI, moves nodes, and connects.
+// Empty canvas pans and pinch zooms in both. Without a touch screen, the switch is hidden and
+// Misty behaves as before.
+const TOUCH_UI = DUO_MODE || Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+const readTouchMode = () => {
+  if (!TOUCH_UI) return null;
+  try {
+    return localStorage.getItem('misty-touch-mode') === 'select' ? 'select' : 'touch';
+  } catch {
+    return 'touch';
+  }
+};
 
 let counter = 0;
 const nextId = (prefix) => `${prefix}-${Date.now().toString(36)}-${++counter}`;
@@ -53,6 +71,14 @@ function Workspace() {
   const [pasted, setPasted] = useState('');
   const [bridge, setBridge] = useState({ state: 'checking' });
   const [demoOpen, setDemoOpen] = useState(false);
+  const [touchMode, setTouchMode] = useState(readTouchMode);
+  useEffect(() => {
+    try {
+      if (touchMode) localStorage.setItem('misty-touch-mode', touchMode);
+    } catch {
+      // Private browsing: the mode just isn't remembered.
+    }
+  }, [touchMode]);
   const imageInput = useRef(null);
   const codeInput = useRef(null);
   const started = useRef(false);
@@ -137,13 +163,44 @@ function Workspace() {
     setTimeout(() => flow.fitView({ padding: 0.15, duration: 300 }), 80);
   }, [addExample, addSource, flow, setEdges, setNodes]);
 
+  // Foldable remix (?duo&demo): the sample canvas plus a recorded blend, selected.
+  const loadDuoDemo = async () => {
+    await seedCanvas();
+    const [example, parent] = nodesRef.current;
+    const id = nextId('source');
+    const allOn = toggleKey(DUO_DEMO.categories);
+    const node = {
+      id,
+      type: 'source',
+      selected: true,
+      position: { x: parent.position.x + 580, y: parent.position.y },
+      data: {
+        ...sourceData(DUO_DEMO.blendedCode),
+        blend: { kind: 'global', image: example.data.image, parentCode: parent.data.code },
+        attempt: 0,
+        blendLabel: DUO_DEMO.blendLabel,
+        blendedCode: DUO_DEMO.blendedCode,
+        categories: DUO_DEMO.categories,
+        designExplanation: DUO_DEMO.designExplanation,
+        differences: DUO_DEMO.differences,
+        toggleCache: { [allOn]: DUO_DEMO.blendedCode, '': parent.data.code },
+      },
+    };
+    nodesRef.current = [...nodesRef.current, node];
+    setNodes((list) => [...list, node]);
+    setEdges(blendEdges(parent.id, example.id, id));
+    setTimeout(() => flow.fitView({ padding: 0.12, duration: 300 }), 120);
+  };
+
   useEffect(() => {
     if (started.current) return;
     started.current = true;
     (async () => {
       // Restore the saved canvas (see lib/persist.js); start from the samples otherwise.
-      const saved = await loadCanvas();
-      if (saved?.nodes?.length) {
+      const saved = DEMO_MODE ? null : await loadCanvas();
+      if (DEMO_MODE) {
+        await loadDuoDemo();
+      } else if (saved?.nodes?.length) {
         const restored = saved.nodes.map((n) =>
           n.type === 'source' && (n.data.status === 'loading' || n.data.toggling)
             ? {
@@ -253,6 +310,28 @@ function Workspace() {
     }
   };
 
+  // The two edges into a blend: solid from its parent, dashed from the example.
+  const blendEdges = (parentId, exampleId, id) => [
+    {
+      id: `${parentId}-${id}`,
+      source: parentId,
+      sourceHandle: 'out',
+      target: id,
+      targetHandle: 'in',
+      style: { stroke: '#B79FD8', strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#B79FD8' },
+    },
+    {
+      id: `${exampleId}-${id}`,
+      source: exampleId,
+      sourceHandle: 'out',
+      target: id,
+      targetHandle: 'in',
+      style: { stroke: '#8D9FCB', strokeWidth: 2, strokeDasharray: '6 6' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#8D9FCB' },
+    },
+  ];
+
   // A blend creates a new source node with the updated code; the parent stays.
   const startBlend = (parentId, exampleId, spec) => {
     const parent = getNode(parentId);
@@ -276,27 +355,7 @@ function Workspace() {
     };
     nodesRef.current = [...nodesRef.current, node];
     setNodes((list) => [...list, node]);
-    setEdges((list) => [
-      ...list,
-      {
-        id: `${parentId}-${id}`,
-        source: parentId,
-        sourceHandle: 'out',
-        target: id,
-        targetHandle: 'in',
-        style: { stroke: '#B79FD8', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#B79FD8' },
-      },
-      {
-        id: `${exampleId}-${id}`,
-        source: exampleId,
-        sourceHandle: 'out',
-        target: id,
-        targetHandle: 'in',
-        style: { stroke: '#8D9FCB', strokeWidth: 2, strokeDasharray: '6 6' },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#8D9FCB' },
-      },
-    ]);
+    setEdges((list) => [...list, ...blendEdges(parentId, exampleId, id)]);
     setTimeout(() => flow.fitView({ nodes: [{ id: parentId }, { id }], padding: 0.15, duration: 500 }), 80);
     requestBlend(id, { ...spec, parentCode: parent.data.code }, 0);
   };
@@ -322,13 +381,9 @@ function Workspace() {
 
   // Semantic diff: toggling asks the model for updated code (Section 4.3). A state
   // already seen, including all-on and all-off, is restored without a new call.
-  const toggleCategory = async (id, categoryId) => {
+  const applyCategories = async (id, categories, switched) => {
     const node = getNode(id);
-    if (!node || node.data.toggling) return;
-    const categories = node.data.categories.map((c) =>
-      c.id === categoryId ? { ...c, enabled: !c.enabled } : c
-    );
-    const switched = categories.find((c) => c.id === categoryId);
+    if (!node?.data.blend || node.data.toggling) return;
     const key = toggleKey(categories);
     const cached = node.data.toggleCache?.[key];
     if (cached) {
@@ -355,6 +410,24 @@ function Workspace() {
     } catch (error) {
       patchNode(id, { categories: node.data.categories, toggling: false, error: error.message });
     }
+  };
+
+  const toggleCategory = (id, categoryId) => {
+    const node = getNode(id);
+    if (!node || node.data.toggling) return;
+    const categories = node.data.categories.map((c) =>
+      c.id === categoryId ? { ...c, enabled: !c.enabled } : c
+    );
+    applyCategories(id, categories, categories.find((c) => c.id === categoryId));
+  };
+
+  // Foldable remix: a blend level k turns on the first k change categories and the rest off.
+  const setBlendLevel = (id, level) => {
+    const node = getNode(id);
+    if (!node?.data.blend || node.data.toggling) return;
+    const categories = node.data.categories.map((c, i) => ({ ...c, enabled: i < level }));
+    if (toggleKey(categories) === toggleKey(node.data.categories)) return;
+    applyCategories(id, categories);
   };
 
   const resetAll = (id) => {
@@ -533,15 +606,19 @@ function Workspace() {
       startCropDrag,
       openCode: setDockId,
       toggleCategory: (...args) => toggleCategoryRef.current(...args),
+      setBlendLevel: (...args) => setBlendLevelRef.current(...args),
       resetAll: (...args) => resetAllRef.current(...args),
       editChange: (...args) => editChangeRef.current(...args),
       regenerate: (...args) => regenerateRef.current(...args),
       fixRender: (...args) => fixRenderRef.current(...args),
+      touchMode,
     }),
-    [patchNode, startCropDrag]
+    [patchNode, startCropDrag, touchMode]
   );
   const toggleCategoryRef = useRef(toggleCategory);
   toggleCategoryRef.current = toggleCategory;
+  const setBlendLevelRef = useRef(setBlendLevel);
+  setBlendLevelRef.current = setBlendLevel;
   const resetAllRef = useRef(resetAll);
   resetAllRef.current = resetAll;
   const editChangeRef = useRef(editChange);
@@ -582,6 +659,12 @@ function Workspace() {
 
   const dockNode = nodes.find((n) => n.id === dockId && n.type === 'source');
 
+  // Foldable remix: the fold and the outer display follow the selected Code Render, or the
+  // latest blend when nothing is selected.
+  const sources = nodes.filter((n) => n.type === 'source');
+  const duoNode =
+    sources.find((n) => n.selected) ?? [...sources].reverse().find((n) => n.data.blendedCode) ?? sources.at(-1);
+
   const onDockChange = useCallback(
     (code) => patchNode(dockId, { code, toggleCache: {}, error: null }),
     [dockId, patchNode]
@@ -612,6 +695,8 @@ function Workspace() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnectEnd={onConnectEnd}
+            nodesDraggable={touchMode !== 'touch'}
+            nodesConnectable={touchMode !== 'touch'}
             isValidConnection={isValidConnection}
             connectionRadius={60}
             connectionLineStyle={{ stroke: '#5B6FA8', strokeWidth: 2, strokeDasharray: '6 6' }}
@@ -628,6 +713,26 @@ function Workspace() {
 
         <header className="m-toolbar">
           <strong className="m-brand">Misty</strong>
+          {touchMode && (
+            <div className="m-mode" role="radiogroup" aria-label="What a drag does">
+              <button
+                role="radio"
+                aria-checked={touchMode === 'touch'}
+                title="Touch: drag to move around the canvas, tap to select"
+                onClick={() => setTouchMode('touch')}
+              >
+                <Hand size={16} /> Touch
+              </button>
+              <button
+                role="radio"
+                aria-checked={touchMode === 'select'}
+                title="Select: drag across an example to pick a section, drag nodes, connect"
+                onClick={() => setTouchMode('select')}
+              >
+                <MousePointer2 size={16} /> Select
+              </button>
+            </div>
+          )}
           <div className="m-menu-wrap">
             <button className="m-tool" onClick={() => setMenu(menu === 'example' ? null : 'example')}>
               <ImagePlus size={16} /> Add Example
@@ -767,6 +872,8 @@ function Workspace() {
           onClose={() => setDemoOpen(false)}
         />
 
+
+        {DUO_MODE && <DuoView node={duoNode} />}
 
         {dockNode && <CodeDock node={dockNode} onChange={onDockChange} onClose={() => setDockId(null)} />}
       </div>

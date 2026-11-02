@@ -1,0 +1,92 @@
+{
+  "example": "Store: featured card",
+  "blendLabel": "Global blend",
+  "blendedCode": "() => {\n  const trails = [\n    { name: \"Steep Ravine, Dipsea and Matt Davis\", place: \"Stinson Beach, California\", meta: \"⭐ 4.8 · Moderate 6.60 mi · Est. 3h 41m\", img: \"/stock/landscape0.jpg\" },\n    { name: \"Bear Mountain, Appalachian Trail\", place: \"Bear Mountain, New York\", meta: \"⭐ 4.7 · Hard 4.00 mi · Est. 2h 20m\", img: \"/stock/landscape1.jpg\" },\n    { name: \"Sunset Ridge, Griffith Park\", place: \"Los Angeles, California\", meta: \"⭐ 4.9 · Easy 3.20 mi · Est. 1h 30m\", img: \"/stock/landscape2.jpg\" },\n    { name: \"Yosemite Falls Trail\", place: \"Yosemite National Park, California\", meta: \"⭐ 4.8 · Hard 7.20 mi · Est. 6h 00m\", img: \"/stock/landscape3.jpg\" },\n    { name: \"Angel's Landing\", place: \"Zion National Park, Utah\", meta: \"⭐ 4.9 · Hard 5.40 mi · Est. 4h 00m\", img: \"/stock/landscape4.jpg\" }\n  ];\n  const chips = [\"Nearby\", \"Epic views\", \"Wildflowers\"];\n  return (\n    <div className=\"bg-gray-100 min-h-full flex flex-col\">\n      <div className=\"bg-white py-4 text-center font-semibold text-gray-900 text-base\">Parks</div>\n      <div className=\"flex-1 px-5 pb-6\">\n        <input className=\"w-full bg-white rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-500 mt-4 mb-3 outline-none\" placeholder=\"Find parks\" />\n        <div className=\"flex gap-2 mb-2\">\n          {chips.map((c) => (\n            <span key={c} className=\"bg-white rounded-full px-3 py-1 text-sm text-gray-700\">{c}</span>\n          ))}\n        </div>\n        <h2 className=\"text-2xl font-bold text-gray-900 mt-5 mb-3\">Featured</h2>\n        <div className=\"bg-white rounded-3xl overflow-hidden mb-6\">\n          <img src={trails[0].img} alt={trails[0].name} className=\"w-full h-40 object-cover\" />\n          <div className=\"p-5\">\n            <p className=\"text-xs text-gray-600\">{trails[0].place}</p>\n            <h3 className=\"text-xl font-bold text-gray-900 mt-1\">{trails[0].name}</h3>\n            <p className=\"text-sm text-gray-600 mt-2\">{trails[0].meta}</p>\n            <button className=\"text-sm font-semibold text-blue-600 mt-3\">Delete</button>\n          </div>\n        </div>\n        <h2 className=\"text-2xl font-bold text-gray-900 mb-3\">More trails</h2>\n        <div className=\"grid grid-cols-2 gap-3\">\n          {trails.slice(1).map((t) => (\n            <div key={t.name} className=\"bg-white rounded-2xl p-4 flex flex-col\">\n              <img src={t.img} alt={t.name} className=\"w-12 h-12 rounded-xl object-cover mb-3\" />\n              <h3 className=\"text-sm font-bold text-gray-900\">{t.name}</h3>\n              <p className=\"text-xs text-gray-600 mt-1\">{t.place}</p>\n              <p className=\"text-xs text-gray-600 mt-1\">{t.meta}</p>\n              <button className=\"text-xs font-semibold text-blue-600 mt-2 text-left\">Delete</button>\n            </div>\n          ))}\n        </div>\n      </div>\n      <div className=\"bg-white border-t border-gray-200 flex justify-around py-3\">\n        {[\"For You\", \"Parks\", \"Explore\", \"Search\", \"Saved\"].map((l, i) => (\n          <div key={l} className=\"flex flex-col items-center gap-1\">\n            <div className={\"w-5 h-5 rounded-full \" + (i === 1 ? \"bg-gray-900\" : \"bg-gray-400\")}></div>\n            <span className={\"text-xs \" + (i === 1 ? \"text-gray-900\" : \"text-gray-600\")}>{l}</span>\n          </div>\n        ))}\n      </div>\n    </div>\n  );\n}",
+  "categories": [
+    {
+      "id": "c0",
+      "label": "Color",
+      "description": "Light gray page with white cards",
+      "enabled": true,
+      "changes": [
+        {
+          "type": "color",
+          "before": "bg-white min-h-full",
+          "after": "bg-gray-100 min-h-full"
+        },
+        {
+          "type": "color",
+          "before": "border border-gray-100 bg-white",
+          "after": "bg-white"
+        },
+        {
+          "type": "color",
+          "before": "text-red-700",
+          "after": "text-blue-600 font-semibold"
+        }
+      ]
+    },
+    {
+      "id": "c1",
+      "label": "Layout",
+      "description": "Header, featured hero card, two-column grid, tab bar",
+      "enabled": true,
+      "changes": [
+        {
+          "type": "layout",
+          "before": "",
+          "after": "bg-white py-4 text-center font-semibold"
+        },
+        {
+          "type": "layout",
+          "before": "",
+          "after": "grid grid-cols-2 gap-3"
+        },
+        {
+          "type": "layout",
+          "before": "",
+          "after": "flex justify-around py-3 border-t"
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "label": "Visual details",
+      "description": "Larger rounded corners and images",
+      "enabled": true,
+      "changes": [
+        {
+          "type": "radius",
+          "before": "rounded-md",
+          "after": "rounded-3xl / rounded-2xl"
+        },
+        {
+          "type": "image",
+          "before": "",
+          "after": "w-full h-40 object-cover"
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "label": "Font",
+      "description": "Bold section headings",
+      "enabled": true,
+      "changes": [
+        {
+          "type": "font",
+          "before": "font-semibold text-gray-800",
+          "after": "text-2xl font-bold text-gray-900"
+        },
+        {
+          "type": "font",
+          "before": "text-sm",
+          "after": "text-xl font-bold"
+        }
+      ]
+    }
+  ],
+  "designExplanation": "Mobile app on light gray background with centered top title, large bold section headings, white rounded-2xl cards with a hero image block, blue link CTA, two-column tile cards, and a bottom tab bar with circle icons.",
+  "differences": "Reference uses light gray page bg, centered header, large bold section headings, big rounded white cards with hero image, blue CTA text, two-column tiles, and a bottom tab bar. Code uses white bg, small search, chips, compact bordered list cards with red delete text.",
+  "note": "A global blend recorded on 2 November 2026 (Claude Sonnet through the LLM bridge): the \"Store: featured card\" example onto the parks UI. Loaded by ?duo&demo."
+}

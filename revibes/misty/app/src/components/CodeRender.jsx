@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo } from 'react';
 import { LiveContext, LivePreview, LiveProvider } from 'react-live';
 import { iconScope } from '../lib/icons.js';
+import { useMisty } from '../context.js';
 
 function ErrorReporter({ onError }) {
   const { error } = useContext(LiveContext);
@@ -29,10 +30,13 @@ export default function CodeRender({ nodeId, code, onError }) {
     if (event.target.closest?.('a') || event.type === 'submit') event.preventDefault();
   };
 
+  // In Touch mode a drag over the rendered UI pans the canvas, like anywhere else.
+  const touchMode = useMisty()?.touchMode;
+
   return (
     <LiveProvider code={code} scope={scope}>
       <div
-        className="m-screen nodrag nowheel nopan"
+        className={`m-screen nodrag nowheel ${touchMode === 'touch' ? '' : 'nopan'}`}
         data-misty-preview={nodeId}
         onClickCapture={stopNavigation}
         onSubmitCapture={stopNavigation}

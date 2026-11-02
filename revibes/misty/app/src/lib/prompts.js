@@ -200,7 +200,11 @@ The blend is described by these semantic changes, each switched ON or OFF by the
 
 ${lines}
 
-The user just switched ${switched.enabled ? 'ON' : 'OFF'} "${switched.label}: ${switched.description}".
+${
+    switched
+      ? `The user just switched ${switched.enabled ? 'ON' : 'OFF'} "${switched.label}: ${switched.description}".`
+      : 'The user just set several of these switches at once.'
+  }
 
 Update the current code so that every ON change is present and every OFF change is reverted to how the original code looked. Do not change anything else: keep all other styling, content and structure exactly as in the current code.
 
