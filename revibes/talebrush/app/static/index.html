@@ -41,6 +41,10 @@
             <p class="settings-note">The paper uses 0.2. Fast strokes allow 1 retry, slow strokes 2.</p>
           </div>
         </div>
+        <label id="modelPick" class="model-pick" hidden>
+          Writing model
+          <select id="modelSelect" aria-label="The Claude model that writes the sentences"></select>
+        </label>
         <div id="bridgeStatus" class="bridge-status"></div>
       </div>
     </header>
@@ -79,14 +83,28 @@
           <svg id="fortuneCanvas" class="sketch-canvas" role="img" aria-label="Fortune canvas: sketch each character's fortune; higher is better"></svg>
         </div>
 
+        <div id="relationHead" class="relation-head" hidden>
+          <span class="fortune-label">Relationship of</span>
+          <div id="pairs" class="pairs" role="group" aria-label="Pairs of characters"></div>
+        </div>
+        <div id="relationWrap" class="canvas-wrap relation-wrap" hidden>
+          <svg id="relationCanvas" class="sketch-canvas" role="img" aria-label="Relationship canvas: sketch how two characters get along, from conflict at the bottom to harmony at the top"></svg>
+        </div>
+
         <div id="surpriseWrap" class="canvas-wrap surprise-wrap" hidden>
           <svg id="surpriseCanvas" class="sketch-canvas" role="img" aria-label="Surprise canvas: sketch how surprising each sentence should be"></svg>
         </div>
 
-        <label class="surprise-toggle">
-          <input type="checkbox" id="surpriseToggle" />
-          Surprise in a separate panel.
-        </label>
+        <div class="panel-toggles">
+          <label class="surprise-toggle">
+            <input type="checkbox" id="surpriseToggle" />
+            Surprise in a separate panel.
+          </label>
+          <label id="relationToggleWrap" class="surprise-toggle" hidden>
+            <input type="checkbox" id="relationToggle" />
+            Relationships between characters.
+          </label>
+        </div>
 
         <div class="tools" role="toolbar" aria-label="Sketch tools">
           <button class="tool" data-tool="pen" type="button" title="Pen (B)" aria-label="Pen">
@@ -109,7 +127,9 @@
       (shown at the top right), prompted with the paper's fortune definition and calibration sentences. The paper
       used GPT-Neo 2.7B with trained soft prompts and a GeDi control model (GPT2-medium), which are not available
       here. The surprise level is given to the model in words, because the bridge has no temperature setting.
-      Remix, not in the paper: "+ Character" adds up to three more characters, each with its own fortune line.
+      Remix, not in the paper: "+ Character" adds up to three more characters, each with its own fortune line,
+      the Relationships panel sets how each pair of characters gets along, from conflict to harmony, and the Writing
+      model menu chooses the Claude model that writes the sentences (ratings stay with the main bridge's model).
       Your stories are saved in this browser.
     </footer>
 

@@ -15,13 +15,18 @@
 // line continues as a dashed segment. With one character, the canvas looks as in the paper.
 //
 // Surprise canvas: the same columns; the pen draws a thin green line for the desired surprise.
+//
+// Relationship canvas (remix): the same columns; y is how a pair of characters gets along, from
+// Conflict (bottom, 0) to Harmony (top, 1). The pen draws an envelope for the pair chosen above the
+// panel, with the same speed rule as the fortune canvas. Each pair's rated relationship is a line
+// of teal dots; where the two characters do not deal with each other, the line is dotted.
 
-import { ABSENT, PALETTE, isRating, labels, modelNames } from "./characters.js";
+import { ABSENT, PALETTE, isRating, labels, modelNames, pairLabel } from "./characters.js";
 import { BANDS, DEFAULT_SURPRISE, ENVELOPE, ERASER_RADIUS, SAMPLES_PER_SLOT as S, halfWidthForSpeed } from "./config.js";
 import { monotoneSegments } from "./geometry.js";
-import { ratingKeys } from "./keys.js";
+import { ratingKeys, relationKeys } from "./keys.js";
 import * as Sk from "./sketch.js";
-import { activeCharacter, changed, isMulti, labelOf, ratingOf, state } from "./store.js";
+import { activeCharacter, activePair, changed, isMulti, labelOf, pairs, ratingOf, relationsOn, state } from "./store.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -41,6 +46,23 @@ function hatchPattern(defs, id, { fill, line, angle }) {
   svgEl("line", { x1: 1.5, y1: 0, x2: 1.5, y2: 6, stroke: line, "stroke-width": 2, "stroke-opacity": 0.9 }, hatch);
 }
 
+// Relationship canvas: background bands, and a few words for a rated value (tooltips).
+const RELATION_BANDS = [
+  { from: 0, to: 0.35, fill: "#fcf1ef" },
+  { from: 0.35, to: 0.65, fill: "#ffffff" },
+  { from: 0.65, to: 1, fill: "#eef7f2" },
+];
+
+export function relationWords(v) {
+  if (v < 0.15) return "open hostility";
+  if (v < 0.35) return "conflict";
+  if (v < 0.45) return "tension";
+  if (v < 0.55) return "neutral";
+  if (v < 0.65) return "friendly";
+  if (v < 0.85) return "warm";
+  return "deep harmony";
+}
+
 /** Characters in drawing order: the selected one last, so it is on top. */
 function drawingOrder() {
   const active = activeCharacter().id;
@@ -51,7 +73,7 @@ export class SketchCanvas {
   constructor({ svg, wrap, kind, onStroke, onErase }) {
     this.svg = svg;
     this.wrap = wrap;
-    this.kind = kind; // "fortune" or "surprise"
+    this.kind = kind; // "fortune", "surprise" or "relation" (remix)
     this.onStroke = onStroke;
     this.onErase = onErase;
     this.pad = { l: 1, r: 1, t: 1, b: 1 };
@@ -67,6 +89,9 @@ export class SketchCanvas {
       hatchPattern(defs, "tb-hatch", { fill: "rgba(118, 204, 150, 0.16)", line: "#86d3a2", angle: -50 });
       PALETTE.forEach((p, k) => hatchPattern(defs, `tb-hatch-${k}`, { fill: p.fill, line: p.hatch, angle: p.angle }));
     }
+    if (kind === "relation") {
+      hatchPattern(defs, "tb-hatch-rel", { fill: "rgba(31, 150, 130, 0.12)", line: "#86cfc2", angle: -50 });
+    }
     const root = svgEl("g", { "clip-path": `url(#${clipId})` }, svg);
     this.layers = {};
     for (const name of ["bg", "grid", "history", "sketch", "arc"]) {
@@ -78,7 +103,7 @@ export class SketchCanvas {
     this.tip.className = "canvas-tip";
     this.tip.hidden = true;
     wrap.appendChild(this.tip);
-    if (kind === "fortune") {
+    if (kind !== "surprise") {
       this.hint = document.createElement("div");
       this.hint.className = "canvas-hint";
       wrap.appendChild(this.hint);
@@ -133,9 +158,10 @@ export class SketchCanvas {
   valueOf(y) {
     return Math.min(1, Math.max(0, 1 - (y - this.pad.t) / this.plotH));
   }
-  /** The samples the pen and eraser act on: the selected character's line, or the surprise line. */
+  /** The samples the pen and eraser act on: the selected character's or pair's line, or the surprise line. */
   samples() {
-    if (this.kind !== "fortune") return state.sketch.surprise;
+    if (this.kind === "surprise") return state.sketch.surprise;
+    if (this.kind === "relation") return Sk.relationLine(state.sketch, activePair().key, state.sentences.length);
     return Sk.lineOf(state.sketch, activeCharacter().id, state.sentences.length);
   }
   point(e) {
@@ -150,6 +176,7 @@ export class SketchCanvas {
 
   down(e) {
     if (e.button !== 0 || this.locked()) return;
+    if (this.kind === "relation" && !activePair()) return;
     e.preventDefault();
     try {
       this.svg.setPointerCapture(e.pointerId);
@@ -159,7 +186,7 @@ export class SketchCanvas {
     const p = this.point(e);
     this.drag = {
       tool: state.tool,
-      character: activeCharacter().id,
+      character: this.kind === "relation" ? activePair().key : activeCharacter().id, // a pair key on the relationship canvas
       line: this.samples(),
       last: p,
       speed: (ENVELOPE.slowSpeed + ENVELOPE.fastSpeed) / 2,
@@ -230,10 +257,10 @@ export class SketchCanvas {
       const ub = this.unitsOf(b.x);
       const va = this.valueOf(a.y);
       const vb = this.valueOf(b.y);
-      if (this.kind === "fortune") {
-        Sk.writeFortune(this.drag.line, ua, va, ub, vb, halfWidthForSpeed(this.drag.speed), this.drag.touched);
-      } else {
+      if (this.kind === "surprise") {
         Sk.writeSurprise(this.drag.line, ua, va, ub, vb, this.drag.touched);
+      } else {
+        Sk.writeFortune(this.drag.line, ua, va, ub, vb, halfWidthForSpeed(this.drag.speed), this.drag.touched);
       }
       return;
     }
@@ -250,7 +277,7 @@ export class SketchCanvas {
       const v = arr[j];
       if (v === null || v === undefined) continue;
       if (Math.abs(this.xOf((j + 0.5) / S) - px) > r) continue;
-      if (this.kind === "fortune") {
+      if (this.kind !== "surprise") {
         const top = this.yOf(Math.min(1, v[0] + v[1]));
         const bottom = this.yOf(Math.max(0, v[0] - v[1]));
         if (py + r < top || py - r > bottom) continue;
@@ -302,11 +329,13 @@ export class SketchCanvas {
     if (!s.text.trim()) {
       lines.push("Blank bullet");
     } else {
-      const who = s.source === "generated" ? "Written by TaleBrush" : "Written by you";
+      const by = s.gen?.model ? ` with ${s.gen.model}` : "";
+      const who = s.source === "generated" ? `Written by TaleBrush${by}` : "Written by you";
       const own = ratingOf(s, state.characters[0].id);
       lines.push(!multi && own !== null ? `${who} · recognized fortune ${own.toFixed(2)}` : who);
       if (s.source === "generated" && s.gen?.tries > 1) lines.push(`Best of ${s.gen.tries} tries`);
     }
+    if (this.kind === "relation") return this.relationTip(slot, lines);
     if (this.kind !== "fortune") {
       const v = Sk.surpriseSlots(state.sketch.surprise, n)[slot];
       lines.push(v !== null ? `Sketched surprise ${v.toFixed(2)}` : `No surprise line: default ${DEFAULT_SURPRISE.toFixed(2)}`);
@@ -342,6 +371,24 @@ export class SketchCanvas {
     return lines.join("<br>");
   }
 
+  /** Tooltip lines for one column of the relationship canvas: every pair's rating and line. */
+  relationTip(slot, lines) {
+    const s = state.sentences[slot];
+    const all = pairs();
+    const cast = Sk.castSlots(state.sketch, [], state.sentences.length, all.map((p) => p.key));
+    all.forEach((p, k) => {
+      const f = cast[slot].relations[k];
+      const v = s.relations[p.key];
+      const parts = [];
+      if (s.text.trim()) {
+        parts.push(isRating(v) ? `rated ${v.toFixed(2)} (${relationWords(v)})` : v === ABSENT ? "do not deal with each other here" : "not rated yet");
+      }
+      parts.push(f.sketched ? `sketched ${f.fortune.toFixed(2)} ± ${f.halfWidth.toFixed(2)}` : "no line here");
+      lines.push(`${escapeHtml(pairLabel(state.characters, p.key))}: ${parts.join(" · ")}`);
+    });
+    return lines.join("<br>");
+  }
+
   // ---------------------------------------------------------------- rendering
 
   render() {
@@ -352,16 +399,26 @@ export class SketchCanvas {
     if (this.kind === "fortune") {
       this.renderHistory();
       this.renderArc();
+    } else if (this.kind === "relation") {
+      this.renderRelationArc();
     }
     this.renderSketch();
     this.wrap.classList.toggle("busy", state.ui.generating);
     this.wrap.classList.toggle("erasing", state.tool === "eraser");
     this.wrap.classList.toggle("locked", !!state.ui.previewId);
     this.wrap.classList.toggle("multi", multi);
-    if (this.hint) {
+    if (this.hint && this.kind === "relation") {
+      const pair = activePair();
+      this.hint.hidden = !pair || Sk.hasSamples(state.sketch.relations?.[pair.key] || []) || state.ui.generating;
+      if (pair) {
+        const name = escapeHtml(pairLabel(state.characters, pair.key).replace(" & ", " and "));
+        this.hint.innerHTML = `Sketch how ${name} get along over the story: harmony at the top, conflict at the bottom.`;
+      }
+    } else if (this.hint) {
       const active = activeCharacter();
       const name = escapeHtml(labelOf(active.id));
-      this.hint.hidden = Sk.hasSamples(state.sketch.fortunes[active.id] || []) || state.ui.generating;
+      const relationLines = relationsOn() && Sk.anyRelation(state.sketch, pairs().map((p) => p.key));
+      this.hint.hidden = Sk.hasSamples(state.sketch.fortunes[active.id] || []) || relationLines || state.ui.generating;
       this.hint.innerHTML = multi
         ? `Sketch how ${name}'s fortune changes over the story. Higher is better.<br>` +
           "Each character has its own line. Choose whose line to draw above the canvas, then press Generate."
@@ -374,11 +431,11 @@ export class SketchCanvas {
     const { l, t } = this.pad;
     const w = this.plotW;
     let html = "";
-    if (this.kind === "fortune") {
-      for (const b of BANDS) {
+    if (this.kind === "fortune" || this.kind === "relation") {
+      for (const b of this.kind === "fortune" ? BANDS : RELATION_BANDS) {
         const y0 = this.yOf(b.to);
         const y1 = this.yOf(b.from);
-        html += `<rect x="${l}" y="${r1(y0)}" width="${r1(w)}" height="${r1(y1 - y0)}" fill="${b.canvas}"/>`;
+        html += `<rect x="${l}" y="${r1(y0)}" width="${r1(w)}" height="${r1(y1 - y0)}" fill="${b.canvas || b.fill}"/>`;
       }
     } else {
       html += `<rect x="${l}" y="${t}" width="${r1(w)}" height="${r1(this.plotH)}" fill="#ffffff"/>`;
@@ -388,6 +445,10 @@ export class SketchCanvas {
     if (this.kind === "surprise") {
       html += `<text class="surprise-label high" transform="translate(${l + 13} ${r1(this.yOf(0.75))}) rotate(-90)">High Surprise</text>`;
       html += `<text class="surprise-label low" transform="translate(${l + 13} ${r1(this.yOf(0.25))}) rotate(-90)">Low Surprise</text>`;
+    }
+    if (this.kind === "relation") {
+      html += `<text class="relation-label harmony" transform="translate(${l + 13} ${r1(this.yOf(0.82))}) rotate(-90)">Harmony</text>`;
+      html += `<text class="relation-label conflict" transform="translate(${l + 13} ${r1(this.yOf(0.18))}) rotate(-90)">Conflict</text>`;
     }
     this.layers.bg.innerHTML = html;
   }
@@ -430,6 +491,17 @@ export class SketchCanvas {
   }
 
   renderSketch() {
+    if (this.kind === "relation") {
+      const active = activePair()?.key;
+      const keys = pairs().map((p) => p.key);
+      let html = "";
+      for (const key of [...keys.filter((k) => k !== active), ...keys.filter((k) => k === active)]) {
+        const body = this.envelopeHtml(state.sketch.relations?.[key] || [], ' style="fill:url(#tb-hatch-rel)"');
+        html += `<g class="pair-line${key === active ? " active" : ""}">${body}</g>`;
+      }
+      this.layers.sketch.innerHTML = html;
+      return;
+    }
     if (this.kind !== "fortune") {
       const arr = state.sketch.surprise;
       const X = (j) => r1(this.xOf((j + 0.5) / S));
@@ -485,10 +557,19 @@ export class SketchCanvas {
    * `skipped`, so the segment leading to it is drawn dashed.
    */
   characterPoints(c, k, keys, targets) {
+    return this.ratingPoints(
+      (s) => s.fortunes[c.id],
+      (s, i) => s.keys[c.id] !== keys[i][k],
+      targets,
+    );
+  }
+
+  /** Points for any per-sentence rating: valueOf(s) gives the rating, outdated(s, i) says it is out of date. */
+  ratingPoints(valueOf, outdated, targets) {
     const points = [];
     let skipped = false;
     state.sentences.forEach((s, i) => {
-      const v = s.fortunes[c.id];
+      const v = valueOf(s);
       if (!s.text.trim() || (!isRating(v) && v !== ABSENT)) {
         points.push(null);
         skipped = false;
@@ -498,7 +579,7 @@ export class SketchCanvas {
         skipped = true;
         return;
       }
-      const stale = !s.draft && !targets.has(i) && s.keys[c.id] !== keys[i][k];
+      const stale = !s.draft && !targets.has(i) && outdated(s, i);
       points.push({ x: this.xOf(i + 0.5), y: this.yOf(v), gen: s.source === "generated", draft: s.draft, stale, skipped });
       skipped = false;
     });
@@ -524,6 +605,39 @@ export class SketchCanvas {
     }
     state.sentences.forEach((s, i) => {
       const v = s.fortunes[active];
+      if (s.text.trim() && s.pending && !isRating(v) && v !== ABSENT) {
+        html += `<circle class="dot waiting" cx="${r1(this.xOf(i + 0.5))}" cy="${r1(this.yOf(0.5))}" r="4.2"/>`;
+      }
+    });
+    this.layers.arc.innerHTML = html;
+    this.layers.arc.classList.toggle("dimmed", !!state.ui.previewId);
+  }
+
+  /** Remix: each pair's rated relationship, the selected pair on top; dotted where the two do not meet. */
+  renderRelationArc() {
+    const targets = new Set(state.ui.generating ? state.ui.targets : []);
+    const all = pairs();
+    const names = modelNames(state.characters);
+    const keys = state.sentences.map((s, i) => (s.text.trim() ? relationKeys(all, names, state.sentences, i) : []));
+    const active = activePair()?.key;
+    let html = "";
+    for (const p of [...all.filter((x) => x.key !== active), ...all.filter((x) => x.key === active)]) {
+      const k = all.indexOf(p);
+      const points = this.ratingPoints(
+        (s) => s.relations[p.key],
+        (s, i) => s.relationKeys[p.key] !== keys[i][k],
+        targets,
+      );
+      const part = this.arcHtml(
+        points,
+        (q) => `arc-seg ${q.gen ? "gen" : "user"}${q.skipped ? " skipped" : ""}`,
+        (q) => `dot ${q.gen ? "gen" : "user"}${q.draft ? " draft" : ""}${q.stale ? " stale" : ""}`,
+        4.2,
+      );
+      html += `<g class="pair-arc${p.key === active ? " active" : ""}">${part}</g>`;
+    }
+    state.sentences.forEach((s, i) => {
+      const v = active ? s.relations[active] : undefined;
       if (s.text.trim() && s.pending && !isRating(v) && v !== ABSENT) {
         html += `<circle class="dot waiting" cx="${r1(this.xOf(i + 0.5))}" cy="${r1(this.yOf(0.5))}" r="4.2"/>`;
       }

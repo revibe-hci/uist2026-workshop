@@ -87,6 +87,33 @@ button {
   cursor: default;
 }
 
+/* Remix: the menu that chooses the Claude model that writes the sentences. */
+.model-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.model-pick select {
+  font: inherit;
+  font-size: 13px;
+  color: #333;
+  padding: 3px 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.model-pick select:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .bridge-status {
   margin-left: 10px;
   font-size: 12px;
@@ -320,6 +347,16 @@ button {
   content: "  (current)";
   font-weight: 400;
   color: #999;
+}
+
+/* Remix: the model that wrote a stored story. */
+.history-model {
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #f1f0ec;
 }
 
 .history-rename {
@@ -711,6 +748,75 @@ button {
   max-width: 280px;
 }
 
+/* Remix: the relationship panel, its pair chips, and the row of panel switches. */
+.panel-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+}
+
+.relation-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.relation-head[hidden],
+.panel-toggles [hidden] {
+  display: none;
+}
+
+.pairs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pair-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 7px;
+  border: 1.5px solid #dcdcdc;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+}
+
+.pair-chip:hover:not(:disabled) {
+  border-color: #bdbdbd;
+}
+
+.pair-chip.active {
+  border-color: #168a76;
+  box-shadow: 0 0 0 2px rgba(22, 138, 118, 0.16);
+}
+
+.pair-chip.only {
+  cursor: default;
+}
+
+.pair-chip .chip-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.pair-chip .chip-swatch + .chip-swatch {
+  margin-left: -3px;
+  margin-right: 3px;
+}
+
+.relation-wrap {
+  flex: 0 0 170px;
+  border: 1px solid #ececec;
+}
+
 .surprise-toggle {
   display: flex;
   align-items: center;
@@ -982,6 +1088,57 @@ button {
 
 .surprise-dot {
   fill: #3a9a5c;
+}
+
+/* Remix: relationship lines and rated relationships (teal), the selected pair on top. */
+.pair-line .envelope {
+  stroke: rgba(22, 138, 118, 0.45);
+}
+
+.pair-line .envelope-center {
+  stroke: rgba(22, 138, 118, 0.35);
+}
+
+.pair-line:not(.active),
+.pair-arc:not(.active) {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.pair-arc .arc-seg.gen,
+.pair-arc .arc-seg.user {
+  stroke: #168a76;
+}
+
+.pair-arc .arc-seg.user {
+  stroke-opacity: 0.45;
+}
+
+.pair-arc .dot.gen {
+  fill: #168a76;
+}
+
+.pair-arc .dot.user,
+.pair-arc .dot.draft,
+.pair-arc .dot.stale {
+  fill: #fff;
+  stroke: #168a76;
+  stroke-width: 2;
+}
+
+.relation-label {
+  font-size: 10.5px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  user-select: none;
+}
+
+.relation-label.harmony {
+  fill: #2f9a6a;
+}
+
+.relation-label.conflict {
+  fill: #cf5a4b;
 }
 
 .surprise-label {

@@ -67,6 +67,47 @@ export function namedCast(characters) {
   return { characters: keep.map((k) => characters[k]), names: keep.map((k) => names[k]) };
 }
 
+// ---------------------------------------------------------------- pairs (remix: relationships)
+
+// A pair of characters is named by their two ids, in character order ("c0|c1x"). The relationship
+// sketch, the ratings and the cache keys are stored per pair.
+export function pairKey(idA, idB) {
+  return `${idA}|${idB}`;
+}
+
+/** Every pair of the given characters, in character order: [{ key, a, b }] with a < b (indices). */
+export function pairsOf(characters) {
+  const out = [];
+  for (let a = 0; a < characters.length; a++) {
+    for (let b = a + 1; b < characters.length; b++) out.push({ key: pairKey(characters[a].id, characters[b].id), a, b });
+  }
+  return out;
+}
+
+/** True when the pair key names two of the given character ids. */
+export function pairOfIds(key, ids) {
+  const [x, y] = String(key).split("|");
+  const i = ids.indexOf(x);
+  const j = ids.indexOf(y);
+  return i >= 0 && j > i;
+}
+
+/** A sentence's stored relationship ratings, kept only for pairs of the given ids. */
+export function normalizePairRatings(src, ids) {
+  const out = {};
+  if (src && typeof src === "object") {
+    for (const [key, v] of Object.entries(src)) if (pairOfIds(key, ids) && (isRating(v) || v === ABSENT)) out[key] = v;
+  }
+  return out;
+}
+
+/** "Bob & Alice", with the names shown in the interface. */
+export function pairLabel(characters, key) {
+  const names = labels(characters);
+  const p = pairsOf(characters).find((x) => x.key === key);
+  return p ? `${names[p.a]} & ${names[p.b]}` : "";
+}
+
 /** The names shown in the interface. */
 export function labels(characters) {
   return modelNames(characters).map((n) => n || "the protagonist");

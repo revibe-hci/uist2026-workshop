@@ -3,18 +3,31 @@
 import * as api from "./api.js";
 import { SketchCanvas } from "./canvas.js";
 import { CastBar } from "./cast.js";
+import { PALETTE, pairLabel } from "./characters.js";
 import { Editor } from "./editor.js";
 import { EXAMPLES } from "./examples.js";
-import { againTargets, runGeneration, sketchExtent, stopGeneration, strokeTargets } from "./generator.js";
+import {
+  againTargets,
+  modelLabel,
+  runGeneration,
+  sketchExtent,
+  stopGeneration,
+  strokeTargets,
+  writingModel,
+  writingModels,
+} from "./generator.js";
 import { HistoryMenu, saveUnsaved } from "./history.js";
 import { scheduleRecognition } from "./recognizer.js";
 import * as Sk from "./sketch.js";
 import {
+  activePair,
   addCharacter,
   changed,
   isMulti,
   labelOf,
   newStory,
+  pairs,
+  relationsOn,
   removeCharacter,
   renderNow,
   restore,
@@ -24,6 +37,8 @@ import {
 } from "./store.js";
 
 const $ = (id) => document.getElementById(id);
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 restore();
 
@@ -32,6 +47,7 @@ restore();
 // With one character, a stroke starts writing as soon as the pen is lifted (the paper's design).
 // With several characters, the writer usually draws more than one line for the same sentences,
 // so a stroke only marks its sentences (state.ui.strokeMarks) and the button turns into "Generate".
+// On the relationship panel (remix), `characterId` is the key of the pair whose line was drawn.
 function onStroke(kind, slots, characterId) {
   if (kind === "surprise") {
     setStatus("Surprise sketch updated. Press Generate Again to use it.", "info");
@@ -39,15 +55,18 @@ function onStroke(kind, slots, characterId) {
   }
   if (!slots.length) return;
   if (isMulti()) {
+    const mark = kind === "relation" ? `pair:${characterId}` : characterId;
     for (const i of slots) {
       const sid = state.sentences[i].id;
       if (!state.ui.strokeMarks.has(sid)) state.ui.strokeMarks.set(sid, new Set());
-      state.ui.strokeMarks.get(sid).add(characterId);
+      state.ui.strokeMarks.get(sid).add(mark);
     }
     const marked = strokeSlots().length;
+    const whose =
+      kind === "relation" ? `The relationship line of ${pairLabel(state.characters, characterId)}` : `${labelOf(characterId)}'s line`;
     setStatus(
-      `${labelOf(characterId)}'s line updated (${marked} sentence${marked === 1 ? "" : "s"} marked). ` +
-        "Draw the other characters' lines too, then press Generate.",
+      `${whose} updated (${marked} sentence${marked === 1 ? "" : "s"} marked). ` +
+        "Draw the other lines too, then press Generate.",
       "info",
     );
     changed({ persist: false });
@@ -68,7 +87,12 @@ function onStroke(kind, slots, characterId) {
 function onErase(kind, erased, characterId) {
   if (!erased) return;
   let message = "Surprise line erased. Those sentences use the default surprise.";
-  if (kind === "fortune" && !isMulti()) {
+  if (kind === "relation") {
+    const name = pairLabel(state.characters, characterId);
+    message =
+      `Part of the relationship line of ${name} erased. Where that line is erased, ` +
+      `sentences have no relationship target for ${name}.`;
+  } else if (kind === "fortune" && !isMulti()) {
     message =
       "Sketch erased. Press Generate Again to rewrite the sketched part; where the line is erased, sentences are written without a fortune target.";
   } else if (kind === "fortune") {
@@ -135,6 +159,7 @@ function selectCharacter(id) {
 }
 const fortuneCanvas = new SketchCanvas({ svg: $("fortuneCanvas"), wrap: $("fortuneWrap"), kind: "fortune", onStroke, onErase });
 const surpriseCanvas = new SketchCanvas({ svg: $("surpriseCanvas"), wrap: $("surpriseWrap"), kind: "surprise", onStroke, onErase });
+const relationCanvas = new SketchCanvas({ svg: $("relationCanvas"), wrap: $("relationWrap"), kind: "relation", onStroke, onErase });
 const historyMenu = new HistoryMenu($("historyBtn"), $("historyMenu"));
 
 // ---------------------------------------------------------------- controls
@@ -146,6 +171,34 @@ $("title").addEventListener("input", (e) => {
 
 $("surpriseToggle").addEventListener("change", (e) => {
   state.surpriseEnabled = e.target.checked;
+  changed();
+});
+
+// Remix: the relationship panel. While it is on, every pair of characters can have a line, each
+// sentence is rated for every pair, and the lines are targets when TaleBrush writes.
+$("relationToggle").addEventListener("change", (e) => {
+  state.relationsEnabled = e.target.checked;
+  if (state.relationsEnabled) {
+    setStatus(
+      "Choose a pair of characters above the new panel and draw how they get along: harmony at the top, " +
+        "conflict at the bottom. TaleBrush rates each sentence for every pair (one more model call).",
+      "info",
+    );
+    scheduleRecognition(300);
+  } else {
+    for (const [sid, marks] of state.ui.strokeMarks) {
+      for (const mark of [...marks]) if (mark.startsWith("pair:")) marks.delete(mark);
+      if (!marks.size) state.ui.strokeMarks.delete(sid);
+    }
+    setStatus("Relationship panel off. Its lines are kept but not used until you switch it on again.", "info");
+  }
+  changed();
+});
+
+$("pairs").addEventListener("click", (e) => {
+  const chip = e.target.closest(".pair-chip");
+  if (!chip || state.ui.generating) return;
+  state.activePair = chip.dataset.key;
   changed();
 });
 
@@ -245,6 +298,20 @@ for (const radio of document.querySelectorAll('input[name="pipeline"]')) {
     changed();
   });
 }
+// Remix: the Claude model that writes the sentences. Fortune ratings keep using the main bridge's model.
+$("modelSelect").addEventListener("change", (e) => {
+  state.settings.model = e.target.value;
+  const writing = state.ui.bridge?.writing;
+  const label = modelLabel(e.target.value);
+  const first = e.target.value !== writing?.default && !writing?.running?.[e.target.value];
+  setStatus(
+    `${label} writes the next sentences. Fortune ratings still come from ${writing?.default || "the main bridge"}.` +
+      (first ? ` The first generation with ${label} starts an LLM bridge for it, which takes a few seconds.` : ""),
+    "info",
+  );
+  changed();
+});
+
 $("threshold").addEventListener("change", (e) => {
   const v = parseFloat(e.target.value);
   if (Number.isFinite(v) && v > 0 && v <= 1) state.settings.threshold = Math.round(v * 100) / 100;
@@ -270,9 +337,33 @@ function renderChrome() {
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
   }
+  // Remix: the relationship panel and its pair chips.
+  const relOn = relationsOn();
+  $("relationToggleWrap").hidden = !isMulti();
+  $("relationToggle").checked = state.relationsEnabled;
+  $("relationToggle").disabled = busy;
+  $("relationHead").hidden = !relOn;
+  $("relationWrap").hidden = !relOn;
+  if (relOn) {
+    const active = activePair()?.key;
+    const all = pairs();
+    const color = (k) => PALETTE[state.characters[k].color].line;
+    const html = all
+      .map(
+        (p) =>
+          `<button type="button" class="pair-chip${p.key === active ? " active" : ""}${all.length === 1 ? " only" : ""}" ` +
+          `data-key="${p.key}" aria-pressed="${p.key === active}"${busy ? " disabled" : ""}>` +
+          `<span class="chip-swatch" style="background:${color(p.a)}"></span><span class="chip-swatch" style="background:${color(p.b)}"></span>` +
+          `${escapeHtml(pairLabel(state.characters, p.key))}</button>`,
+      )
+      .join("");
+    if ($("pairs").innerHTML !== html) $("pairs").innerHTML = html;
+  }
+
   const again = $("generateAgain");
   const marked = !busy && strokeSlots().length > 0;
-  again.disabled = busy || !Sk.anyLine(state.sketch);
+  const anyLine = Sk.anyLine(state.sketch) || (relOn && Sk.anyRelation(state.sketch, pairs().map((p) => p.key)));
+  again.disabled = busy || !anyLine;
   again.classList.toggle("busy", busy);
   again.classList.toggle("ready", marked);
   $("generateLabel").textContent = marked ? "Generate" : "Generate Again";
@@ -297,14 +388,42 @@ function renderChrome() {
   $("statusText").textContent = message || "";
   $("stopBtn").hidden = !busy;
 
+  // Remix: the writing model menu, shown when the main bridge runs Claude Code.
+  const models = writingModels();
+  const writing = bridge?.writing;
+  $("modelPick").hidden = !models.length;
+  if (models.length) {
+    const select = $("modelSelect");
+    const options = models.some((m) => m.id === writing.default)
+      ? models
+      : [{ id: writing.default, label: writing.default }, ...models]; // a bridge started with a full model name
+    const signature = JSON.stringify([options, writing.default]);
+    if (select.dataset.signature !== signature) {
+      select.innerHTML = options
+        .map((m) => `<option value="${m.id}">${m.label}${m.id === writing.default ? " (main bridge)" : ""}</option>`)
+        .join("");
+      select.dataset.signature = signature;
+    }
+    const chosen = writingModel() || writing.default;
+    if (select.value !== chosen) select.value = chosen;
+    select.disabled = busy;
+    $("modelPick").title =
+      "The Claude model that writes the sentences. Fortune ratings always come from the main bridge's model " +
+      `(${writing.default}), so stories written by different models are rated by the same model. ` +
+      "Larger models take longer and use more of your plan.";
+  }
+
   const badge = $("bridgeStatus");
   if (!bridge) {
     badge.className = "bridge-status";
     badge.textContent = "Checking the LLM bridge...";
   } else if (bridge.ok) {
     badge.className = "bridge-status ok";
-    badge.textContent = `Model: ${bridge.backend || "?"} · ${bridge.model || "default"} via LLM bridge`;
-    badge.title = `LLM bridge at ${bridge.url}`;
+    badge.textContent = models.length
+      ? `Rating model: ${bridge.model || "default"} via LLM bridge`
+      : `Model: ${bridge.backend || "?"} · ${bridge.model || "default"} via LLM bridge`;
+    const extra = Object.entries(writing?.running || {}).map(([m, url]) => `${m} at ${url}`);
+    badge.title = `Main LLM bridge at ${bridge.url}` + (extra.length ? `. Writing bridges: ${extra.join(", ")}` : "");
   } else {
     badge.className = "bridge-status down";
     badge.textContent = "LLM bridge offline";
@@ -316,6 +435,7 @@ subscribe(() => {
   editor.render();
   fortuneCanvas.render();
   surpriseCanvas.render();
+  if (relationsOn()) relationCanvas.render();
   historyMenu.render();
   renderChrome();
 });

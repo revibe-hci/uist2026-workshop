@@ -3,11 +3,12 @@
 // stories; while it is open, their fortune arcs are drawn on the canvas in low opacity.
 // Hovering a story shows its text in the editor and highlights its arc; clicking it
 // rolls back to it. Stories can be renamed (pencil) and deleted (x), as in Figure 5.
-// Remix: a stored story also keeps its characters, each character's ratings and lines.
+// Remix: a stored story also keeps its characters, each character's ratings and lines, and
+// each pair's relationship ratings and lines.
 
-import { ABSENT, isRating, modelNames } from "./characters.js";
+import { ABSENT, isRating, modelNames, pairsOf } from "./characters.js";
 import { HISTORY_LIMIT } from "./config.js";
-import { ratingKeys } from "./keys.js";
+import { ratingKeys, relationKeys } from "./keys.js";
 import { scheduleRecognition } from "./recognizer.js";
 import * as Sk from "./sketch.js";
 import { changed, makeSentence, state } from "./store.js";
@@ -27,19 +28,27 @@ function textSignature(src) {
   return JSON.stringify([src.title.trim(), modelNames(src.characters), src.sentences.map((s) => s.text.trim())]);
 }
 
-function makeSnapshot(name) {
+function makeSnapshot(name, model = null) {
   const snap = {
     id: `h${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     name,
     createdAt: Date.now(),
     title: state.title,
     characters: state.characters.map((c) => ({ ...c })),
-    sentences: state.sentences.map((s) => ({ text: s.text, source: s.source, fortunes: { ...s.fortunes } })),
+    sentences: state.sentences.map((s) => ({
+      text: s.text,
+      source: s.source,
+      fortunes: { ...s.fortunes },
+      relations: { ...s.relations },
+    })),
     sketch: {
       fortunes: Object.fromEntries(state.characters.map((c) => [c.id, (state.sketch.fortunes[c.id] || []).slice()])),
       surprise: state.sketch.surprise.slice(),
+      relations: Object.fromEntries(Object.entries(state.sketch.relations || {}).map(([k, arr]) => [k, arr.slice()])),
     },
     surpriseEnabled: state.surpriseEnabled,
+    relationsEnabled: state.relationsEnabled,
+    model, // the model that wrote this story (remix: choose the writing model)
   };
   return snap;
 }
@@ -79,10 +88,10 @@ export function saveUnsaved() {
   return push(makeSnapshot(uniqueName(name)));
 }
 
-/** Store a freshly generated story. */
-export function saveGenerated() {
+/** Store a freshly generated story. model: the name of the model that wrote it. */
+export function saveGenerated(model = null) {
   state.storyCounter += 1;
-  return push(makeSnapshot(uniqueName(`Story ${state.storyCounter}`)));
+  return push(makeSnapshot(uniqueName(`Story ${state.storyCounter}`), model));
 }
 
 /** Roll back to a stored story (its text, characters, fortunes and sketch). */
@@ -93,14 +102,20 @@ export function rollBack(id) {
   state.title = snap.title;
   state.characters = snap.characters.map((c) => ({ ...c }));
   if (!state.characters.some((c) => c.id === state.activeCharacter)) state.activeCharacter = state.characters[0].id;
-  state.sentences = snap.sentences.map((s) => makeSentence(s.text, s.source, s.fortunes));
+  state.sentences = snap.sentences.map((s) => makeSentence(s.text, s.source, s.fortunes, s.relations));
   const names = modelNames(state.characters);
+  const pairList = pairsOf(state.characters);
   state.sentences.forEach((s, i) => {
     if (!s.text.trim()) return;
     const keys = ratingKeys(state.characters, state.sentences, i, names);
     state.characters.forEach((c, k) => {
       const v = s.fortunes[c.id];
       if (isRating(v) || v === ABSENT) s.keys[c.id] = keys[k];
+    });
+    const pairKeys = relationKeys(pairList, names, state.sentences, i);
+    pairList.forEach((p, k) => {
+      const v = s.relations[p.key];
+      if (isRating(v) || v === ABSENT) s.relationKeys[p.key] = pairKeys[k];
     });
   });
   state.sketch = Sk.normalizeSketch(
@@ -110,6 +125,7 @@ export function rollBack(id) {
   );
   state.ui.strokeMarks.clear();
   state.surpriseEnabled = !!snap.surpriseEnabled;
+  state.relationsEnabled = !!snap.relationsEnabled;
   state.activeHistoryId = snap.id;
   changed();
   scheduleRecognition(300); // rate any sentence the stored story had no rating for
@@ -238,7 +254,8 @@ export class HistoryMenu {
           this.renaming === h.id
             ? `<input class="history-rename" value="${escapeHtml(h.name)}" aria-label="Story name">`
             : `<button class="history-name" data-action="open" title="Roll back to this story">${escapeHtml(h.name)}</button>`;
-        return `<div class="history-row${active ? " active" : ""}" data-id="${h.id}">${name}
+        const model = h.model ? `<span class="history-model" title="Written by ${escapeHtml(h.model)}">${escapeHtml(h.model)}</span>` : "";
+        return `<div class="history-row${active ? " active" : ""}" data-id="${h.id}">${name}${model}
           <button class="history-icon" data-action="rename" title="Rename">${ICON_PENCIL}</button>
           ${active ? '<span class="history-icon-space"></span>' : `<button class="history-icon delete" data-action="delete" title="Delete">${ICON_X}</button>`}
         </div>`;

@@ -4,14 +4,22 @@
 Serves the web interface (static/) and a small REST API for the paper's two
 language-model components:
 
-    GET  /api/health      is the LLM bridge reachable, and which model answers
+    GET  /api/health      is the LLM bridge reachable, which model answers, and which
+                          models can write
     POST /api/recognize   fortune recognition for a batch of sentences, one
                           rating per character
+    POST /api/relations   remix: how each pair of characters gets along in a batch
+                          of sentences, from 0 (open conflict) to 1 (full harmony)
     POST /api/generate    fortune-controlled generation for sketched sentence
                           slots; streams newline-delimited JSON events
 
 Remix: both POST routes take a list of characters (the protagonist first)
 instead of one protagonist; see DEVELOPER.md.
+
+Remix: /api/generate can name the Claude model that writes the sentences
+("model": "sonnet"). TaleBrush then starts a second LLM bridge for that model
+on a free port from 8788, and stops it when TaleBrush stops. Fortune ratings
+always come from the main bridge. See talebrush/bridges.py.
 
 The paper used a Flask server. This one uses only the Python standard library,
 so nothing has to be installed. Model calls go through the workshop's LLM
@@ -28,6 +36,7 @@ import argparse
 import json
 import mimetypes
 import os
+import signal
 import sys
 import time
 import traceback
@@ -38,12 +47,14 @@ from urllib.parse import urlparse
 APP_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(APP_DIR))
 
-from talebrush.cast import clean_characters  # noqa: E402
+from talebrush.bridges import BridgePool  # noqa: E402
+from talebrush.cast import clean_characters, clean_pairs  # noqa: E402
 from talebrush.generation import GenerationCancelled, Generator, parse_request  # noqa: E402
 from talebrush.llm import BridgeClient, BridgeError  # noqa: E402
 from talebrush.recognition import Recognizer  # noqa: E402
 
 STATIC_DIR = (APP_DIR / "static").resolve()
+BRIDGE_SCRIPT = APP_DIR.parents[2] / "llm-bridge" / "bridge.py"
 DEFAULT_PORT = 5177
 DEFAULT_BRIDGE = "http://localhost:8787"
 
@@ -61,6 +72,7 @@ class App:
         self.llm = BridgeClient(bridge_url)
         self.recognizer = Recognizer(self.llm)
         self.generator = Generator(self.llm, self.recognizer, log=log)
+        self.bridges = BridgePool(self.llm, BRIDGE_SCRIPT, log=log)  # one bridge per writing model
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -102,6 +114,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(400, {"error": "The request body is not valid JSON."})
         if path == "/api/recognize":
             return self.handle_recognize(body)
+        if path == "/api/relations":
+            return self.handle_relations(body)
         if path == "/api/generate":
             return self.handle_generate(body)
         self.send_json(404, {"error": f"Unknown endpoint {path}"})
@@ -127,7 +141,8 @@ class Handler(BaseHTTPRequestHandler):
         llm = self.app.llm
         try:
             info = llm.health()
-            bridge = {"ok": True, "url": llm.base_url, "backend": info.get("backend"), "model": info.get("model")}
+            bridge = {"ok": True, "url": llm.base_url, "backend": info.get("backend"), "model": info.get("model"),
+                      "writing": self.app.bridges.describe(info)}
         except BridgeError as e:
             bridge = {"ok": False, "url": llm.base_url, "error": str(e)}
         self.send_json(200, {"ok": True, "bridge": bridge})
@@ -147,6 +162,23 @@ class Handler(BaseHTTPRequestHandler):
         log(f"recognized {len(items)} sentence(s){who} in {time.time() - started:.1f}s")
         self.send_json(200, {"characters": characters, "fortunes": fortunes})
 
+    def handle_relations(self, body):
+        items = body.get("items") if isinstance(body, dict) else None
+        if not isinstance(items, list) or not all(isinstance(it, dict) for it in items):
+            return self.send_json(400, {"error": "items must be a list of {context, sentence} objects."})
+        characters = clean_characters(body.get("characters"))
+        pairs = clean_pairs(body.get("pairs"), len(characters))
+        if not pairs:
+            return self.send_json(400, {"error": "pairs must list pairs of character indices, such as [[0, 1]]."})
+        started = time.time()
+        try:
+            relations = self.app.recognizer.recognize_relations(characters, pairs, items)
+        except BridgeError as e:
+            log(f"relationship recognition failed: {e}")
+            return self.send_json(502, {"error": str(e)})
+        log(f"rated relationships of {len(pairs)} pair(s) in {len(items)} sentence(s) in {time.time() - started:.1f}s")
+        self.send_json(200, {"pairs": pairs, "relations": relations})
+
     def handle_generate(self, body):
         try:
             request = parse_request(body)
@@ -165,7 +197,9 @@ class Handler(BaseHTTPRequestHandler):
                 raise GenerationCancelled()
 
         try:
-            self.app.generator.run(request, emit)
+            notify = lambda message: emit({"type": "status", "message": message})  # noqa: E731
+            writer, model = self.app.bridges.writer_for(request.model, notify)
+            self.app.generator.run(request, emit, writer=writer, model=model)
         except GenerationCancelled:
             log("generation stopped by the writer")
         except BridgeError as e:
@@ -203,10 +237,14 @@ def main():
         log(f"LLM bridge at {args.bridge}: backend={info.get('backend')}, model={info.get('model')}")
     except BridgeError as e:
         log(f"WARNING: {e}")
+    # Stop the extra bridges on Ctrl+C and on kill (SIGTERM) too.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         log("stopped")
+    finally:
+        Handler.app.bridges.stop()
 
 
 if __name__ == "__main__":

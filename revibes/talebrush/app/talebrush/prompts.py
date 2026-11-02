@@ -15,6 +15,12 @@ character, the *_multi prompts and the multi-character branches below are used.
 They give one fortune target per character and ask the model to rate each
 character separately. With one character, every prompt is exactly the text the
 one-character version sent, so the two versions can be compared.
+
+Remix (relationships between characters): a request can also name pairs of
+characters with a relationship target, from 0 (open conflict) to 1 (full
+harmony). Only then do the generation prompts get the relationship definition,
+targets and rules; without pairs they are exactly the text sent before.
+Relationships are rated with their own prompt (relation_recognition_*).
 """
 
 from .cast import ABSENT
@@ -56,6 +62,38 @@ FORTUNE_BANDS = [
 FORTUNE_SCALE = "How to read the scale:\n" + "\n".join(
     f"- {low:.2f} to {min(high, 1.0):.2f}: {words}"
     for (low, (high, words)) in zip([0.0] + [b[0] for b in FORTUNE_BANDS[:-1]], FORTUNE_BANDS)
+)
+
+# ---------------------------------------------------------------- relationships (remix)
+
+RELATIONSHIP_DEFINITION = (
+    "RELATIONSHIP is how two characters get along with each other in a sentence, as a reader would "
+    "perceive it. It is a number from 0 (open conflict: fighting, betraying, competing against or hurting "
+    "each other) to 1 (full harmony: helping, supporting, celebrating or loving each other); 0.5 is "
+    "neutral. It is separate from fortune: two rivals can both be doing well while in conflict, and two "
+    "friends can stand by each other while things go badly."
+)
+
+RELATIONSHIP_BANDS = [
+    (0.15, "open hostility (an attack, a betrayal, a bitter fight)"),
+    (0.35, "conflict (an argument, a rivalry, a cruel remark, sabotage)"),
+    (0.45, "tension (distrust, coldness, a disagreement)"),
+    (0.55, "neutral (they deal with each other without warmth or hostility)"),
+    (0.65, "friendly (politeness, a small favour, getting along)"),
+    (0.85, "warm cooperation (helping, encouraging, working together)"),
+    (1.01, "deep harmony (devotion, a sacrifice for each other, celebrating together)"),
+]
+
+RELATIONSHIP_SCALE = "How to read the relationship scale:\n" + "\n".join(
+    f"- {low:.2f} to {min(high, 1.0):.2f}: {words}"
+    for (low, (high, words)) in zip([0.0] + [b[0] for b in RELATIONSHIP_BANDS[:-1]], RELATIONSHIP_BANDS)
+)
+
+RELATIONSHIP_RULES = (
+    "- On a line with a relationship target, the two characters of that pair must deal with each other in "
+    "the sentence (talk, act on each other, or clearly react to each other), and how they get along must "
+    "match the target as closely as you can.\n"
+    "- Relationship targets and fortune targets are independent: follow both."
 )
 
 SURPRISE_DEFINITION = (
@@ -106,6 +144,20 @@ def fortune_words(f):
     return FORTUNE_BANDS[-1][1]
 
 
+def relationship_words(v):
+    """The scale band of a relationship value, e.g. 0.3 -> "conflict (...)"."""
+    for high, words in RELATIONSHIP_BANDS:
+        if v < high:
+            return words
+    return RELATIONSHIP_BANDS[-1][1]
+
+
+def pair_name(characters, pair):
+    """'Bob & Alice' for the pair (0, 1)."""
+    names = names_of(characters)
+    return f"{names[pair[0]]} & {names[pair[1]]}"
+
+
 def surprise_words(s):
     if s < 0.2:
         return "very predictable: the most expected next event"
@@ -123,7 +175,9 @@ def fortune_instruction(target, characters=None):
         if target.fortune is None:
             return "No fortune target: write whatever fits the story best."
         return f"Fortune target: {target.fortune:.2f} ({fortune_words(target.fortune)})."
-    if not target.has_target:
+    if not target.has_fortune_target:
+        if target.has_relation_target:
+            return "No fortune targets."
         return "No fortune targets: write whatever fits the story best."
     parts = [f"{name} {f:.2f} ({fortune_words(f)})" if f is not None else f"{name}: no target"
              for name, f in zip(names_of(characters), target.fortunes)]
@@ -134,7 +188,21 @@ def surprise_instruction(target):
     return f"Surprise: {target.surprise:.2f} ({surprise_words(target.surprise)})."
 
 
-def feedback_lines(target, attempts, indent, characters=None):
+def relationship_instruction(target, characters, pairs):
+    """'Relationship targets: Bob & Alice 0.20 (conflict ...).', or "" when the line has none."""
+    parts = [f"{pair_name(characters, pair)} {v:.2f} ({relationship_words(v)})"
+             for pair, v in zip(pairs or [], target.relations) if v is not None]
+    return "Relationship targets: " + "; ".join(parts) + "." if parts else ""
+
+
+def target_line(target, characters, pairs=None):
+    """The fortune, relationship and surprise instructions of one line, separated by spaces."""
+    parts = [fortune_instruction(target, characters), relationship_instruction(target, characters, pairs),
+             surprise_instruction(target)]
+    return " ".join(p for p in parts if p)
+
+
+def feedback_lines(target, attempts, indent, characters=None, pairs=None):
     """Earlier text for this slot that the model should not repeat."""
     lines = []
     if target.previous:
@@ -158,6 +226,17 @@ def feedback_lines(target, attempts, indent, characters=None):
                 notes.append(f"{name} read as {rating:.2f}, on target")
             else:
                 notes.append(f"{name} read as {rating:.2f}, {'too good' if rating > goal else 'too bad'}")
+        for pair, rating, goal in zip(pairs or [], a.relations, target.relations):
+            if goal is None or rating is None:
+                continue
+            name = pair_name(characters, pair)
+            if rating == ABSENT:
+                notes.append(f"{name} did not deal with each other, but have a relationship target")
+            elif abs(rating - goal) < 0.05:
+                notes.append(f"{name} relationship read as {rating:.2f}, on target")
+            else:
+                notes.append(f"{name} relationship read as {rating:.2f}, "
+                             f"{'too friendly' if rating > goal else 'too hostile'}")
         if notes:
             lines.append(f'{indent}Rejected try ({"; ".join(notes)}): "{a.text}"')
     return lines
@@ -238,12 +317,44 @@ def recognition_user_multi(characters, rate, items):
     return "\n".join(parts)
 
 
+def relation_recognition_system():
+    return (
+        "You are the relationship recognition module of TaleBrush, a story-writing tool. The story follows "
+        "several characters. For each item you get up to three sentences that come before the target sentence "
+        "(previous context) and the target sentence. For each pair of characters you are asked to rate, "
+        "estimate how the two characters get along with each other in the target sentence.\n\n"
+        f"{RELATIONSHIP_DEFINITION}\n\n{RELATIONSHIP_SCALE}\n\n"
+        "Judge what the two characters do to, say to, or feel about each other in the target sentence itself. "
+        "Use the previous context only to understand who and what the target sentence refers to. If the two "
+        "characters do not deal with each other in the target sentence, directly or by clear implication, "
+        "answer null for that pair. Use the whole scale: open hostility near 0.05, deep harmony near 0.95."
+    )
+
+
+def relation_recognition_user(characters, pairs, items):
+    """pairs: the (i, j) pairs to rate; items: (context sentences, target sentence)."""
+    names = [pair_name(characters, p) for p in pairs]
+    parts = [f"Characters: {cast_line(characters)}", f"Rate pairs: {'; '.join(names)}", ""]
+    for k, (context, sentence) in enumerate(items, 1):
+        parts.append(f"Item {k}")
+        parts.append("Previous context: " + (" ".join(context) if context else "(none)"))
+        parts.append(f"Target sentence: {sentence}")
+        parts.append("")
+    example = ", ".join(f'"{n}": <number between 0 and 1, two decimals, or null>' for n in names)
+    parts.append(
+        'Respond with JSON only: {"ratings": [{"item": 1, "reason": "<how each pair gets along, at most 20 '
+        'words>", "relationships": {' + example + '}}, ...]} '
+        f"with exactly {len(items)} rating(s), in item order."
+    )
+    return "\n".join(parts)
+
+
 # ---------------------------------------------------------------- generation
 
 
-def generation_system(characters=None):
+def generation_system(characters=None, relations=False):
     if characters is not None and len(as_cast(characters)) > 1:
-        return generation_system_multi()
+        return generation_system_multi(relations)
     return (
         "You are the story generation module of TaleBrush, a tool in which a writer co-writes a short "
         "story outline with an AI by sketching how the protagonist's fortune changes over the story. "
@@ -255,8 +366,8 @@ def generation_system(characters=None):
     )
 
 
-def generation_system_multi():
-    return (
+def generation_system_multi(relations=False):
+    text = (
         "You are the story generation module of TaleBrush, a tool in which a writer co-writes a short "
         "story outline with an AI by sketching how the fortune of each of several characters changes over "
         "the story. A story is a numbered list of lines; each line is one step of the story, usually one "
@@ -266,6 +377,13 @@ def generation_system_multi():
         "separately for each character, and each rating should land close to that character's target. "
         "Write events exactly as good or as bad as each target: not more extreme, and not milder."
     )
+    if relations:
+        text += (
+            f"\n\n{RELATIONSHIP_DEFINITION}\n\n{RELATIONSHIP_SCALE}\n\n"
+            "A reader will also rate how the two characters of each pair with a relationship target get along "
+            "in that sentence, and that rating should land close to the target."
+        )
+    return text
 
 
 MULTI_RULES = (
@@ -278,7 +396,7 @@ MULTI_RULES = (
 )
 
 
-def batch_user(protagonist, lines, attempts):
+def batch_user(protagonist, lines, attempts, pairs=None):
     """All blank lines at once.
 
     protagonist: the protagonist's name, or the list of all character names (protagonist first).
@@ -286,7 +404,7 @@ def batch_user(protagonist, lines, attempts):
     attempts: dict slot index -> list of earlier Candidate objects.
     """
     if len(as_cast(protagonist)) > 1:
-        return batch_user_multi(as_cast(protagonist), lines, attempts)
+        return batch_user_multi(as_cast(protagonist), lines, attempts, pairs)
     name = name_of(as_cast(protagonist)[0])
     parts = [f"Story Character: {name}", "",
              "Story. Lines marked BLANK are for you to write; the other lines are already written.", ""]
@@ -313,7 +431,7 @@ def batch_user(protagonist, lines, attempts):
     return "\n".join(parts)
 
 
-def batch_user_multi(characters, lines, attempts):
+def batch_user_multi(characters, lines, attempts, pairs=None):
     parts = [f"Story Characters: {cast_line(characters)}", "",
              "Story. Lines marked BLANK are for you to write; the other lines are already written.", ""]
     for kind, number, value in lines:
@@ -321,12 +439,12 @@ def batch_user_multi(characters, lines, attempts):
             parts.append(f"{number}. {value}")
             continue
         t = value.target
-        parts.append(f"{number}. BLANK. {fortune_instruction(t, characters)} {surprise_instruction(t)}")
-        parts += feedback_lines(t, attempts.get(value.index, []), "   ", characters)
+        parts.append(f"{number}. BLANK. {target_line(t, characters, pairs)}")
+        parts += feedback_lines(t, attempts.get(value.index, []), "   ", characters, pairs)
     parts += [
         "",
         "Write one sentence for each BLANK line.",
-        MULTI_RULES,
+        MULTI_RULES + (f"\n{RELATIONSHIP_RULES}" if pairs else ""),
         "- The whole story must read smoothly from top to bottom: each sentence follows from the lines "
         "before it and leads into the written lines after it.",
         f"- Keep {names_of(characters)[0]} as the protagonist. Do not bring in many new characters.",
@@ -338,7 +456,7 @@ def batch_user_multi(characters, lines, attempts):
     return "\n".join(parts)
 
 
-def single_user(task, protagonist, prev, nxt, missing, target, attempts):
+def single_user(task, protagonist, prev, nxt, missing, target, attempts, pairs=None):
     """One sentence, laid out like the paper's three generation tasks (Figure 9).
 
     protagonist: the protagonist's name, or the list of all character names (protagonist first).
@@ -361,11 +479,15 @@ def single_user(task, protagonist, prev, nxt, missing, target, attempts):
         parts = [character_line, "", f"Beginning Story:\n{beginning}", "", f"Ending Story:\n{ending}", "",
                  f"Infilled Story: {missing} {lines_word} missing between the Beginning Story and the Ending "
                  "Story. Write the LAST missing sentence, the one that comes right before the Ending Story."]
-    parts += ["", fortune_instruction(target, cast), surprise_instruction(target)]
-    parts += feedback_lines(target, attempts, "", cast)
+    parts += ["", fortune_instruction(target, cast)]
+    if multi and relationship_instruction(target, cast, pairs):
+        parts.append(relationship_instruction(target, cast, pairs))
+    parts.append(surprise_instruction(target))
+    parts += feedback_lines(target, attempts, "", cast, pairs)
+    rules = MULTI_RULES + (f"\n{RELATIONSHIP_RULES}" if pairs else "")
     parts += [
         "",
-        MULTI_RULES if multi else "- Make the protagonist's fortune in the sentence match the target as closely as you can.",
+        rules if multi else "- Make the protagonist's fortune in the sentence match the target as closely as you can.",
         f"- Keep {name} as the protagonist.",
         STYLE_RULES,
         "",

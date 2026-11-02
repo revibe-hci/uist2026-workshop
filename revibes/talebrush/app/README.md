@@ -24,9 +24,11 @@ Open two terminals in the repository root (`uist2026-workshop/`).
 
 3. Open **http://localhost:5177** in your browser.
 
-The badge at the top right of the page shows which model answers
-("Model: claude · haiku via LLM bridge"). If it says "LLM bridge offline", the
-bridge from step 1 is not running.
+The badge at the top right of the page shows which model rates fortune
+("Rating model: haiku via LLM bridge"). If it says "LLM bridge offline", the
+bridge from step 1 is not running. The **Writing model** menu next to it
+chooses the Claude model that writes the sentences (see "Choosing the writing
+model" below).
 
 If port 5177 is taken, start TaleBrush with another port:
 `python3 revibes/talebrush/app/server.py --port 5180`. If the bridge runs on
@@ -117,6 +119,55 @@ sketch the fortunes of up to three more characters. To try it quickly, pick
 
 `../remixes.md` explains why this was added and what question it explores.
 
+## Relationships between characters (remix, not in the paper)
+
+With two or more characters, you can also sketch how each pair of characters
+gets along over the story, from conflict to harmony. To try it, pick "Bob and
+Alice" from **Examples**.
+
+1. **Switch it on** with **Relationships between characters** under the
+   canvas. A second panel appears, with **Harmony** at the top, **Conflict**
+   at the bottom and neutral in the middle. TaleBrush rates every sentence
+   for every pair (one more model call).
+2. **Choose a pair** with the chips above the panel ("Bob & Alice"). With
+   three characters there are 3 pairs; with four, 6.
+3. **Draw the pair's line** the same way as a fortune line. Drawing slowly
+   makes TaleBrush follow the line more closely (up to 2 rewrites). Lifting
+   the pen marks the sentences; press **Generate** to write them. You can
+   also draw fortune lines for the same sentences, and both are used.
+4. **Read the result.** Each pair's rated relationship is a line of teal
+   dots. Where the two characters do not deal with each other in a sentence,
+   the pair has no dot there and its line is dotted. A sentence is rewritten
+   when a pair misses its line by more than 0.2, or when the two characters
+   do not deal with each other where they have a line. Hover over a column
+   to see each pair's rating and line.
+5. **Switch it off** to go back to fortune lines only. The relationship lines
+   are kept, but they are not used while the panel is off.
+
+## Choosing the writing model (remix, not in the paper)
+
+The **Writing model** menu at the top right chooses which Claude model writes
+the sentences: Haiku, Sonnet, Opus or Fable. Each name means the newest model
+of that family that your Claude Code can use.
+
+- **Only the writing changes.** Fortune ratings always come from the main
+  bridge's model (Haiku), so stories written by different models are rated
+  by the same model. The badge next to the menu names the rating model.
+- **A second bridge starts by itself.** The workshop bridge answers with one
+  model only. So the first time you generate with another model, TaleBrush
+  starts one more bridge for that model, on the first free port from 8788.
+  The status line says so, and the start takes a few seconds. TaleBrush stops
+  these bridges when you stop TaleBrush. Their log lines appear in the
+  TaleBrush terminal, marked with the model name, for example `(sonnet)`.
+- **Cost and speed.** Larger models take longer per call and use more of your
+  plan. In one test, Sonnet wrote 2 sentences in 9 seconds.
+- **Which model wrote what.** The status line after generating, the History
+  list and the tooltip of each canvas column name the model that wrote the
+  sentences.
+
+The menu appears only when the main bridge runs Claude Code
+(`python3 llm-bridge/bridge.py claude`).
+
 ## Settings
 
 **Settings** at the top of the page has two options:
@@ -146,6 +197,12 @@ sketch the fortunes of up to three more characters. To try it quickly, pick
   sentences of a stroke are written together (see Settings).
 - **Several characters.** Not in the paper; see "Several characters" above.
   With one character, TaleBrush behaves and prompts the model exactly as
+  before.
+- **Relationships.** Not in the paper; see "Relationships between
+  characters" above. While the panel is off, TaleBrush behaves and prompts
+  the model exactly as before.
+- **Writing model.** Not in the paper; see "Choosing the writing model"
+  above. With Haiku chosen (the default), TaleBrush behaves exactly as
   before.
 - **Software.** The paper used React and Flask. This version uses plain
   JavaScript and a Python server with no extra packages, so it runs without

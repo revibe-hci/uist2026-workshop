@@ -4,10 +4,19 @@ This guide explains how the rebuilt TaleBrush is put together, what you need
 to run and change it, and where each feature of the paper lives in the code.
 For using the tool, see `README.md`.
 
-This version includes one remix that is not in the paper: up to four
-characters, each with its own fortune line. See "Several characters (remix)"
-below and `../remixes.md`. With one character, the page and every prompt are
-the same as in the version without the remix.
+This version includes three remixes that are not in the paper:
+
+- up to four characters, each with its own fortune line. See "Several
+  characters (remix)" below. With one character, the page and every prompt
+  are the same as in the version without the remix.
+- a relationship line for each pair of characters, from conflict to harmony.
+  See "Relationships (remix)" below. While its panel is off, the page and
+  every prompt are the same as without it.
+- a menu that chooses the Claude model that writes the sentences. See
+  "Writing model (remix)" below. With Haiku chosen (the default), nothing
+  changes.
+
+`../remixes.md` gives the reasons for all three.
 
 ## What you need
 
@@ -41,9 +50,12 @@ The server prints one line per model operation, for example
 `generated 6 sentence(s) (batch) in 21.7s with 4 model call(s)`.
 
 The bridge itself is shared by all groups and lives in `llm-bridge/`; do not
-change it. Its settings (for example `BRIDGE_MODEL=sonnet` for a larger model)
-are described in `llm-bridge/README.md`. Check which backend answers with
-http://localhost:8787/health.
+change it. Its settings are described in `llm-bridge/README.md`. Check which
+backend answers with http://localhost:8787/health. To write with a larger
+model, use the Writing model menu instead of restarting the bridge with
+`BRIDGE_MODEL`: the menu changes only the writing, and ratings stay with the
+main bridge's model. TaleBrush starts the extra bridges itself, on ports 8788
+to 8799 (see "Writing model (remix)").
 
 ## How the parts fit together
 
@@ -76,6 +88,7 @@ changed; see "Substitutions" below.
         llm.py                   BridgeClient: POST /v1/chat/completions with JSON output; errors
         prompts.py               fortune definition, scale, calibration sentences, all prompts
         cast.py                  character names, ABSENT ("not in this sentence") (remix)
+        bridges.py               BridgePool: starts one extra bridge per writing model (remix)
         recognition.py           Recognizer: batches sentences, keeps 3 sentences of context, caches per character
         generation.py            parse_request, plan_runs, sequential_order, Generator (both pipelines)
       static/
@@ -131,7 +144,13 @@ changed; see "Substitutions" below.
 
 ### `GET /api/health`
 
-    {"ok": true, "bridge": {"ok": true, "url": "http://localhost:8787", "backend": "claude", "model": "haiku"}}
+    {"ok": true, "bridge": {"ok": true, "url": "http://localhost:8787", "backend": "claude", "model": "haiku",
+                            "writing": {"models": [{"id": "haiku", "label": "Haiku"}, {"id": "sonnet", "label": "Sonnet"}, ...],
+                                        "default": "haiku", "running": {"sonnet": "http://localhost:8788"}}}}
+
+`writing` (remix) lists the models the page offers in the Writing model menu,
+the main bridge's own model (`default`), and the extra bridges that run now.
+With a Codex bridge, `models` is empty and the page hides the menu.
 
 When the bridge is down, `bridge.ok` is false and `bridge.error` says how to
 start it. The page polls this every 6 seconds while the bridge is down and
@@ -156,16 +175,29 @@ One model call rates up to 16 sentences. Results are cached in memory per
 character, by (character, last three context sentences, sentence). So adding
 a character rates only that character.
 
+### `POST /api/relations` (remix)
+
+    {"characters": ["Bob", "Alice", "Carl"], "pairs": [[0, 1], [1, 2]],
+     "items": [{"context": ["..."], "sentence": "Alice shoved Bob.", "rate": [0, 1]}]}
+    -> {"pairs": [[0, 1], [1, 2]], "relations": [[0.1, "absent"]]}
+
+`pairs` lists pairs of character indices. The answer has one row per item and
+one value per pair: how the two get along, from 0 (open conflict) to 1 (full
+harmony), `"absent"` (the two do not deal with each other in the sentence), or
+`null`. One call rates up to 16 sentences for every pair. Results are cached
+by (both names, context, sentence).
+
 ### `POST /api/generate`
 
 Request: the whole story, one entry per bullet. Slots with a `target` are to
 be written; the others are context. Blank slots without a target are skipped.
 
-    {"characters": ["Bob", "Alice"], "mode": "batch", "threshold": 0.2,
+    {"characters": ["Bob", "Alice"], "pairs": [[0, 1]], "mode": "batch", "threshold": 0.2, "model": "sonnet",
      "slots": [
        {"text": "Bob and Alice both auditioned ...", "target": null},
        {"text": "", "previous": "old text or null",
-        "target": {"fortunes": [0.31, 0.8], "tolerances": [0.05, 0.12], "maxRegen": 2, "surprise": 0.5}},
+        "target": {"fortunes": [0.31, 0.8], "tolerances": [0.05, 0.12], "relations": [0.15],
+                   "relationTolerances": [0.05], "maxRegen": 2, "surprise": 0.5}},
        {"text": "", "target": {"fortunes": [null, null], "surprise": 0.5}}
      ]}
 
@@ -179,22 +211,31 @@ be written; the others are context. Blank slots without a target are skipped.
   characters the page sends the largest value over the characters' strokes.
 - `previous`: the slot's earlier text, so the model writes something new.
 - `mode`: `batch` or `sequential` (see "Generation").
+- `pairs` and `relations` (remix, optional): pairs of character indices, and
+  one relationship target per pair for the slot (`null` where the pair has
+  no line). `relationTolerances` are the envelope half-widths. Without
+  `pairs`, the prompts are the same as before this remix.
+- `model` (remix, optional): `haiku`, `sonnet`, `opus` or `fable`, the Claude
+  model that writes the sentences. Leave it out to write with the main
+  bridge's model. Ratings always use the main bridge.
 
 Response: newline-delimited JSON events, streamed as they happen:
 
 | Event | Fields | Meaning |
 |---|---|---|
-| `plan` | `mode`, `runs: [{slots, task}]` | which slots are written, as continuation or infilling |
+| `plan` | `mode`, `model`, `runs: [{slots, task}]` | which slots are written, as continuation or infilling, and by which model |
 | `status` | `message` | progress text shown under the canvas |
 | `draft` | `slot`, `text`, `fortunes`, `attempt` | a try and its ratings (the page shows it in italics) |
 | `sentence` | `slot`, `text`, `fortunes`, `targets`, `tolerances`, `surprise`, `maxRegen`, `task`, `attempts` | the chosen sentence for a slot |
+| `missing` | `slot` | the model gave no usable sentence for the slot |
+| `error` | `message` | the bridge failed; the page puts unfinished slots back |
+| `done` | `seconds`, `calls`, `model`, `written`, `retried`, `missing` | summary; `calls` counts writing and rating calls |
 
 `fortunes`, `targets` and `tolerances` have one value per character. The
 events also carry the protagonist's values as `fortune`, `target` and
-`tolerance`.
-| `missing` | `slot` | the model gave no usable sentence for the slot |
-| `error` | `message` | the bridge failed; the page puts unfinished slots back |
-| `done` | `seconds`, `calls`, `written`, `retried`, `missing` | summary |
+`tolerance`. With pairs, `draft` and `sentence` events also carry
+`relations` (one rating per pair) and `sentence` events `relationTargets`. When the chosen model's bridge is not running yet, a `status`
+event says that it is starting.
 
 If the browser closes the connection (the Stop button), the server stops at
 its next event.
@@ -330,6 +371,14 @@ regeneration rule (1 or 2 rewrites, keeping the smallest error), the
 three-sentence recognition context and the cache. The front-end tests check
 which slots a stroke sketches, the speed-to-retries rule, erased gaps,
 inserting and deleting slots, the curve, and sentence splitting on paste.
+The `RelationshipTests` check the relationship remix with a fake model: pair
+parsing, reading answers that name a pair in either order, the cache, that a
+sentence missing its relationship line is rewritten, and that requests
+without pairs never mention relationships.
+The `WritingModelTests` check the writing model remix with fake bridge
+processes: which port a new bridge gets, that a running bridge is reused, that
+the chosen model writes and the main model rates, and that stopping TaleBrush
+stops the bridges it started.
 
 ## Substitutions and known limits
 
@@ -384,3 +433,59 @@ one-character prompts (`test_one_character_prompts_have_the_one_character_form`)
 They do not compare against the code from before the remix. That comparison
 was made once while building: 8 one-character prompts rendered by the old and
 the new `prompts.py` were identical.
+
+## Relationships (remix)
+
+Not in the paper. With two or more characters, the checkbox **Relationships
+between characters** shows a third canvas under the fortune canvas. Its y axis
+is how a pair of characters gets along: 0 is open conflict (bottom), 0.5
+neutral, 1 full harmony (top). The writer chooses a pair with the chips above
+it and draws that pair's line, with the same envelope and speed rule as a
+fortune line.
+
+| Behaviour | Code |
+|---|---|
+| pairs (`"c0|cx"` keys, in character order), pair labels, stored pair ratings | `static/js/characters.js` `pairsOf`, `pairKey`, `pairOfIds`, `pairLabel`, `normalizePairRatings` |
+| relationship lines in the sketch; they count toward the sketched range and the retries only while the panel is on | `sketch.js` `relationLine`, `castSlots(…, pairKeys)`, `anyRelation`; `generator.js` `usedPairs` |
+| the panel, its pair chips and its switch; a stroke marks sentences as `pair:<key>` | `index.html` `#relationHead`, `#relationWrap`, `#relationToggle`; `main.js` `onStroke`, `renderChrome` |
+| drawing and showing the lines, teal dots, dotted where the two do not meet, tooltip | `canvas.js` kind `"relation"`, `renderRelationArc`, `relationTip`; `.pair-*` styles in `talebrush.css` |
+| rating every pair of every sentence, in a second request sent with the fortune request | `recognizer.js` `relationItems`, `api.js` `recognizeRelations`, `keys.js` `relationKey`; `recognition.py` `recognize_relations`, `relation_for` |
+| one relationship target per pair; error is the worst miss over fortunes and pairs; a pair that does not meet counts 1.0 | `generation.py` `Target.relations`, `error_of`, `Generator._rate` |
+| prompts: definition, scale, targets, rules, feedback on rejected tries | `prompts.py` `RELATIONSHIP_*`, `relationship_instruction`, `relation_recognition_*`, the `pairs` branches |
+| stored stories keep relationship lines, ratings and the switch | `store.js` `persist`, `restore`, `upgradeSnapshot`; `history.js` |
+
+Unnamed characters are left out of pairs sent to the model, as they are for
+fortunes. Removing a character removes the lines and ratings of its pairs.
+While the panel is off, no pair is sent, so every prompt is the text sent
+before this remix. That was checked once while building: 25 prompts (1, 2 and
+3 characters, both pipelines, both rating prompts) rendered by the committed
+`prompts.py` and by this one were identical.
+
+## Writing model (remix)
+
+Not in the paper. The Writing model menu in the top bar chooses the Claude
+model that writes the sentences. Fortune ratings always come from the main
+bridge (`--bridge`), so stories written by different models are rated by the
+same model.
+
+The workshop bridge answers with one model, fixed when it starts
+(`BRIDGE_MODEL`), and ignores the model name in requests. So
+`talebrush/bridges.py` starts one more bridge per chosen model, the first time
+that model is used:
+
+    BRIDGE_MODEL=sonnet python3 llm-bridge/bridge.py claude 8788
+
+It uses the first free port from 8788 to 8799. If a bridge for that model
+already answers on one of those ports (started by hand, or left by an earlier
+TaleBrush run that was killed), it is used instead. TaleBrush stops the
+bridges it started when it stops (Ctrl+C or SIGTERM). Their log lines are
+copied to the TaleBrush terminal with the model name in front, for example
+`(sonnet) [bridge 13:55:27] claude 5.3s, 300 characters`.
+
+| Behaviour | Code |
+|---|---|
+| model list, starting and reusing bridges, stopping them | `talebrush/bridges.py` `MODELS`, `BridgePool` |
+| the request's `model`; the writer's bridge passed to the generator | `generation.py` `parse_request`, `Generator.run(writer=, model=)`; `server.py` `handle_generate` |
+| the menu, the rating-model badge | `index.html` `#modelPick`; `main.js` `renderChrome`, `#modelSelect` handler |
+| the chosen model is saved with the settings | `store.js` `settings.model` |
+| which model wrote what: status line, History tag, canvas tooltip | `generator.js` (`writtenBy`), `history.js` `saveGenerated`, `canvas.js` `tipHtml` |

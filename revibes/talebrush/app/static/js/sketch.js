@@ -4,12 +4,14 @@
 //   fortunes[characterId][j] = [fortune 0..1, envelope half-width] or null where nothing is drawn
 //                              (one line per character; the remix allows several characters)
 //   surprise[j]              = surprise 0..1 or null
+//   relations[pairKey][j]    = [relationship 0..1, envelope half-width] or null (remix: one line per
+//                              pair of characters, from 0 = open conflict to 1 = full harmony)
 // x positions are in "slot units": slot i spans [i, i + 1).
 // Storing samples per slot keeps the sketch lined up with its sentences when the
 // writer adds or removes a bullet point.
 
 import { SAMPLES_PER_SLOT as S, SLOT_COVERAGE, ENVELOPE } from "./config.js";
-import { PROTAGONIST_ID } from "./characters.js";
+import { PROTAGONIST_ID, pairOfIds } from "./characters.js";
 
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -19,7 +21,7 @@ const blank = (n) => new Array(n * S).fill(null);
 export function emptySketch(n, ids = [PROTAGONIST_ID]) {
   const fortunes = {};
   for (const id of ids) fortunes[id] = blank(n);
-  return { fortunes, surprise: blank(n) };
+  return { fortunes, surprise: blank(n), relations: {} };
 }
 
 /**
@@ -38,7 +40,23 @@ export function normalizeSketch(sketch, n, ids = [PROTAGONIST_ID]) {
   const src = sketch?.fortunes && typeof sketch.fortunes === "object" ? sketch.fortunes : { [ids[0]]: sketch?.fortune };
   const fortunes = {};
   for (const id of ids) fortunes[id] = fix(src[id], okFortune);
-  return { fortunes, surprise: fix(sketch?.surprise, (v) => Number.isFinite(v)) };
+  const relations = {};
+  if (sketch?.relations && typeof sketch.relations === "object") {
+    for (const [key, arr] of Object.entries(sketch.relations)) if (pairOfIds(key, ids)) relations[key] = fix(arr, okFortune);
+  }
+  return { fortunes, surprise: fix(sketch?.surprise, (v) => Number.isFinite(v)), relations };
+}
+
+/** A pair's relationship line, created empty if the pair has none yet (remix: relationships). */
+export function relationLine(sketch, key, n) {
+  if (!sketch.relations) sketch.relations = {};
+  if (!Array.isArray(sketch.relations[key])) sketch.relations[key] = blank(n);
+  return sketch.relations[key];
+}
+
+/** True when any of the given pairs' relationship lines has samples. */
+export function anyRelation(sketch, keys) {
+  return keys.some((k) => hasSamples(sketch.relations?.[k] || []));
 }
 
 /** A character's line, created empty if the character has none yet. */
@@ -48,7 +66,7 @@ export function lineOf(sketch, id, n) {
 }
 
 function allArrays(sketch) {
-  return [...Object.values(sketch.fortunes), sketch.surprise];
+  return [...Object.values(sketch.fortunes), sketch.surprise, ...Object.values(sketch.relations || {})];
 }
 
 export function insertSlot(sketch, index) {
@@ -132,19 +150,24 @@ export function fortuneSlots(arr, n) {
 }
 
 /**
- * Per-slot reading of every character's line (in the order of `ids`). A slot is sketched when
- * any character's line covers it. Its retries follow the slowest stroke over it.
+ * Per-slot reading of every character's line (in the order of `ids`) and of the relationship lines
+ * of the pairs in `pairKeys` (remix). A slot is sketched when any of these lines covers it. Its
+ * retries follow the slowest stroke over it.
  */
-export function castSlots(sketch, ids, n) {
+export function castSlots(sketch, ids, n, pairKeys = []) {
   const per = ids.map((id) => fortuneSlots(sketch.fortunes[id] || [], n));
+  const perPair = pairKeys.map((k) => fortuneSlots(sketch.relations?.[k] || [], n));
   const out = [];
   for (let i = 0; i < n; i++) {
     const characters = per.map((p) => p[i]);
+    const relations = perPair.map((p) => p[i]);
+    const all = [...characters, ...relations];
     out.push({
       index: i,
-      sketched: characters.some((c) => c.sketched),
+      sketched: all.some((c) => c.sketched),
       characters,
-      maxRegen: Math.max(0, ...characters.map((c) => c.maxRegen)),
+      relations,
+      maxRegen: Math.max(0, ...all.map((c) => c.maxRegen)),
     });
   }
   return out;

@@ -17,9 +17,15 @@ character's rating is cached on its own, so adding a character rates only
 that character. A character other than the protagonist can be rated ABSENT:
 the sentence does not involve them. With one character, the prompt is the
 one-character version's prompt, unchanged.
+
+Remix (relationships between characters): recognize_relations() rates how
+each pair of characters gets along in each sentence, from 0 (open conflict) to
+1 (full harmony), with its own prompt and its own cache. A pair that does not
+deal with each other in a sentence is rated ABSENT.
 """
 
 import json
+import re
 import threading
 
 from . import prompts
@@ -41,6 +47,69 @@ class Recognizer:
         if not is_protagonist:
             key.append("side")  # rated with the several-character prompt, which allows ABSENT
         return json.dumps(key)
+
+    @staticmethod
+    def relation_key(names, pair, context, sentence):
+        return json.dumps([names[pair[0]].strip(), names[pair[1]].strip(), list(context), sentence.strip(), "relationship"])
+
+    @staticmethod
+    def _clean(item):
+        """(context, sentence) of an item, with at most three context sentences; sentence "" if blank."""
+        sentence = " ".join(str(item.get("sentence") or "").split())
+        context = [" ".join(str(c).split()) for c in (item.get("context") or [])]
+        return [c for c in context if c][-CONTEXT_SENTENCES:], sentence
+
+    def recognize_relations(self, characters, pairs, items):
+        """Rate how each pair of characters gets along in each item (remix: relationships).
+
+        characters: the names, the protagonist first. pairs: (i, j) indices into
+        characters. Items are as for recognize(); "rate" lists pair indices.
+        Returns one list per item with one value per pair: a relationship in
+        [0, 1], ABSENT (the two do not deal with each other in the sentence), or
+        None (not rated).
+        """
+        names = clean_characters(characters)
+        pairs = [tuple(p) for p in pairs]
+        results = [[None] * len(pairs) for _ in items]
+        groups = {}
+        for i, item in enumerate(items):
+            context, sentence = self._clean(item)
+            if not sentence or not pairs:
+                continue
+            wanted = range(len(pairs))
+            if isinstance(item.get("rate"), list):
+                wanted = sorted({k for k in item["rate"] if isinstance(k, int) and 0 <= k < len(pairs)})
+            missing = []
+            for k in wanted:
+                with self._lock:
+                    cached = self._cache.get(self.relation_key(names, pairs[k], context, sentence))
+                if cached is not None:
+                    results[i][k] = cached
+                else:
+                    missing.append(k)
+            if missing:
+                groups.setdefault(tuple(missing), []).append((i, context, sentence))
+        for rate, todo in groups.items():
+            for start in range(0, len(todo), MAX_ITEMS_PER_CALL):
+                chunk = todo[start:start + MAX_ITEMS_PER_CALL]
+                asked = [pairs[k] for k in rate]
+                system = prompts.relation_recognition_system()
+                user = prompts.relation_recognition_user(names, asked, [(c, s) for _, c, s in chunk])
+                values = []
+                for _ in range(2):  # ask again once if the model returns the wrong number of values
+                    values = ratings_of(self.llm.chat_json(system, user))
+                    if len(values) == len(chunk):
+                        break
+                shown = prompts.names_of(names)  # the names as the prompt writes them
+                for j, (i, context, sentence) in enumerate(chunk):
+                    rating = values[j] if j < len(values) else None
+                    for k in rate:
+                        value = relation_for(rating, shown[pairs[k][0]], shown[pairs[k][1]])
+                        results[i][k] = value
+                        if value is not None:
+                            with self._lock:
+                                self._cache[self.relation_key(names, pairs[k], context, sentence)] = value
+        return results
 
     def recognize(self, characters, items):
         """Rate a list of items, each {"context": [previous sentences], "sentence": str}.
@@ -139,6 +208,30 @@ def normalize(value):
     elif 10 < x <= 100:
         x /= 100
     return round(min(1.0, max(0.0, x)), 3)
+
+
+_PAIR_SPLIT = re.compile(r"\s*&\s*|\s+and\s+|\s*/\s*", re.I)
+
+
+def relation_for(rating, a, b):
+    """One pair's value in a relationship rating, e.g. {"relationships": {"Bob & Alice": 0.2}}.
+
+    The pair may be written in either order, with "&", "and" or "/". null (or a
+    word such as "absent") means the two do not deal with each other: ABSENT.
+    A pair missing from the answer is None, so it is asked again later.
+    """
+    table = rating.get("relationships") if isinstance(rating, dict) else None
+    if not isinstance(table, dict):
+        return None
+    want = sorted([" ".join(a.split()).lower(), " ".join(b.split()).lower()])
+    for key, value in table.items():
+        parts = [" ".join(p.split()).lower() for p in _PAIR_SPLIT.split(str(key)) if p.strip()]
+        if sorted(parts) != want:
+            continue
+        if value is None or (isinstance(value, str) and value.strip().lower() in ABSENT_WORDS):
+            return ABSENT
+        return normalize(value)
+    return None
 
 
 def fortune_for(rating, name, is_protagonist):

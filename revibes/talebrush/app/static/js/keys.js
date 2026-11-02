@@ -25,6 +25,19 @@ export function recognitionKey(name, sentences, index, side = false) {
   return JSON.stringify(key);
 }
 
+/**
+ * The key of one pair's relationship rating of one sentence (remix: relationships). It depends on
+ * both names, the context and the sentence.
+ */
+export function relationKey(nameA, nameB, sentences, index) {
+  return JSON.stringify([squash(nameA), squash(nameB), contextFor(sentences, index), squash(sentences[index].text), "relationship"]);
+}
+
+/** The keys of every pair's relationship rating of sentence `index`; pairs index into `names`. */
+export function relationKeys(pairs, names, sentences, index) {
+  return pairs.map((p) => relationKey(names[p.a], names[p.b], sentences, index));
+}
+
 /** The keys of every character's rating of sentence `index`, in character order. */
 export function ratingKeys(characters, sentences, index, names = modelNames(characters)) {
   return characters.map((c, k) => recognitionKey(names[k], sentences, index, k > 0));

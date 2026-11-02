@@ -8,7 +8,10 @@ import {
   labels,
   makeCharacter,
   normalizeCharacters,
+  normalizePairRatings,
   normalizeRatings,
+  pairOfIds,
+  pairsOf,
 } from "./characters.js";
 import { DEFAULT_BULLETS, DEFAULT_THRESHOLD, HISTORY_LIMIT, STORAGE_KEY } from "./config.js";
 import * as Sk from "./sketch.js";
@@ -21,9 +24,22 @@ let nextId = 1;
  * fortunes: character id -> recognized fortune 0..1, or ABSENT when the sentence does not involve
  *   that character. A character without an entry has not been rated yet.
  * keys: character id -> the recognition key its rating belongs to (see keys.js).
+ * relations, relationKeys: the same per pair of characters (remix: relationships), from 0 (open
+ *   conflict) to 1 (full harmony), or ABSENT when the two do not deal with each other in the sentence.
  */
-export function makeSentence(text = "", source = "user", fortunes = {}) {
-  return { id: nextId++, text, source, fortunes: { ...fortunes }, keys: {}, pending: false, draft: false, gen: null };
+export function makeSentence(text = "", source = "user", fortunes = {}, relations = {}) {
+  return {
+    id: nextId++,
+    text,
+    source,
+    fortunes: { ...fortunes },
+    keys: {},
+    relations: { ...relations },
+    relationKeys: {},
+    pending: false,
+    draft: false,
+    gen: null,
+  };
 }
 
 export const state = {
@@ -33,11 +49,14 @@ export const state = {
   sentences: [],
   sketch: Sk.emptySketch(0),
   surpriseEnabled: false,
+  relationsEnabled: false, // remix: the relationship panel is shown and its lines are used
+  activePair: null, // remix: the pair whose relationship line the pen draws
   tool: "pen",
   history: [], // stored stories (Figure 5)
   activeHistoryId: null,
   storyCounter: 0,
-  settings: { pipeline: "batch", threshold: DEFAULT_THRESHOLD },
+  // model: the Claude model that writes the sentences (remix); null means the main LLM bridge's model.
+  settings: { pipeline: "batch", threshold: DEFAULT_THRESHOLD, model: null },
   ui: {
     generating: false,
     targets: [],
@@ -79,6 +98,30 @@ export function ratingOf(s, id) {
   return isRating(v) ? v : null;
 }
 
+// ---------------------------------------------------------------- pairs (remix: relationships)
+
+/** True when the relationship panel is in use: it is switched on and there are two or more characters. */
+export function relationsOn() {
+  return state.relationsEnabled && isMulti();
+}
+
+/** Every pair of the current characters: [{ key, a, b }]. */
+export function pairs() {
+  return pairsOf(state.characters);
+}
+
+/** The pair whose line the pen draws on the relationship panel (the first pair by default). */
+export function activePair() {
+  const all = pairs();
+  return all.find((p) => p.key === state.activePair) || all[0] || null;
+}
+
+/** A sentence's relationship rating for one pair: a number, or null when absent or not rated. */
+export function relationOf(s, key) {
+  const v = s?.relations?.[key];
+  return isRating(v) ? v : null;
+}
+
 export function addCharacter(name = "") {
   if (state.characters.length >= MAX_CHARACTERS) return null;
   const c = makeCharacter(name, freeColor(state.characters));
@@ -93,15 +136,27 @@ export function removeCharacter(id) {
   if (k <= 0) return; // the protagonist stays
   state.characters.splice(k, 1);
   delete state.sketch.fortunes[id];
+  // Remove the relationship lines and ratings of every pair this character was part of.
+  const ids = state.characters.map((c) => c.id);
+  const gone = (key) => !pairOfIds(key, ids);
+  for (const key of Object.keys(state.sketch.relations || {})) if (gone(key)) delete state.sketch.relations[key];
   for (const s of state.sentences) {
     delete s.fortunes[id];
     delete s.keys[id];
+    for (const key of Object.keys(s.relations)) {
+      if (gone(key)) {
+        delete s.relations[key];
+        delete s.relationKeys[key];
+      }
+    }
   }
   for (const [sid, marks] of state.ui.strokeMarks) {
     marks.delete(id);
+    for (const mark of [...marks]) if (mark.startsWith("pair:") && gone(mark.slice(5))) marks.delete(mark);
     if (!marks.size) state.ui.strokeMarks.delete(sid);
   }
   if (state.activeCharacter === id) state.activeCharacter = state.characters[0].id;
+  if (state.activePair && gone(state.activePair)) state.activePair = null;
 }
 
 // ---------------------------------------------------------------- change notification
@@ -149,6 +204,8 @@ export function newStory({ title = "", protagonist = "", characters = null, text
   state.sentences = list.map((t) => makeSentence(t, "user"));
   state.sketch = Sk.emptySketch(state.sentences.length, state.characters.map((c) => c.id));
   state.surpriseEnabled = false;
+  state.relationsEnabled = false;
+  state.activePair = null;
   state.activeHistoryId = null;
   state.ui.strokeMarks.clear();
 }
@@ -198,10 +255,14 @@ export function persist() {
         source: s.source,
         fortunes: s.fortunes,
         keys: s.keys,
+        relations: s.relations,
+        relationKeys: s.relationKeys,
         gen: s.gen,
       })),
       sketch: state.sketch,
       surpriseEnabled: state.surpriseEnabled,
+      relationsEnabled: state.relationsEnabled,
+      activePair: state.activePair,
       tool: state.tool,
       history: state.history.slice(-HISTORY_LIMIT),
       activeHistoryId: state.activeHistoryId,
@@ -238,9 +299,12 @@ export function upgradeSnapshot(h) {
       text: str(s?.text),
       source: s?.source === "generated" ? "generated" : "user",
       fortunes: normalizeRatings(s, ids),
+      relations: normalizePairRatings(s?.relations, ids),
     })),
     sketch: Sk.normalizeSketch(h.sketch, h.sentences.length, ids),
     surpriseEnabled: !!h.surpriseEnabled,
+    relationsEnabled: !!h.relationsEnabled,
+    model: typeof h.model === "string" ? h.model : null, // the model that wrote this story (remix)
   };
 }
 
@@ -261,7 +325,15 @@ export function restore() {
   const ids = state.characters.map((c) => c.id);
   state.activeCharacter = ids.includes(data.activeCharacter) ? data.activeCharacter : ids[0];
   state.sentences = data.sentences.map((s) => {
-    const x = makeSentence(str(s?.text), s?.source === "generated" ? "generated" : "user", normalizeRatings(s, ids));
+    const x = makeSentence(
+      str(s?.text),
+      s?.source === "generated" ? "generated" : "user",
+      normalizeRatings(s, ids),
+      normalizePairRatings(s?.relations, ids),
+    );
+    if (s?.relationKeys && typeof s.relationKeys === "object") {
+      for (const key of Object.keys(x.relations)) if (typeof s.relationKeys[key] === "string") x.relationKeys[key] = s.relationKeys[key];
+    }
     if (s?.keys && typeof s.keys === "object") {
       for (const id of ids) if (typeof s.keys[id] === "string") x.keys[id] = s.keys[id];
     } else if (typeof s?.fortuneKey === "string") {
@@ -272,6 +344,8 @@ export function restore() {
   });
   state.sketch = Sk.normalizeSketch(data.sketch, state.sentences.length, ids);
   state.surpriseEnabled = !!data.surpriseEnabled;
+  state.relationsEnabled = !!data.relationsEnabled;
+  state.activePair = typeof data.activePair === "string" && pairOfIds(data.activePair, ids) ? data.activePair : null;
   state.tool = data.tool === "eraser" ? "eraser" : "pen";
   state.history = Array.isArray(data.history) ? data.history.map(upgradeSnapshot).filter(Boolean) : [];
   state.activeHistoryId = state.history.some((h) => h.id === data.activeHistoryId) ? data.activeHistoryId : null;
@@ -279,6 +353,7 @@ export function restore() {
   state.settings = {
     pipeline: data.settings?.pipeline === "sequential" ? "sequential" : "batch",
     threshold: num(data.settings?.threshold) ?? DEFAULT_THRESHOLD,
+    model: typeof data.settings?.model === "string" ? data.settings.model : null,
   };
   return true;
 }

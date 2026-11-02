@@ -13,7 +13,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from talebrush import prompts  # noqa: E402
-from talebrush.cast import ABSENT, clean_characters  # noqa: E402
+from talebrush.bridges import BridgePool  # noqa: E402
+from talebrush.llm import BridgeError  # noqa: E402
+from talebrush.cast import ABSENT, clean_characters, clean_pairs  # noqa: E402
 from talebrush.generation import (  # noqa: E402
     Candidate,
     Generator,
@@ -24,7 +26,7 @@ from talebrush.generation import (  # noqa: E402
     plan_runs,
     sequential_order,
 )
-from talebrush.recognition import Recognizer, fortune_for, normalize, ratings_of  # noqa: E402
+from talebrush.recognition import Recognizer, fortune_for, normalize, ratings_of, relation_for  # noqa: E402
 
 
 class FakeLLM:
@@ -33,10 +35,12 @@ class FakeLLM:
     fortune_of(sentence) rates the protagonist in one-character prompts. For
     several-character prompts, fortune_of(sentence, name) is called for each
     name on the prompt's "Rate:" line; None stands for "not in the sentence".
+    relation_of(sentence, "Bob & Alice") rates relationships the same way.
     """
 
-    def __init__(self, fortune_of):
+    def __init__(self, fortune_of, relation_of=None):
         self.fortune_of = fortune_of
+        self.relation_of = relation_of or (lambda sentence, pair: 0.5)
         self.calls = 0
         self.written = 0
         self.prompts = []
@@ -44,6 +48,12 @@ class FakeLLM:
     def chat_json(self, system, user, retries=1):
         self.calls += 1
         self.prompts.append((system, user))
+        if "relationship recognition module" in system:
+            targets = [line[len("Target sentence: "):] for line in user.splitlines()
+                       if line.startswith("Target sentence: ")]
+            pairs = [line[len("Rate pairs: "):] for line in user.splitlines() if line.startswith("Rate pairs: ")][0]
+            return {"ratings": [{"item": k, "relationships": {p: self.relation_of(t, p) for p in pairs.split("; ")}}
+                                for k, t in enumerate(targets, 1)]}
         if "fortune recognition module" in system:
             targets = [line[len("Target sentence: "):] for line in user.splitlines()
                        if line.startswith("Target sentence: ")]
@@ -309,6 +319,199 @@ class HelperTests(unittest.TestCase):
         b = Candidate("b", [0.4], 0.3, 2)
         self.assertIs(pick_best([a, b]), b)
         self.assertIsNone(pick_best([]))
+
+
+# ---------------------------------------------------------------- relationships between characters (remix)
+
+
+def relation_request(relations, max_regen=1, fortunes=(None, None)):
+    return parse_request({"characters": ["Bob", "Alice"], "pairs": [[0, 1]], "slots": [
+        {"text": "Bob and Alice both auditioned for the lead role.", "target": None},
+        {"text": "", "target": {"fortunes": list(fortunes), "relations": relations, "maxRegen": max_regen,
+                                "surprise": 0.5}}]})
+
+
+class RelationshipTests(unittest.TestCase):
+    def test_pairs_in_a_request(self):
+        self.assertEqual(clean_pairs([[1, 0], [0, 1], [0, 5], [2, 2], "x", [True, 1]], 3), [(0, 1)])
+        req = relation_request([0.1])
+        self.assertEqual(req.pairs, [(0, 1)])
+        t = req.slots[1].target
+        self.assertEqual((t.relations, t.has_fortune_target, t.has_relation_target, t.max_regen), ([0.1], False, True, 1))
+        one = parse_request({"protagonist": "Mike", "pairs": [[0, 1]], "slots": [target(0.5)]})
+        self.assertEqual((one.pairs, one.slots[0].target.relations), ([], []))
+
+    def test_a_relationship_miss_counts_like_a_fortune_miss(self):
+        t = relation_request([0.1], fortunes=(0.8, None)).slots[1].target
+        self.assertEqual(error_of([0.75, None], t, [0.5]), 0.4)
+        self.assertEqual(error_of([0.75, None], t, [ABSENT]), 1.0)  # the two did not deal with each other
+        self.assertEqual(error_of([0.75, None], t), 0.05)
+
+    def test_relationship_answers_are_read_in_either_order(self):
+        rating = {"relationships": {"Alice and Bob": 0.3, "Bob & Carl": None}}
+        self.assertEqual(relation_for(rating, "Bob", "Alice"), 0.3)
+        self.assertEqual(relation_for(rating, "Bob", "Carl"), ABSENT)
+        self.assertIsNone(relation_for(rating, "Alice", "Carl"))
+        self.assertIsNone(relation_for({"fortunes": {}}, "Bob", "Alice"))
+
+    def test_relationships_are_rated_once_and_cached(self):
+        llm = FakeLLM(lambda t, n=None: 0.5, relation_of=lambda t, p: 0.2 if p == "Bob & Alice" else None)
+        rec = Recognizer(llm)
+        items = [{"context": [], "sentence": "Bob shoved Alice."}]
+        cast = ["Bob", "Alice", "Carl"]
+        self.assertEqual(rec.recognize_relations(cast, [(0, 1), (1, 2)], items), [[0.2, ABSENT]])
+        self.assertEqual(rec.recognize_relations(cast, [(0, 1), (1, 2)], items), [[0.2, ABSENT]])
+        self.assertEqual(llm.calls, 1)
+
+    def test_a_sentence_that_misses_its_relationship_line_is_rewritten(self):
+        # The first try is rated friendly (0.9) against a conflict target (0.1), the second 0.12.
+        llm = FakeLLM(lambda t, n=None: 0.5, relation_of=lambda t, p: 0.9 if t == "Sentence 1." else 0.12)
+        events = run(llm, relation_request([0.1]))
+        final = finals(events)[1]
+        self.assertEqual((final["text"], final["relations"], final["relationTargets"]), ("Sentence 2.", [0.12], [0.1]))
+        users = [u for _, u in llm.prompts]
+        self.assertTrue(any("Relationship targets: Bob & Alice 0.10 (open hostility" in u for u in users))
+        self.assertTrue(any("relationship read as 0.90, too friendly" in u for u in users))
+        system = [s for s, _ in llm.prompts if "story generation module" in s][0]
+        self.assertIn("RELATIONSHIP is how two characters get along", system)
+
+    def test_without_pairs_the_prompts_say_nothing_about_relationships(self):
+        llm = FakeLLM(lambda t, n=None: 0.5)
+        req = parse_request({"characters": ["Bob", "Alice"], "slots": [
+            {"text": "", "target": {"fortunes": [0.8, 0.2], "maxRegen": 1, "surprise": 0.5}}]})
+        run(llm, req)
+        self.assertFalse(any("elationship" in s + u for s, u in llm.prompts))
+
+
+# ---------------------------------------------------------------- choose the writing model (remix)
+
+
+class FakeMain:
+    """The main bridge as BridgePool sees it: only its /health answer matters."""
+
+    def __init__(self, backend="claude", model="haiku"):
+        self.info = {"ok": True, "backend": backend, "model": model}
+        self.base_url = "http://localhost:8787"
+        self.calls = 0
+
+    def health(self):
+        return self.info
+
+
+class FakeProcess:
+    def __init__(self, exit_code=None):
+        self.returncode = exit_code
+        self.terminated = False
+
+    def poll(self):
+        return self.returncode
+
+    def terminate(self):
+        self.terminated = True
+        self.returncode = -15
+
+    def wait(self, timeout=None):
+        return self.returncode
+
+    def kill(self):
+        self.returncode = -9
+
+
+class FakePorts:
+    """Bridges that answer /health on local ports; spawn() starts one, as bridge.py would."""
+
+    def __init__(self, running=None, dies=False):
+        self.running = dict(running or {})  # port -> model
+        self.spawned = []
+        self.dies = dies
+
+    def probe(self, url):
+        port = int(url.rsplit(":", 1)[1])
+        model = self.running.get(port)
+        return {"ok": True, "backend": "claude", "model": model} if model else None
+
+    def is_free(self, port):
+        return port not in self.running
+
+    def spawn(self, model, port):
+        self.spawned.append((model, port))
+        if self.dies:
+            return FakeProcess(exit_code=1)
+        self.running[port] = model
+        return FakeProcess()
+
+
+def pool(ports, main=None):
+    return BridgePool(main or FakeMain(), "bridge.py", log=lambda m: None, probe=ports.probe, spawn=ports.spawn,
+                      ports=range(8788, 8792), port_is_free=ports.is_free, start_timeout=1)
+
+
+class WritingModelTests(unittest.TestCase):
+    def test_the_request_can_name_a_model(self):
+        self.assertIsNone(request([target(0.5)]).model)
+        body = {"protagonist": "Mike", "model": "sonnet", "slots": [target(0.5)]}
+        self.assertEqual(parse_request(body).model, "sonnet")
+        with self.assertRaises(ValueError):
+            parse_request({**body, "model": "gpt-4"})
+
+    def test_the_main_bridge_writes_with_its_own_model(self):
+        ports = FakePorts()
+        bridges = pool(ports)
+        self.assertEqual(bridges.writer_for(None), (bridges.main, "haiku"))
+        self.assertEqual(bridges.writer_for("haiku"), (bridges.main, "haiku"))
+        self.assertEqual(ports.spawned, [])
+
+    def test_another_model_starts_one_bridge_on_the_first_free_port(self):
+        ports = FakePorts(running={8788: "opus"})  # 8788 already runs another model
+        bridges = pool(ports)
+        messages = []
+        client, model = bridges.writer_for("sonnet", messages.append)
+        self.assertEqual((client.base_url, model), ("http://localhost:8789", "sonnet"))
+        self.assertEqual(ports.spawned, [("sonnet", 8789)])
+        self.assertIn("Starting an LLM bridge for Sonnet on port 8789", messages[0])
+        again, _ = bridges.writer_for("sonnet")
+        self.assertIs(again, client)
+        self.assertEqual(len(ports.spawned), 1)
+        self.assertEqual(bridges.describe(bridges.main.info)["running"], {"sonnet": "http://localhost:8789"})
+
+    def test_a_bridge_that_already_runs_the_model_is_used(self):
+        ports = FakePorts(running={8790: "opus"})
+        client, _ = pool(ports).writer_for("opus")
+        self.assertEqual(client.base_url, "http://localhost:8790")
+        self.assertEqual(ports.spawned, [])
+
+    def test_a_bridge_that_fails_to_start_is_reported(self):
+        with self.assertRaises(BridgeError):
+            pool(FakePorts(dies=True)).writer_for("fable")
+
+    def test_only_a_claude_bridge_offers_models(self):
+        bridges = pool(FakePorts(), FakeMain(backend="codex", model="gpt-5-mini"))
+        self.assertEqual(bridges.describe(bridges.main.info)["models"], [])
+        with self.assertRaises(BridgeError):
+            bridges.writer_for("sonnet")
+        with self.assertRaises(ValueError):
+            bridges.writer_for("gpt-4")
+
+    def test_the_chosen_model_writes_and_the_main_model_rates(self):
+        writer = FakeLLM(lambda t: 0.5)
+        rater = FakeLLM(lambda t: 0.5)
+        events = []
+        Generator(rater, Recognizer(rater), log=lambda m: None).run(
+            request([target(0.5), target(0.5)]), events.append, writer=writer, model="sonnet")
+        self.assertTrue(writer.prompts and all('"sentences"' in user for _, user in writer.prompts))
+        self.assertTrue(rater.prompts and all("fortune recognition module" in system for system, _ in rater.prompts))
+        done = events[-1]
+        self.assertEqual((done["type"], done["model"], done["calls"]), ("done", "sonnet", writer.calls + rater.calls))
+        self.assertEqual(events[0]["model"], "sonnet")
+
+    def test_stop_ends_the_bridges_talebrush_started(self):
+        ports = FakePorts()
+        bridges = pool(ports)
+        bridges.writer_for("sonnet")
+        proc = bridges.procs["sonnet"]
+        bridges.stop()
+        self.assertTrue(proc.terminated)
+        self.assertEqual(bridges.clients, {})
 
 
 if __name__ == "__main__":

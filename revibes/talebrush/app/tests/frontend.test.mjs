@@ -11,11 +11,13 @@ import {
   modelNames,
   namedCast,
   normalizeCharacters,
+  normalizePairRatings,
   normalizeRatings,
+  pairsOf,
 } from "../static/js/characters.js";
 import { SAMPLES_PER_SLOT as S, halfWidthForSpeed, ENVELOPE } from "../static/js/config.js";
 import { monotoneSegments } from "../static/js/geometry.js";
-import { ratingKeys, recognitionKey } from "../static/js/keys.js";
+import { ratingKeys, recognitionKey, relationKeys } from "../static/js/keys.js";
 import * as Sk from "../static/js/sketch.js";
 import { splitSentences } from "../static/js/editor.js";
 
@@ -143,6 +145,49 @@ test("stories saved before the remix load as one protagonist", () => {
   assert.deepEqual(normalizeRatings({ fortune: 0.4 }, ["c0"]), { c0: 0.4 });
   assert.deepEqual(normalizeRatings({ fortunes: { c0: ABSENT, a: ABSENT, b: "x" } }, ["c0", "a", "b"]), { a: ABSENT });
   assert.equal(freeColor([{ color: 0 }, { color: 2 }]), 1);
+});
+
+// ---------------------------------------------------------------- relationships between characters (remix)
+
+test("every pair of characters, in character order", () => {
+  assert.deepEqual(
+    pairsOf([{ id: "c0" }, { id: "a" }, { id: "b" }]).map((p) => [p.key, p.a, p.b]),
+    [["c0|a", 0, 1], ["c0|b", 0, 2], ["a|b", 1, 2]],
+  );
+  assert.deepEqual(pairsOf([{ id: "c0" }]), []);
+});
+
+test("a relationship line sets the sketched range and the retries only while the panel is on", () => {
+  const ids = ["c0", "a"];
+  const sketch = Sk.emptySketch(5, ids);
+  Sk.writeFortune(Sk.relationLine(sketch, "c0|a", 5), 2, 0.1, 3.99, 0.1, ENVELOPE.minHalfWidth); // slow stroke
+  const on = Sk.castSlots(sketch, ids, 5, ["c0|a"]);
+  assert.deepEqual(Sk.extentOf(on), [2, 3]);
+  assert.deepEqual(on.map((c) => c.maxRegen), [0, 0, 2, 2, 0]);
+  assert.ok(Math.abs(on[2].relations[0].fortune - 0.1) < 1e-9);
+  assert.equal(Sk.extentOf(Sk.castSlots(sketch, ids, 5)), null); // panel off: the line is not used
+  assert.ok(Sk.anyRelation(sketch, ["c0|a"]));
+  Sk.insertSlot(sketch, 0);
+  assert.equal(sketch.relations["c0|a"].length, 6 * S);
+});
+
+test("stored relationship lines and ratings are kept only for pairs that still exist", () => {
+  const sketch = Sk.normalizeSketch(
+    { fortunes: { c0: [] }, relations: { "c0|a": [[0.2, 0.05]], "c0|gone": [[0.5, 0.1]], "a|c0": [[0.1, 0.1]] }, surprise: [] },
+    1,
+    ["c0", "a"],
+  );
+  assert.deepEqual(Object.keys(sketch.relations), ["c0|a"]);
+  assert.deepEqual(normalizePairRatings({ "c0|a": 0.3, "c0|gone": 0.4, "a|c0": 0.1 }, ["c0", "a"]), { "c0|a": 0.3 });
+  assert.deepEqual(normalizePairRatings({ "c0|a": ABSENT }, ["c0", "a"]), { "c0|a": ABSENT });
+  assert.deepEqual(Sk.normalizeSketch({ fortunes: { c0: [] }, surprise: [] }, 1, ["c0"]).relations, {});
+});
+
+test("a relationship key depends on both names, the context and the sentence", () => {
+  const sentences = ["A.", "B."].map((text) => ({ text }));
+  assert.deepEqual(relationKeys([{ a: 0, b: 1 }], ["Bob", "Alice"], sentences, 1), [
+    JSON.stringify(["Bob", "Alice", ["A."], "B.", "relationship"]),
+  ]);
 });
 
 test("a character added but not named yet is not sent to the model", () => {

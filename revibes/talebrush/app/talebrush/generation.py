@@ -25,15 +25,29 @@ character (None where that character has no line). A try's error is its worst
 miss over the characters that have a target; a try that leaves out a
 character with a target counts as a miss of 1.0. The regeneration rule is
 otherwise unchanged.
+
+Remix (relationships between characters): the request can name pairs of
+characters, and each slot can have one relationship target per pair, from 0
+(open conflict) to 1 (full harmony). Every try is then also rated for those
+pairs, in a second model call made at the same time as the fortune rating. A
+try's error is its worst miss over fortune and relationship targets; a pair
+with a target that does not deal with each other in the sentence counts as a
+miss of 1.0.
+
+Remix (choose the writing model): the request can name the Claude model that
+writes the sentences. The server passes that model's bridge to run() as
+`writer`. Fortune recognition still goes through the recognizer's own bridge.
 """
 
 import re
 import time
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 from typing import Optional
 
 from . import prompts
-from .cast import ABSENT, clean_characters
+from .bridges import MODEL_IDS
+from .cast import ABSENT, clean_characters, clean_pairs
 from .recognition import CONTEXT_SENTENCES
 
 DEFAULT_THRESHOLD = 0.2   # regenerate when |target - recognized fortune| > 0.2 (paper)
@@ -52,6 +66,8 @@ class Target:
     max_regen: int                  # 1 for fast strokes, 2 for slow strokes, 0 without a target
     surprise: float
     previous: Optional[str] = None  # the slot's earlier text, so the model writes something new
+    relations: list = field(default_factory=list)            # one per pair of the request; None: no target
+    relation_tolerances: list = field(default_factory=list)  # half-widths of the relationship envelopes
 
     @property
     def fortune(self):
@@ -63,8 +79,16 @@ class Target:
         return self.tolerances[0] if self.tolerances else None
 
     @property
-    def has_target(self):
+    def has_fortune_target(self):
         return any(f is not None for f in self.fortunes)
+
+    @property
+    def has_relation_target(self):
+        return any(r is not None for r in self.relations)
+
+    @property
+    def has_target(self):
+        return self.has_fortune_target or self.has_relation_target
 
 
 @dataclass
@@ -80,6 +104,7 @@ class Candidate:
     fortunes: list                  # the try's rating per character: a fortune, ABSENT or None
     error: Optional[float]
     attempt: int
+    relations: list = field(default_factory=list)  # the try's rating per pair: a relationship, ABSENT or None
 
     @property
     def fortune(self):
@@ -93,6 +118,8 @@ class Request:
     slots: list
     mode: str = "batch"
     threshold: float = DEFAULT_THRESHOLD
+    model: Optional[str] = None     # the model that writes; None: the main bridge's model
+    pairs: list = field(default_factory=list)  # (i, j) pairs of characters with relationship targets
 
     @property
     def protagonist(self):
@@ -117,10 +144,10 @@ def clamp(x, lo=0.0, hi=1.0):
 
 
 def per_character(t, many, one, n):
-    """A target's per-character list ("fortunes"), or its one-character field ("fortune"), fitted to n."""
+    """A target's list ("fortunes", or "relations" per pair), or its one-value field ("fortune"), fitted to n."""
     raw = t.get(many)
-    values = [number(v) for v in raw[:n]] if isinstance(raw, list) else [number(t.get(one))]
-    return values + [None] * (n - len(values))
+    values = [number(v) for v in raw[:n]] if isinstance(raw, list) else [number(t.get(one)) if one else None]
+    return (values + [None] * n)[:n]
 
 
 def parse_request(body):
@@ -128,6 +155,7 @@ def parse_request(body):
     if not isinstance(body, dict):
         raise ValueError("Expected a JSON object.")
     characters = clean_characters(body.get("characters"), body.get("protagonist"))
+    pairs = clean_pairs(body.get("pairs"), len(characters))
     raw_slots = body.get("slots")
     if not isinstance(raw_slots, list) or not raw_slots:
         raise ValueError("slots must be a non-empty list.")
@@ -142,15 +170,18 @@ def parse_request(body):
         t = raw.get("target")
         if isinstance(t, dict):
             fortunes = [None if f is None else clamp(f) for f in per_character(t, "fortunes", "fortune", len(characters))]
+            relations = [None if r is None else clamp(r) for r in per_character(t, "relations", None, len(pairs))]
             surprise = number(t.get("surprise"))
             max_regen = number(t.get("maxRegen"))
-            has_target = any(f is not None for f in fortunes)
+            has_target = any(f is not None for f in fortunes + relations)
             target = Target(
                 fortunes=fortunes,
                 tolerances=per_character(t, "tolerances", "tolerance", len(characters)),
                 max_regen=int(clamp(1 if max_regen is None else max_regen, 0, MAX_REGEN)) if has_target else 0,
                 surprise=DEFAULT_SURPRISE if surprise is None else clamp(surprise),
                 previous=" ".join(str(raw.get("previous") or "").split()) or None,
+                relations=relations,
+                relation_tolerances=per_character(t, "relationTolerances", None, len(pairs)),
             )
             text = ""
         slots.append(Slot(i, text, target))
@@ -159,7 +190,10 @@ def parse_request(body):
     mode = body.get("mode") if body.get("mode") in ("batch", "sequential") else "batch"
     threshold = number(body.get("threshold"))
     threshold = DEFAULT_THRESHOLD if threshold is None else clamp(threshold, 0.01, 1.0)
-    return Request(characters, slots, mode, threshold)
+    model = body.get("model") or None
+    if model is not None and model not in MODEL_IDS:
+        raise ValueError(f"Unknown model {model!r}. Choose one of: {', '.join(MODEL_IDS)}.")
+    return Request(characters, slots, mode, threshold, model, pairs)
 
 
 # ---------------------------------------------------------------- planning
@@ -228,14 +262,15 @@ def clean_sentence(text):
     return t
 
 
-def error_of(ratings, target):
-    """The largest miss over the characters that have a target (None if none of them was rated).
+def error_of(ratings, target, relations=()):
+    """The largest miss over the characters and pairs that have a target (None if none was rated).
 
     A character with a target that the sentence leaves out (ABSENT) counts as a miss of 1.0,
-    worse than any rated miss.
+    worse than any rated miss. So does a pair with a relationship target whose two characters
+    do not deal with each other in the sentence.
     """
     errors = []
-    for rating, goal in zip(ratings, target.fortunes):
+    for rating, goal in list(zip(ratings, target.fortunes)) + list(zip(relations, target.relations)):
         if goal is None or rating is None:
             continue
         errors.append(1.0 if rating == ABSENT else abs(rating - goal))
@@ -281,13 +316,15 @@ def final_event(slot, task, chosen, attempts):
         "target": slot.target.fortune, "targets": slot.target.fortunes,
         "tolerance": slot.target.tolerance, "tolerances": slot.target.tolerances,
         "surprise": slot.target.surprise, "maxRegen": slot.target.max_regen, "task": task,
-        "attempts": [{"text": a.text, "fortune": a.fortune, "fortunes": a.fortunes} for a in attempts],
+        "relations": chosen.relations, "relationTargets": slot.target.relations,
+        "attempts": [{"text": a.text, "fortune": a.fortune, "fortunes": a.fortunes, "relations": a.relations}
+                     for a in attempts],
     }
 
 
 def draft_event(slot_index, candidate, attempt):
     return {"type": "draft", "slot": slot_index, "text": candidate.text, "fortune": candidate.fortune,
-            "fortunes": candidate.fortunes, "attempt": attempt}
+            "fortunes": candidate.fortunes, "relations": candidate.relations, "attempt": attempt}
 
 
 # ---------------------------------------------------------------- generator
@@ -299,25 +336,45 @@ class Generator:
         self.recognizer = recognizer
         self.log = log
 
-    def run(self, req, emit):
-        """Generate every target slot of the request. emit(event) streams progress to the browser."""
+    def run(self, req, emit, writer=None, model=None):
+        """Generate every target slot of the request. emit(event) streams progress to the browser.
+
+        writer: the bridge client that writes the sentences (default: the generator's own).
+        model: the name of the writer's model, reported in the plan and done events.
+        """
         started = time.time()
-        calls_before = self.llm.calls
+        writer = writer or self.llm
+        clients = list({id(c): c for c in (writer, self.recognizer.llm)}.values())
+        calls_before = sum(c.calls for c in clients)
         runs = plan_runs(req.slots)
-        emit({"type": "plan", "mode": req.mode, "threshold": req.threshold,
+        emit({"type": "plan", "mode": req.mode, "threshold": req.threshold, "model": model,
               "runs": [{"slots": [s.index for s in r["slots"]], "task": r["task"]} for r in runs]})
         if req.mode == "sequential":
-            stats = self._sequential(req, runs, emit)
+            stats = self._sequential(req, runs, emit, writer)
         else:
-            stats = self._batch(req, runs, emit)
+            stats = self._batch(req, runs, emit, writer)
         seconds = round(time.time() - started, 1)
-        calls = self.llm.calls - calls_before
-        self.log(f"generated {stats['written']} sentence(s) ({req.mode}) in {seconds}s with {calls} model call(s)")
-        emit({"type": "done", "seconds": seconds, "calls": calls, **stats})
+        calls = sum(c.calls for c in clients) - calls_before
+        by = f", written by {model}" if model else ""
+        self.log(f"generated {stats['written']} sentence(s) ({req.mode}{by}) in {seconds}s with {calls} model call(s)")
+        emit({"type": "done", "seconds": seconds, "calls": calls, "model": model, **stats})
+
+    def _rate(self, req, items):
+        """Rate new sentences: one (fortunes, relations) pair of lists per item.
+
+        Relationships are rated only when the request has pairs, in a second call made at the
+        same time as the fortune call.
+        """
+        if not req.pairs:
+            return [(r, []) for r in self.recognizer.recognize(req.characters, items)]
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fortunes = pool.submit(self.recognizer.recognize, req.characters, items)
+            relations = pool.submit(self.recognizer.recognize_relations, req.characters, req.pairs, items)
+            return list(zip(fortunes.result(), relations.result()))
 
     # ---------------------------------------------------------------- batch pipeline
 
-    def _batch(self, req, runs, emit):
+    def _batch(self, req, runs, emit, writer):
         task_of = {s.index: r["task"] for r in runs for s in r["slots"]}
         targets = [s for r in runs for s in r["slots"]]
         attempts = {s.index: [] for s in targets}
@@ -332,15 +389,16 @@ class Generator:
                 emit({"type": "status", "message":
                       f"Rewriting {plural(len(pending), 'sentence')} whose fortune missed the sketch by more "
                       f"than {req.threshold:.2f} (retry {round_no})..."})
-            texts = self._write_batch(req, pending, best, attempts)
+            texts = self._write_batch(writer, req, pending, best, attempts)
             written = [s for s in pending if texts.get(s.index)]
             if written:
                 whose = "the protagonist's fortune" if len(req.characters) == 1 else "the characters' fortunes"
+                if req.pairs:
+                    whose += " and relationships"
                 emit({"type": "status", "message": f"Checking {whose} in {plural(len(written), 'new sentence')}..."})
             story = current_story(req.slots, best, texts)
-            ratings = self.recognizer.recognize(
-                req.characters,
-                [{"context": context_before(story, s.index), "sentence": texts[s.index]} for s in written])
+            ratings = self._rate(
+                req, [{"context": context_before(story, s.index), "sentence": texts[s.index]} for s in written])
             rating_of = {s.index: r for s, r in zip(written, ratings)}
             next_pending = []
             for s in pending:
@@ -349,9 +407,9 @@ class Generator:
                     if round_no < max(1, s.target.max_regen):
                         next_pending.append(s)
                     continue
-                r = rating_of.get(s.index) or [None] * len(req.characters)
-                err = error_of(r, s.target)
-                attempts[s.index].append(Candidate(text, r, err, round_no + 1))
+                r, rel = rating_of.get(s.index) or ([None] * len(req.characters), [None] * len(req.pairs))
+                err = error_of(r, s.target, rel)
+                attempts[s.index].append(Candidate(text, r, err, round_no + 1, rel))
                 best[s.index] = pick_best(attempts[s.index])
                 emit(draft_event(s.index, best[s.index], round_no + 1))
                 if err is not None and err > req.threshold and round_no < s.target.max_regen:
@@ -372,7 +430,7 @@ class Generator:
                 emit(final_event(s, run["task"], chosen, attempts[s.index]))
         return {"written": written, "retried": retried, "missing": missing}
 
-    def _write_batch(self, req, pending, best, attempts):
+    def _write_batch(self, writer, req, pending, best, attempts):
         """One call that writes every pending slot. Returns slot index -> text."""
         pending_ids = {s.index for s in pending}
         lines, slot_of_line = [], {}
@@ -389,8 +447,8 @@ class Generator:
             elif s.text:
                 number_ += 1
                 lines.append(("fixed", number_, s.text))
-        data = self.llm.chat_json(prompts.generation_system(req.characters),
-                                  prompts.batch_user(req.characters, lines, attempts))
+        data = writer.chat_json(prompts.generation_system(req.characters, relations=bool(req.pairs)),
+                                prompts.batch_user(req.characters, lines, attempts, req.pairs))
         items = data.get("sentences") if isinstance(data, dict) else data
         if not isinstance(items, list):
             items = []
@@ -418,7 +476,7 @@ class Generator:
 
     # ---------------------------------------------------------------- sequential pipeline
 
-    def _sequential(self, req, runs, emit):
+    def _sequential(self, req, runs, emit, writer):
         story = {s.index: s.text for s in req.slots if s.text and s.target is None}
         written = retried = missing = 0
         for run in runs:
@@ -430,13 +488,12 @@ class Generator:
                 for k in range(1 + slot.target.max_regen):
                     emit({"type": "status", "message":
                           f"Sentence {slot.index + 1}: {task}" + (f", retry {k}" if k else "") + "..."})
-                    text = self._write_one(req, task, prev, nxt, remaining, slot.target, attempts)
+                    text = self._write_one(writer, req, task, prev, nxt, remaining, slot.target, attempts)
                     if not text:
                         continue
-                    r = self.recognizer.recognize(
-                        req.characters, [{"context": prev[-CONTEXT_SENTENCES:], "sentence": text}])[0]
-                    err = error_of(r, slot.target)
-                    attempts.append(Candidate(text, r, err, k + 1))
+                    r, rel = self._rate(req, [{"context": prev[-CONTEXT_SENTENCES:], "sentence": text}])[0]
+                    err = error_of(r, slot.target, rel)
+                    attempts.append(Candidate(text, r, err, k + 1, rel))
                     emit(draft_event(slot.index, attempts[-1], k + 1))
                     if err is None or err <= req.threshold:
                         break
@@ -451,9 +508,10 @@ class Generator:
                 emit(final_event(slot, task, chosen, attempts))
         return {"written": written, "retried": retried, "missing": missing}
 
-    def _write_one(self, req, task, prev, nxt, missing, target, attempts):
-        data = self.llm.chat_json(prompts.generation_system(req.characters),
-                                  prompts.single_user(task, req.characters, prev, nxt, missing, target, attempts))
+    def _write_one(self, writer, req, task, prev, nxt, missing, target, attempts):
+        data = writer.chat_json(prompts.generation_system(req.characters, relations=bool(req.pairs)),
+                                prompts.single_user(task, req.characters, prev, nxt, missing, target, attempts,
+                                                    req.pairs))
         if isinstance(data, dict):
             return clean_sentence(data.get("text") or data.get("sentence") or "")
         return ""

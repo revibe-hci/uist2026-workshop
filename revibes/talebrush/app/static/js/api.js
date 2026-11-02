@@ -28,6 +28,23 @@ export async function recognize(characters, items) {
   return data.fortunes || [];
 }
 
+/**
+ * Remix (relationships): how each pair of characters gets along in each sentence.
+ * pairs: [[a, b], ...] indices into `characters`. items: as for recognize(), with `rate` listing pair indices.
+ * -> one row per item, one value per pair: 0 (open conflict) to 1 (full harmony), "absent" (the two
+ *    do not deal with each other in the sentence), or null (not rated).
+ */
+export async function recognizeRelations(characters, pairs, items) {
+  const r = await fetch("/api/relations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ characters, pairs, items }),
+  });
+  if (!r.ok) throw await errorOf(r, "Relationship recognition failed");
+  const data = await r.json();
+  return data.relations || [];
+}
+
 /** Stream generation events (one JSON object per line) to onEvent until the server finishes. */
 export async function generate(payload, onEvent, signal) {
   const r = await fetch("/api/generate", {
