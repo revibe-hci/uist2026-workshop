@@ -399,20 +399,37 @@ function rulingsForPrompt() {
   return s + '\nMention the agreed proposals in categorizedChanges.';
 }
 
+// Update the list in place rather than redrawing it, so a click that lands while a turn
+// starts or ends still reaches its button.
 function renderLines() {
-  const items = turns.slice(0, shown).map((t, i) => `
-    <li class="m-line m-line-${t.speaker} ${i === speakingIdx ? 'is-speaking' : ''}">
-      <p class="m-bubble">${esc(t.line)}</p>
-      <div class="m-ruling">
-        <span class="m-proposal">${esc(t.proposal)}</span>
-        <button class="m-rule m-rule-keep ${t.ruling === 'keep' ? 'is-on' : ''}" data-id="${t.id}" data-r="keep" aria-pressed="${t.ruling === 'keep'}" aria-label="Agree: ${esc(t.proposal)}">✔</button>
-        <button class="m-rule m-rule-reject ${t.ruling === 'reject' ? 'is-on' : ''}" data-id="${t.id}" data-r="reject" aria-pressed="${t.ruling === 'reject'}" aria-label="Reject: ${esc(t.proposal)}">✖</button>
-      </div>
-    </li>`);
-  if (shown >= turns.length && status !== 'playing') {
-    items.push(`<li class="m-line m-line-compromise"><p class="m-bubble">Compromise: ${esc(SCRIPT.compromise)}</p></li>`);
-  }
-  $('lines').innerHTML = items.join('');
+  const ol = $('lines');
+  if (shown === 0 || ol.querySelector('.m-debate-wait')) ol.innerHTML = '';
+  turns.slice(0, shown).forEach((t, i) => {
+    let li = ol.querySelector(`[data-turn="${t.id}"]`);
+    if (!li) {
+      li = document.createElement('li');
+      li.dataset.turn = t.id;
+      li.className = `m-line m-line-${t.speaker}`;
+      li.innerHTML = `<p class="m-bubble">${esc(t.line)}</p>
+        <div class="m-ruling">
+          <span class="m-proposal">${esc(t.proposal)}</span>
+          <button class="m-rule m-rule-keep" data-id="${t.id}" data-r="keep" aria-label="Agree: ${esc(t.proposal)}">✔</button>
+          <button class="m-rule m-rule-reject" data-id="${t.id}" data-r="reject" aria-label="Reject: ${esc(t.proposal)}">✖</button>
+        </div>`;
+      ol.insertBefore(li, ol.querySelector('.m-line-compromise'));
+    }
+    li.classList.toggle('is-speaking', i === speakingIdx);
+    for (const b of li.querySelectorAll('.m-rule')) {
+      const on = t.ruling === b.dataset.r;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', on);
+    }
+  });
+  const wantCompromise = shown >= turns.length && status !== 'playing';
+  const comp = ol.querySelector('.m-line-compromise');
+  if (wantCompromise && !comp) {
+    ol.insertAdjacentHTML('beforeend', `<li class="m-line m-line-compromise"><p class="m-bubble">Compromise: ${esc(SCRIPT.compromise)}</p></li>`);
+  } else if (!wantCompromise && comp) comp.remove();
   $('prompt').textContent = rulingsForPrompt();
 }
 
