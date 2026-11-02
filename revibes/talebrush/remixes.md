@@ -52,3 +52,60 @@ Code: `remix-misty/`, run on port 5058. The revibe in `app/` is unchanged.
 - The semantic diff describes the last generation only. Typing in the editor clears it.
 - The node-based infinite canvas from Misty was not brought over. TaleBrush's
   History dropdown stays, and each diff revision is stored there.
+
+## TaleBrush Studio: Misty + Luminate + VideoDiff + Selenite (table 1, group 1)
+
+Code: `remix-studio/`, run on port 5059. It builds on the Misty remix, which stays in
+`remix-misty/`.
+
+**What changed**
+- **Luminate: design space.** A "Design space" tab where the AI proposes dimensions
+  and writes several variants of the open sentences, each with a different mix of
+  values and each following the fortune sketch.
+  - Arrange by one or two dimensions, or by TaleBrush's *Fit to your arc* and
+    *Ending fortune*.
+  - Semantic zoom (dot, title, keywords, summary, full), search, filter, bookmarks,
+    more like this, more in a subspace, user-added dimensions, and switching between
+    spaces.
+  - Clicking a variant puts it in the editor (yellow).
+- **VideoDiff: compare.** A "Compare" tab with the variants aligned by sentence slot
+  under the current story. Differences are highlighted, and each row has its fortune
+  arc over the sketch.
+  - Sort, pin and archive.
+  - Edit by prompt (the result sits under the original, with a change summary),
+    recombine by #id, and Surprise me.
+  - Use a whole variant, or a single sentence.
+- **Selenite: Story Guide.** Criteria commonly considered for this kind of story,
+  bright or faded by coverage.
+  - In-situ criterion chips per sentence, with ‹ › navigation.
+  - *Analyze* colours phrases by their effect on the protagonist's fortune.
+  - Elements encountered (characters, places, objects).
+  - A summary with two suggested criteria, which can launch a Luminate exploration.
+- **Tutorial**: 24 steps that switch tabs as needed. Each step is badged with the
+  system(s) it comes from, and several badges mark where systems were combined.
+
+**What it explores**
+- **Exploring many versions at once.** Does exploring a design space of whole-story
+  variants (Luminate) change how writers use TaleBrush's sketch, from steering one
+  generation to choosing among many that share an arc?
+- **Fortune as a comparison axis.** Is the fortune arc a useful axis for comparing
+  alternatives (VideoDiff's aligned timelines, Luminate's fit axis), compared with
+  reading every variant?
+- **Criteria for stories.** Do criteria borrowed from sensemaking (Selenite) help
+  writers judge a story, and does "consider next" make good prompts for exploration?
+
+**First observations** (one session, Claude Haiku through the bridge)
+- The guide found 12 criteria for "underdog jazz musician redemption story". It marked
+  *Pacing*, *Dialogue quality* and *Thematic coherence* as missing, and suggested
+  thematic coherence and dialogue as next steps.
+- A 4-variant design space for "different endings" produced dimensions such as
+  *Stranger's motive* and *Ending tone*. All variants fit the sketch well (fit
+  0.84–0.95).
+- Recombining "the stranger from #1 with the ending of #4" gave a coherent merge, with
+  a summary of which parts came from where. Editing #2 to be "bittersweet" rewrote only
+  the ending.
+
+**Assumptions**
+- Variants rewrite the same slots TaleBrush would generate, and the writer's own
+  sentences are kept.
+- A design space defaults to 6 variants (≈13 calls); 4 and 8 are offered.
