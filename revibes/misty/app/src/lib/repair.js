@@ -15,7 +15,9 @@ const STOCK = {
 };
 
 const BUILTIN = new Set(['React', 'Fragment']);
-const known = (name) => BUILTIN.has(name) || isKnownIcon(name);
+// 3D remix: the 3D helpers from lib/three3d.jsx are in scope too.
+const THREE_HELPERS = new Set(['Scene3D', 'Spin', 'Float3D', 'RoundedBox']);
+const known = (name) => BUILTIN.has(name) || THREE_HELPERS.has(name) || isKnownIcon(name);
 
 // Apply fn to the token list of every static className string.
 function mapClassNames(code, fn) {
@@ -74,6 +76,20 @@ function fixUnknownComponents(code) {
   return code;
 }
 
+// 3D remix: models often write @react-three/fiber or drei names that are not in
+// scope. Map them onto the 3D helpers, or drop helpers that only add polish, before
+// the unknown-component rule would turn them into icons (which crash a 3D scene).
+const DREI_DROPPED = 'OrbitControls|Environment|ContactShadows|PerspectiveCamera|OrthographicCamera|Stars|SoftShadows|BakeShadows|AccumulativeShadows|Preload|AdaptiveDpr|Sky';
+const DREI_GROUPS = 'Center|Stage|Bounds|PresentationControls|Resize';
+function fix3D(code) {
+  if (!/<(Scene3D|Canvas)\b|<mesh\b/.test(code)) return code;
+  return code
+    .replace(/<(\/?)Canvas\b/g, '<$1Scene3D')
+    .replace(/<(\/?)Float\b(?!3D)/g, '<$1Float3D')
+    .replace(new RegExp(`<(?:${DREI_DROPPED})\\b[^<>]*?\\/>`, 'g'), '')
+    .replace(new RegExp(`<(\\/?)(?:${DREI_GROUPS})\\b[^<>]*?>`, 'g'), '<$1group>');
+}
+
 // react-live renders one expression; turn declarations into one.
 function toExpression(code) {
   code = code.trim().replace(/;+\s*$/, '');
@@ -123,6 +139,7 @@ export function repairCode(input) {
     exported && !/^\(\s*\)\s*=>/.test(code) ? `(() => {\n${code}\nreturn ${exported[1]};\n})()` : toExpression(code);
   code = mapClassNames(code, (tokens) => tokens.map((t) => SCREEN_CLASSES[t] || t));
   code = fixImages(code);
+  code = fix3D(code);
   code = fixUnknownComponents(code);
   return code.trim();
 }

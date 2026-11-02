@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LiveEditor, LiveError, LiveProvider } from 'react-live';
 import { Check, Copy, Download, X } from 'lucide-react';
-import { iconScope } from '../lib/icons.js';
+import { USES_3D, isThreeLoaded, loadThree, renderScope } from '../lib/renderScope.js';
 
 const THEME = {
   plain: { color: '#ECECF4', backgroundColor: '#1F1F28' },
@@ -18,7 +18,12 @@ const THEME = {
 export default function CodeDock({ node, onChange, onClose }) {
   const [copied, setCopied] = useState(false);
   const code = node.data.code;
-  const scope = useMemo(() => ({ React, useState: React.useState, ...iconScope(code) }), [code]);
+  // 3D remix: same scope as the node preview, including the 3D helpers when used.
+  const [threeReady, setThreeReady] = useState(isThreeLoaded());
+  useEffect(() => {
+    if (USES_3D.test(code) && !isThreeLoaded()) loadThree().then(() => setThreeReady(true));
+  }, [code]);
+  const scope = useMemo(() => renderScope(code), [code, threeReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copy = async () => {
     await navigator.clipboard.writeText(code);

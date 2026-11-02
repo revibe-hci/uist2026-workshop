@@ -101,11 +101,26 @@ here is a good example of the changes field:
 
 ]`;
 
-const CODE_RULES = `- only use tailwind, react, and react icons. Follow the current code structure, do not include any import or export statements, just use a simple component definition () => {};
+// 3D remix: the components from lib/three3d.jsx, described for the model.
+const THREE_D_API = `- 3D is available through these components, already in scope (do not import anything):
+  <Scene3D className="h-48 w-full" camera={[0, 0, 5]} autoRotate>...</Scene3D> is a 3D viewport with soft lights and drag-to-rotate. Give it a height with className. Optional props: camera (position), fov, autoRotate, controls={false}, background (a color; the default is transparent, so the UI shows through).
+  Inside Scene3D, write @react-three/fiber JSX: <mesh position={[x, y, z]} rotation={[x, y, z]} scale={s}> with one geometry (boxGeometry, sphereGeometry, torusGeometry, torusKnotGeometry, cylinderGeometry, coneGeometry, capsuleGeometry, icosahedronGeometry, octahedronGeometry, planeGeometry, ringGeometry; sizes go in args) and one material (meshStandardMaterial or meshPhysicalMaterial with color, metalness, roughness, clearcoat, transmission, opacity, transparent). Group meshes with <group>. Extra lights such as <pointLight> are allowed.
+  <RoundedBox args={[width, height, depth]} radius={0.1}><meshStandardMaterial color="#..." /></RoundedBox> makes rounded 3D cards, tiles and buttons.
+  <Spin speed={0.6} axis="y">...</Spin> rotates its children, and <Float3D speed={1} height={0.15}>...</Float3D> makes them bob gently. useFrame and THREE are also available for custom animation.
+  Only meshes, groups, lights and these components go inside Scene3D: no HTML, text or icons. Keep text, icons and images in HTML, next to the Scene3D or over it with absolute positioning. Keep each scene small (about 12 meshes at most) and use at most 2 Scene3D per screen.
+  Example: <Scene3D className="h-56 w-full" autoRotate><Float3D><mesh><torusKnotGeometry args={[0.9, 0.3, 160, 24]} /><meshPhysicalMaterial color="#7c3aed" metalness={0.3} roughness={0.2} clearcoat={1} /></mesh></Float3D></Scene3D>
+  Keep any 3D that is already in the code unless you are asked to change it.`;
+
+// 3D remix: how to read 3D elements in a reference and record them in the semantic diff.
+const threeDInterpretRule = (where) => `- 3D elements: look for 3D elements in ${where}: rendered 3D objects or illustrations, glossy, metallic or glass shapes, isometric or perspective scenes, 3D charts, and cards or buttons with visible depth. Rebuild them as live 3D with the 3D components described below, not as flat images, gradients or CSS imitations, and keep them in the same place in the layout. Name them in designExplanation. Put these changes in their own category that starts with "3D:" (for example "3D: Added a spinning glass torus knot as the hero"), with change type "3d", and give each change's "after" as an exact JSX snippet from your code, such as a material's color="#7c3aed".`;
+
+const CODE_RULES = `- only use tailwind, react, react icons, and the 3D components described below. Follow the current code structure, do not include any import or export statements, just use a simple component definition () => {};
 
 - when adding icons, pick from this list of lucide react icons, do not use others: ${iconList}
 
-- there are a few stock photos for use under the folder /stock/, they are named after their orientation, like landscape0.jpg, landscape1.jpg, portrait0.jpg, etc. Do not use any other images. Do not use placeholder image paths.`;
+- there are a few stock photos for use under the folder /stock/, they are named after their orientation, like landscape0.jpg, landscape1.jpg, portrait0.jpg, etc. Do not use any other images. Do not use placeholder image paths.
+
+${THREE_D_API}`;
 
 const SUMMARY_RULE = `- Summarize the code changes in your response, use the format "categorizedChanges:" followed by a list of changes. Be very concise in your explanations. For example, "Color change: section titles, from green to purple"; "Layout change: adapted the layout for [add the feature description of the changed code piece]".`;
 
@@ -132,6 +147,8 @@ A few rules:
 
 - Briefly summarize the differences between the reference image and the code, summarize them into a few categories of changes you want to make. Base your later generation of categorizedChanges based on these categories.
 
+${threeDInterpretRule('the reference image')} If the reference image has no 3D elements, do not add any 3D.
+
 ${CODE_RULES}
 
 ${SUMMARY_RULE}
@@ -142,7 +159,7 @@ ${CHANGE_FORMAT}${variation(attempt)}`;
 // A.3.2 Drag-and-drop blending
 export function dropBlendPrompt({ code, aspects, custom, targetHtml, attempt = 0 }) {
   const named = aspects.filter((a) => a !== 'Customize');
-  const described = [...named.map((a) => a.toLowerCase()), custom].filter(Boolean).join(', ');
+  const described = [...named.map((a) => (a === '3D' ? '3D elements' : a.toLowerCase())), custom].filter(Boolean).join(', ');
   const attention = [...named, custom].filter(Boolean).join(' ');
   return `Here is my react and tailwind code:
 
@@ -162,6 +179,12 @@ A few rules:
     named.includes('Content')
       ? '\n\n- Addition mode is on: add the selected UI element from the reference image at the location of the code above, with content that fits the source code.'
       : ''
+  }
+
+${
+    named.includes('3D')
+      ? `${threeDInterpretRule('the selected part of the reference image')} The user picked 3D, so rebuild the 3D elements of the selection at this location.`
+      : '- Do not add new 3D: the user did not pick the 3D aspect.'
   }
 
 - Do not use list and .map functions to represent lists. Just generate HTML elements for each of the list items.

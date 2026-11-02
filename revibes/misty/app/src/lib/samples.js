@@ -3,6 +3,9 @@ export const SAMPLE_EXAMPLES = [
   { name: 'Health: dark list', src: '/examples/health-dark.svg' },
   { name: 'Profile: carousel + Edit', src: '/examples/profile-carousel.svg' },
   { name: 'Hand-drawn sketch', src: '/examples/hand-sketch.svg' },
+  // 3D remix: references with 3D elements (rendered by scripts/make-3d-examples.mjs)
+  { name: '3D: product hero', src: '/examples/3d-product.png' },
+  { name: '3D: stats with 3D chart', src: '/examples/3d-stats.png' },
 ];
 
 const park = (name, place, rating, level, distance, time) => `

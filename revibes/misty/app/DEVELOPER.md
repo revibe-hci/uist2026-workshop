@@ -143,3 +143,53 @@ Two fixes: Reset All now also restores class values edited in the panel (`origin
 change), so the list matches the code again. Pasted code with an unknown wrapper component no
 longer loses its text.
 
+## 3D blending remix (branch `misty-table7-3dui`)
+
+Blending can rebuild 3D elements of a reference as live three.js scenes inside the generated UI.
+
+- **Dependencies:** `three` 0.169 and `@react-three/fiber` 8 (the React 18 line). Generated code
+  writes 3D as fiber JSX (`<mesh>`, `<torusKnotGeometry>`, `<meshPhysicalMaterial>`), which is
+  much shorter for the model than imperative three.js. After `npm install`, restart `npm run dev`:
+  a dev server started before the install keeps stale pre-bundled dependencies and crashes with
+  "Cannot read properties of null (reading 'useMemo')".
+- **3D helpers.** `src/lib/three3d.jsx` defines the components generated code can use:
+  - `Scene3D` is a viewport with lights and drag-to-rotate (three's `OrbitControls`). It
+    measures its layout size (`resize={{ offsetSize: true }}`): inside a zoomed React Flow node,
+    the on-screen size is scaled and would shrink the scene into a corner.
+  - `RoundedBox` uses three's `RoundedBoxGeometry`.
+  - `Spin` and `Float3D` add simple motion.
+  - `useFrame` and `THREE` are in scope too, for custom animation.
+  - An error inside a scene is caught there and reported to the node, so the rest of the UI keeps
+    rendering and Fix Render still sees the error.
+- **Loading on demand.** `src/lib/renderScope.js` builds the scope for both the node preview
+  (`CodeRender`) and the code dock (`CodeDock`). When the code uses a 3D helper (`USES_3D`), it
+  loads `three3d.jsx` with a dynamic import, which builds as a separate chunk. Until then the node
+  shows "Loading 3D…". `src/lib/sceneError.js` holds the context that scenes report errors
+  through.
+- **Prompts** (`src/lib/prompts.js`):
+  - `THREE_D_API` describes the helpers and fiber JSX, with an example. It is part of
+    `CODE_RULES`, so the toggle and Fix Render prompts keep 3D intact.
+  - `threeDInterpretRule` tells the model to look for 3D elements, rebuild them in place, and
+    report them in a "3D:" category, with each change's `after` as an exact JSX snippet.
+  - The global prompt applies the rule only when the reference has 3D. The drop prompt applies it
+    when the **3D** aspect is picked (`BlendDialog.jsx`), and otherwise says not to add 3D.
+- **Repair rules.** `fix3D` in `src/lib/repair.js` maps names the model often borrows from
+  fiber or drei:
+  - `Canvas` becomes `Scene3D`, and `Float` becomes `Float3D`.
+  - It drops self-closing drei extras such as `OrbitControls` and `Environment`.
+  - It turns drei wrappers such as `Center` and `Stage` into `group`.
+  - The helper names count as known components, so the unknown-component rule leaves them alone.
+- **Fine-grained edits.** `swapChangeValue` in `src/lib/changes.js` swaps a change's whole value,
+  or failing that only the space-separated parts that changed. This lets
+  `color="#8b6cf0"` → `color="#f59e0b"` apply even though the model wrote the whole element on
+  one line.
+- **Samples.** `public/examples/3d-product.png` and `3d-stats.png` are rendered with three.js
+  by `scripts/make-3d-examples.mjs` (headless Chrome with software WebGL).
+- **Limits:**
+  - Each scene is a WebGL context, and browsers keep about 16 per page, so with many 3D nodes
+    the oldest scenes go blank.
+  - Downloaded code needs the helpers in `three3d.jsx` to run elsewhere.
+  - 3D text is not supported: text stays in HTML over or next to the scene.
+- **Testing in headless Chrome** needs software WebGL:
+  `--use-angle=swiftshader --enable-unsafe-swiftshader`.
+

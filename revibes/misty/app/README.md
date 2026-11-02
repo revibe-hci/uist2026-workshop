@@ -78,6 +78,24 @@ Press **Guided Demo** in the toolbar for on-screen walkthroughs, one for each pa
 have done it. **Back** and **Skip step** are always there, except while a blend is running. Starting a
 demo resets the canvas. This mode is an addition for this revibe and is not a feature of the paper.
 
+## 3D blending (remix)
+
+This remix lets blending read 3D elements in a reference and rebuild them as live 3D with
+three.js. 3D elements are things like rendered objects, glossy or glass shapes, 3D charts, and
+cards with depth.
+
+- Add **3D: product hero** or **3D: stats with 3D chart** from the sample examples, or your own
+  screenshot with 3D in it.
+- **Global blend:** connect it to a source. The 3D parts come back as live 3D scenes inside the
+  UI, listed under **3D** in Applied Changes. A reference without 3D gets no 3D.
+- **Localized blend:** select a 3D part of the example, drop it on the source, and pick **3D**
+  (alone or with Layout, Color or Content).
+- Drag inside a 3D scene to rotate it. Switch the **3D** change off to get the flat version
+  back. Open its class changes to retype a material color, such as `color="#7c3aed"`.
+
+A 3D blend takes a little longer, and a UI with 3D shows "Loading 3D…" for a moment the first
+time.
+
 ## What differs from the paper
 
 - Haiku through the bridge answers instead of GPT-4o, which may change blend quality.

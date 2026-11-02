@@ -23,6 +23,7 @@ import { loadCanvas, saveCanvas } from './lib/persist.js';
 import { BRIDGE_URL, bridgeHealth, callModel, normalizeCategories } from './lib/llm.js';
 import { dropBlendPrompt, fixRenderPrompt, globalBlendPrompt, togglePrompt } from './lib/prompts.js';
 import { repairCode } from './lib/repair.js';
+import { swapChangeValue } from './lib/changes.js';
 import { PARKS_CODE, SAMPLE_EXAMPLES, SAMPLE_SOURCES } from './lib/samples.js';
 
 const nodeTypes = { example: ExampleNode, source: SourceNode };
@@ -380,12 +381,13 @@ function Workspace() {
     const category = node?.data.categories.find((c) => c.id === categoryId);
     const change = category?.changes[index];
     if (!change || !value || value === change.after) return;
-    if (!change.after || !node.data.code.includes(change.after)) {
+    const swapped = swapChangeValue(node.data.code, change.after, value);
+    if (swapped === null) {
       say(`"${change.after || '(empty)'}" is not in the current code, so it can't be swapped. Use Show Code.`);
       return;
     }
     patchNode(id, {
-      code: node.data.code.split(change.after).join(value),
+      code: swapped,
       toggleCache: {},
       categories: node.data.categories.map((c) =>
         c.id === categoryId
