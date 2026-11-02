@@ -7,13 +7,21 @@
 // writer's sentences are grey and generated ones blue, joined by a smooth line with a gap at blank
 // bullets. While the History dropdown is open, stored stories are drawn faintly as well.
 //
+// Remix (several characters): with two or more characters, every character has its own line in
+// its own colour (characters.js PALETTE). The pen and the eraser act on the character selected
+// above the canvas; the other characters' envelopes are drawn faintly. Each character's recognized
+// fortune is a line of dots in its colour: filled dots for TaleBrush's sentences, rings for the
+// writer's. Where a sentence does not involve a character, that character has no dot, and its
+// line continues as a dashed segment. With one character, the canvas looks as in the paper.
+//
 // Surprise canvas: the same columns; the pen draws a thin green line for the desired surprise.
 
+import { ABSENT, PALETTE, isRating, labels, modelNames } from "./characters.js";
 import { BANDS, DEFAULT_SURPRISE, ENVELOPE, ERASER_RADIUS, SAMPLES_PER_SLOT as S, halfWidthForSpeed } from "./config.js";
 import { monotoneSegments } from "./geometry.js";
-import { recognitionKey } from "./keys.js";
+import { ratingKeys } from "./keys.js";
 import * as Sk from "./sketch.js";
-import { changed, state } from "./store.js";
+import { activeCharacter, changed, isMulti, labelOf, ratingOf, state } from "./store.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -25,6 +33,18 @@ function svgEl(name, attrs, parent) {
   for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
   parent?.appendChild(node);
   return node;
+}
+
+function hatchPattern(defs, id, { fill, line, angle }) {
+  const hatch = svgEl("pattern", { id, patternUnits: "userSpaceOnUse", width: 6, height: 6, patternTransform: `rotate(${angle})` }, defs);
+  svgEl("rect", { width: 6, height: 6, fill }, hatch);
+  svgEl("line", { x1: 1.5, y1: 0, x2: 1.5, y2: 6, stroke: line, "stroke-width": 2, "stroke-opacity": 0.9 }, hatch);
+}
+
+/** Characters in drawing order: the selected one last, so it is on top. */
+function drawingOrder() {
+  const active = activeCharacter().id;
+  return [...state.characters.filter((c) => c.id !== active), ...state.characters.filter((c) => c.id === active)];
 }
 
 export class SketchCanvas {
@@ -44,15 +64,8 @@ export class SketchCanvas {
     const clipId = `tb-clip-${kind}`;
     this.clipRect = svgEl("rect", { rx: 12, ry: 12 }, svgEl("clipPath", { id: clipId }, defs));
     if (kind === "fortune") {
-      const hatch = svgEl("pattern", {
-        id: "tb-hatch",
-        patternUnits: "userSpaceOnUse",
-        width: 6,
-        height: 6,
-        patternTransform: "rotate(-50)",
-      }, defs);
-      svgEl("rect", { width: 6, height: 6, fill: "rgba(118, 204, 150, 0.16)" }, hatch);
-      svgEl("line", { x1: 1.5, y1: 0, x2: 1.5, y2: 6, stroke: "#86d3a2", "stroke-width": 2, "stroke-opacity": 0.9 }, hatch);
+      hatchPattern(defs, "tb-hatch", { fill: "rgba(118, 204, 150, 0.16)", line: "#86d3a2", angle: -50 });
+      PALETTE.forEach((p, k) => hatchPattern(defs, `tb-hatch-${k}`, { fill: p.fill, line: p.hatch, angle: p.angle }));
     }
     const root = svgEl("g", { "clip-path": `url(#${clipId})` }, svg);
     this.layers = {};
@@ -120,8 +133,10 @@ export class SketchCanvas {
   valueOf(y) {
     return Math.min(1, Math.max(0, 1 - (y - this.pad.t) / this.plotH));
   }
+  /** The samples the pen and eraser act on: the selected character's line, or the surprise line. */
   samples() {
-    return this.kind === "fortune" ? state.sketch.fortune : state.sketch.surprise;
+    if (this.kind !== "fortune") return state.sketch.surprise;
+    return Sk.lineOf(state.sketch, activeCharacter().id, state.sentences.length);
   }
   point(e) {
     const r = this.svg.getBoundingClientRect();
@@ -144,6 +159,8 @@ export class SketchCanvas {
     const p = this.point(e);
     this.drag = {
       tool: state.tool,
+      character: activeCharacter().id,
+      line: this.samples(),
       last: p,
       speed: (ENVELOPE.slowSpeed + ENVELOPE.fastSpeed) / 2,
       touched: new Set(),
@@ -192,8 +209,8 @@ export class SketchCanvas {
       /* already released */
     }
     changed();
-    if (drag.tool === "pen") this.onStroke?.(this.kind, Sk.touchedSlots(drag.touched, state.sentences.length));
-    else this.onErase?.(this.kind, drag.erased);
+    if (drag.tool === "pen") this.onStroke?.(this.kind, Sk.touchedSlots(drag.touched, state.sentences.length), drag.character);
+    else this.onErase?.(this.kind, drag.erased, drag.character);
   }
 
   leave() {
@@ -214,9 +231,9 @@ export class SketchCanvas {
       const va = this.valueOf(a.y);
       const vb = this.valueOf(b.y);
       if (this.kind === "fortune") {
-        Sk.writeFortune(state.sketch.fortune, ua, va, ub, vb, halfWidthForSpeed(this.drag.speed), this.drag.touched);
+        Sk.writeFortune(this.drag.line, ua, va, ub, vb, halfWidthForSpeed(this.drag.speed), this.drag.touched);
       } else {
-        Sk.writeSurprise(state.sketch.surprise, ua, va, ub, vb, this.drag.touched);
+        Sk.writeSurprise(this.drag.line, ua, va, ub, vb, this.drag.touched);
       }
       return;
     }
@@ -225,7 +242,7 @@ export class SketchCanvas {
   }
 
   eraseAt(px, py) {
-    const arr = this.samples();
+    const arr = this.drag.line;
     const r = ERASER_RADIUS;
     const j0 = Math.max(0, Math.floor(((px - r - this.pad.l) / this.slotW) * S));
     const j1 = Math.min(arr.length - 1, Math.ceil(((px + r - this.pad.l) / this.slotW) * S));
@@ -280,30 +297,48 @@ export class SketchCanvas {
   tipHtml(slot) {
     const s = state.sentences[slot];
     const n = state.sentences.length;
+    const multi = isMulti();
     const lines = [`<b>Sentence ${slot + 1}</b>`];
     if (!s.text.trim()) {
       lines.push("Blank bullet");
     } else {
       const who = s.source === "generated" ? "Written by TaleBrush" : "Written by you";
-      lines.push(s.fortune !== null ? `${who} · recognized fortune ${s.fortune.toFixed(2)}` : who);
+      const own = ratingOf(s, state.characters[0].id);
+      lines.push(!multi && own !== null ? `${who} · recognized fortune ${own.toFixed(2)}` : who);
       if (s.source === "generated" && s.gen?.tries > 1) lines.push(`Best of ${s.gen.tries} tries`);
     }
-    if (this.kind === "fortune") {
-      const slots = Sk.fortuneSlots(state.sketch.fortune, n);
-      const f = slots[slot];
-      const extent = Sk.extentOf(slots);
-      if (f.sketched) {
-        const speed = f.maxRegen === 2 ? "drawn slowly: up to 2 retries" : "drawn fast: up to 1 retry";
-        lines.push(`Sketched fortune ${f.fortune.toFixed(2)} ± ${f.halfWidth.toFixed(2)} (${speed})`);
-      } else if (extent && slot > extent[0] && slot < extent[1]) {
-        lines.push("Line erased here: written without a fortune target");
-      } else {
-        lines.push("Not sketched");
-      }
-    } else {
+    if (this.kind !== "fortune") {
       const v = Sk.surpriseSlots(state.sketch.surprise, n)[slot];
       lines.push(v !== null ? `Sketched surprise ${v.toFixed(2)}` : `No surprise line: default ${DEFAULT_SURPRISE.toFixed(2)}`);
+      return lines.join("<br>");
     }
+    const cast = Sk.castSlots(
+      state.sketch,
+      state.characters.map((c) => c.id),
+      n,
+    );
+    const extent = Sk.extentOf(cast);
+    const inGap = extent && slot > extent[0] && slot < extent[1];
+    const speedWords = (maxRegen) => (maxRegen === 2 ? "drawn slowly: up to 2 retries" : "drawn fast: up to 1 retry");
+    if (!multi) {
+      const f = cast[slot].characters[0];
+      if (f.sketched) lines.push(`Sketched fortune ${f.fortune.toFixed(2)} ± ${f.halfWidth.toFixed(2)} (${speedWords(f.maxRegen)})`);
+      else if (inGap) lines.push("Line erased here: written without a fortune target");
+      else lines.push("Not sketched");
+      return lines.join("<br>");
+    }
+    const names = labels(state.characters);
+    state.characters.forEach((c, k) => {
+      const f = cast[slot].characters[k];
+      const v = s.fortunes[c.id];
+      const parts = [];
+      if (s.text.trim()) parts.push(isRating(v) ? `rated ${v.toFixed(2)}` : v === ABSENT ? "not in this sentence" : "not rated yet");
+      parts.push(f.sketched ? `sketched ${f.fortune.toFixed(2)} ± ${f.halfWidth.toFixed(2)}` : "no line here");
+      const swatch = `<span class="tip-swatch" style="background:${PALETTE[c.color].line}"></span>`;
+      lines.push(`${swatch}${escapeHtml(names[k])}: ${parts.join(" · ")}`);
+    });
+    if (cast[slot].sketched) lines.push(`${speedWords(cast[slot].maxRegen)} (the slowest stroke over this sentence counts)`);
+    else if (inGap) lines.push("No line here: written without fortune targets");
     return lines.join("<br>");
   }
 
@@ -311,6 +346,7 @@ export class SketchCanvas {
 
   render() {
     if (!this.W && !this.layout()) return;
+    const multi = isMulti();
     this.renderBackground();
     this.renderGrid();
     if (this.kind === "fortune") {
@@ -321,12 +357,16 @@ export class SketchCanvas {
     this.wrap.classList.toggle("busy", state.ui.generating);
     this.wrap.classList.toggle("erasing", state.tool === "eraser");
     this.wrap.classList.toggle("locked", !!state.ui.previewId);
+    this.wrap.classList.toggle("multi", multi);
     if (this.hint) {
-      const name = escapeHtml(state.protagonist.trim() || "the protagonist");
-      this.hint.hidden = Sk.hasSamples(state.sketch.fortune) || state.ui.generating;
-      this.hint.innerHTML =
-        `Sketch how ${name}'s fortune changes over the story. Higher is better.<br>` +
-        "Draw slowly where the sentences should follow your line closely.";
+      const active = activeCharacter();
+      const name = escapeHtml(labelOf(active.id));
+      this.hint.hidden = Sk.hasSamples(state.sketch.fortunes[active.id] || []) || state.ui.generating;
+      this.hint.innerHTML = multi
+        ? `Sketch how ${name}'s fortune changes over the story. Higher is better.<br>` +
+          "Each character has its own line. Choose whose line to draw above the canvas, then press Generate."
+        : `Sketch how ${name}'s fortune changes over the story. Higher is better.<br>` +
+          "Draw slowly where the sentences should follow your line closely.";
     }
   }
 
@@ -372,27 +412,48 @@ export class SketchCanvas {
     this.layers.grid.innerHTML = html;
   }
 
-  renderSketch() {
-    const arr = this.samples();
+  /** The envelope (hatched band) and its centre line for one line's samples. */
+  envelopeHtml(arr, style = "") {
     const X = (j) => r1(this.xOf((j + 0.5) / S));
     let html = "";
     for (const [a, b] of Sk.runsOf(arr)) {
-      if (this.kind === "fortune") {
-        const f = Sk.smoothRun(arr, a, b, 1, (v) => v[0]);
-        const hw = Sk.smoothRun(arr, a, b, 5, (v) => v[1]); // the width changes gradually on screen
-        const xs = [];
-        for (let j = a; j <= b; j++) xs.push(X(j));
-        const upper = xs.map((x, k) => `${x},${r1(this.yOf(Math.min(1, f[k] + hw[k])))}`);
-        const lower = xs.map((x, k) => `${x},${r1(this.yOf(Math.max(0, f[k] - hw[k])))}`).reverse();
-        html += `<path class="envelope" d="M${upper.join("L")}L${lower.join("L")}Z"/>`;
-        html += `<path class="envelope-center" d="M${xs.map((x, k) => `${x},${r1(this.yOf(f[k]))}`).join("L")}"/>`;
-      } else {
+      const f = Sk.smoothRun(arr, a, b, 1, (v) => v[0]);
+      const hw = Sk.smoothRun(arr, a, b, 5, (v) => v[1]); // the width changes gradually on screen
+      const xs = [];
+      for (let j = a; j <= b; j++) xs.push(X(j));
+      const upper = xs.map((x, k) => `${x},${r1(this.yOf(Math.min(1, f[k] + hw[k])))}`);
+      const lower = xs.map((x, k) => `${x},${r1(this.yOf(Math.max(0, f[k] - hw[k])))}`).reverse();
+      html += `<path class="envelope"${style} d="M${upper.join("L")}L${lower.join("L")}Z"/>`;
+      html += `<path class="envelope-center" d="M${xs.map((x, k) => `${x},${r1(this.yOf(f[k]))}`).join("L")}"/>`;
+    }
+    return html;
+  }
+
+  renderSketch() {
+    if (this.kind !== "fortune") {
+      const arr = state.sketch.surprise;
+      const X = (j) => r1(this.xOf((j + 0.5) / S));
+      let html = "";
+      for (const [a, b] of Sk.runsOf(arr)) {
         const v = Sk.smoothRun(arr, a, b, 1, (x) => x);
         html +=
           a === b
             ? `<circle class="surprise-dot" cx="${X(a)}" cy="${r1(this.yOf(v[0]))}" r="2"/>`
             : `<path class="surprise-line" d="M${v.map((y, k) => `${X(a + k)},${r1(this.yOf(y))}`).join("L")}"/>`;
       }
+      this.layers.sketch.innerHTML = html;
+      return;
+    }
+    if (!isMulti()) {
+      this.layers.sketch.innerHTML = this.envelopeHtml(state.sketch.fortunes[state.characters[0].id] || []);
+      return;
+    }
+    const active = activeCharacter().id;
+    let html = "";
+    for (const c of drawingOrder()) {
+      const style = ` style="fill:url(#tb-hatch-${c.color})"`;
+      const body = this.envelopeHtml(state.sketch.fortunes[c.id] || [], style);
+      html += `<g class="char-line${c.id === active ? " active" : ""}" style="--c:${PALETTE[c.color].line}">${body}</g>`;
     }
     this.layers.sketch.innerHTML = html;
   }
@@ -418,21 +479,52 @@ export class SketchCanvas {
     return html;
   }
 
+  /**
+   * One character's recognized fortune as points. A blank or unrated sentence is a gap (null).
+   * A sentence that does not involve the character has no point; the next point is marked
+   * `skipped`, so the segment leading to it is drawn dashed.
+   */
+  characterPoints(c, k, keys, targets) {
+    const points = [];
+    let skipped = false;
+    state.sentences.forEach((s, i) => {
+      const v = s.fortunes[c.id];
+      if (!s.text.trim() || (!isRating(v) && v !== ABSENT)) {
+        points.push(null);
+        skipped = false;
+        return;
+      }
+      if (v === ABSENT) {
+        skipped = true;
+        return;
+      }
+      const stale = !s.draft && !targets.has(i) && s.keys[c.id] !== keys[i][k];
+      points.push({ x: this.xOf(i + 0.5), y: this.yOf(v), gen: s.source === "generated", draft: s.draft, stale, skipped });
+      skipped = false;
+    });
+    return points;
+  }
+
   renderArc() {
     const targets = new Set(state.ui.generating ? state.ui.targets : []);
-    const points = state.sentences.map((s, i) => {
-      if (!s.text.trim() || s.fortune === null) return null;
-      const stale = !s.draft && !targets.has(i) && s.fortuneKey !== recognitionKey(state.protagonist, state.sentences, i);
-      return { x: this.xOf(i + 0.5), y: this.yOf(s.fortune), gen: s.source === "generated", draft: s.draft, stale };
-    });
-    let html = this.arcHtml(
-      points,
-      (p) => `arc-seg ${p.gen ? "gen" : "user"}`,
-      (p) => `dot ${p.gen ? "gen" : "user"}${p.draft ? " draft" : ""}${p.stale ? " stale" : ""}`,
-      4.2,
-    );
+    const names = modelNames(state.characters);
+    const keys = state.sentences.map((s, i) => (s.text.trim() ? ratingKeys(state.characters, state.sentences, i, names) : []));
+    const multi = isMulti();
+    const active = activeCharacter().id;
+    let html = "";
+    for (const c of drawingOrder()) {
+      const k = state.characters.indexOf(c);
+      const part = this.arcHtml(
+        this.characterPoints(c, k, keys, targets),
+        (p) => `arc-seg ${p.gen ? "gen" : "user"}${p.skipped ? " skipped" : ""}`,
+        (p) => `dot ${p.gen ? "gen" : "user"}${p.draft ? " draft" : ""}${p.stale ? " stale" : ""}`,
+        4.2,
+      );
+      html += multi ? `<g class="char-arc${c.id === active ? " active" : ""}" style="--c:${PALETTE[c.color].line}">${part}</g>` : part;
+    }
     state.sentences.forEach((s, i) => {
-      if (s.text.trim() && s.fortune === null && s.pending) {
+      const v = s.fortunes[active];
+      if (s.text.trim() && s.pending && !isRating(v) && v !== ABSENT) {
         html += `<circle class="dot waiting" cx="${r1(this.xOf(i + 0.5))}" cy="${r1(this.yOf(0.5))}" r="4.2"/>`;
       }
     });
@@ -440,22 +532,38 @@ export class SketchCanvas {
     this.layers.arc.classList.toggle("dimmed", !!state.ui.previewId);
   }
 
+  /**
+   * Stored stories, drawn faintly while the History dropdown is open. Each story shows the
+   * selected character's line (matched by id; stories without that character are left out).
+   * The story under the mouse shows every one of its characters, in their colours.
+   */
   renderHistory() {
     if (!state.ui.historyOpen || !state.history.length) {
       this.layers.history.innerHTML = "";
       return;
     }
+    const active = activeCharacter().id;
     let html = "";
     let hot = "";
     for (const h of state.history) {
       const n = h.sentences.length;
       if (!n) continue;
       const isHot = h.id === state.ui.previewId;
-      const points = h.sentences.map((s, i) =>
-        s.text.trim() && s.fortune !== null ? { x: this.pad.l + ((i + 0.5) * this.plotW) / n, y: this.yOf(s.fortune) } : null,
-      );
+      const pointsOf = (id) =>
+        h.sentences.map((s, i) =>
+          s.text.trim() && isRating(s.fortunes?.[id]) ? { x: this.pad.l + ((i + 0.5) * this.plotW) / n, y: this.yOf(s.fortunes[id]) } : null,
+        );
+      if (isHot && h.characters.length > 1) {
+        for (const c of h.characters) {
+          const part = this.arcHtml(pointsOf(c.id), () => "hist-arc hot", () => "hist-dot hot", 3.8);
+          hot += `<g class="hist-char" style="--c:${PALETTE[c.color].line}">${part}</g>`;
+        }
+        continue;
+      }
+      const c = h.characters.find((x) => x.id === active);
+      if (!c) continue;
       const part = this.arcHtml(
-        points,
+        pointsOf(c.id),
         () => `hist-arc${isHot ? " hot" : ""}`,
         () => `hist-dot${isHot ? " hot" : ""}`,
         isHot ? 3.8 : 2.6,

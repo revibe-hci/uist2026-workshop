@@ -1,43 +1,67 @@
 // The sketch data model. Pure functions, no DOM, so they can be tested with Node.
 //
-// A sketch has two sample arrays with SAMPLES_PER_SLOT samples per sentence slot:
-//   fortune[j]  = [fortune 0..1, envelope half-width] or null where nothing is drawn
-//   surprise[j] = surprise 0..1 or null
+// A sketch has sample arrays with SAMPLES_PER_SLOT samples per sentence slot:
+//   fortunes[characterId][j] = [fortune 0..1, envelope half-width] or null where nothing is drawn
+//                              (one line per character; the remix allows several characters)
+//   surprise[j]              = surprise 0..1 or null
 // x positions are in "slot units": slot i spans [i, i + 1).
 // Storing samples per slot keeps the sketch lined up with its sentences when the
 // writer adds or removes a bullet point.
 
 import { SAMPLES_PER_SLOT as S, SLOT_COVERAGE, ENVELOPE } from "./config.js";
+import { PROTAGONIST_ID } from "./characters.js";
 
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const present = (v) => v !== null && v !== undefined;
+const blank = (n) => new Array(n * S).fill(null);
 
-export function emptySketch(n) {
-  return { fortune: new Array(n * S).fill(null), surprise: new Array(n * S).fill(null) };
+export function emptySketch(n, ids = [PROTAGONIST_ID]) {
+  const fortunes = {};
+  for (const id of ids) fortunes[id] = blank(n);
+  return { fortunes, surprise: blank(n) };
 }
 
-/** Copy a stored sketch, dropping invalid samples and fitting it to n slots. */
-export function normalizeSketch(sketch, n) {
+/**
+ * Copy a stored sketch, dropping invalid samples and fitting it to n slots and the given
+ * character ids. A sketch stored before the remix has one `fortune` array: the protagonist's.
+ */
+export function normalizeSketch(sketch, n, ids = [PROTAGONIST_ID]) {
   const fix = (arr, ok) => {
-    const out = new Array(n * S).fill(null);
+    const out = blank(n);
     if (Array.isArray(arr)) {
       for (let j = 0; j < Math.min(arr.length, out.length); j++) if (ok(arr[j])) out[j] = arr[j];
     }
     return out;
   };
-  return {
-    fortune: fix(sketch?.fortune, (v) => Array.isArray(v) && v.length === 2 && v.every(Number.isFinite)),
-    surprise: fix(sketch?.surprise, (v) => Number.isFinite(v)),
-  };
+  const okFortune = (v) => Array.isArray(v) && v.length === 2 && v.every(Number.isFinite);
+  const src = sketch?.fortunes && typeof sketch.fortunes === "object" ? sketch.fortunes : { [ids[0]]: sketch?.fortune };
+  const fortunes = {};
+  for (const id of ids) fortunes[id] = fix(src[id], okFortune);
+  return { fortunes, surprise: fix(sketch?.surprise, (v) => Number.isFinite(v)) };
+}
+
+/** A character's line, created empty if the character has none yet. */
+export function lineOf(sketch, id, n) {
+  if (!Array.isArray(sketch.fortunes[id])) sketch.fortunes[id] = blank(n);
+  return sketch.fortunes[id];
+}
+
+function allArrays(sketch) {
+  return [...Object.values(sketch.fortunes), sketch.surprise];
 }
 
 export function insertSlot(sketch, index) {
-  for (const key of ["fortune", "surprise"]) sketch[key].splice(index * S, 0, ...new Array(S).fill(null));
+  for (const arr of allArrays(sketch)) arr.splice(index * S, 0, ...new Array(S).fill(null));
 }
 
 export function deleteSlot(sketch, index) {
-  for (const key of ["fortune", "surprise"]) sketch[key].splice(index * S, S);
+  for (const arr of allArrays(sketch)) arr.splice(index * S, S);
+}
+
+/** True when any character's line has samples. */
+export function anyLine(sketch) {
+  return Object.values(sketch.fortunes).some(hasSamples);
 }
 
 function sampleRange(total, x0, x1) {
@@ -102,6 +126,25 @@ export function fortuneSlots(arr, n) {
       fortune: count ? sumF / count : null,
       halfWidth,
       maxRegen: sketched ? (halfWidth < ENVELOPE.tightBelow ? 2 : 1) : 0,
+    });
+  }
+  return out;
+}
+
+/**
+ * Per-slot reading of every character's line (in the order of `ids`). A slot is sketched when
+ * any character's line covers it. Its retries follow the slowest stroke over it.
+ */
+export function castSlots(sketch, ids, n) {
+  const per = ids.map((id) => fortuneSlots(sketch.fortunes[id] || [], n));
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const characters = per.map((p) => p[i]);
+    out.push({
+      index: i,
+      sketched: characters.some((c) => c.sketched),
+      characters,
+      maxRegen: Math.max(0, ...characters.map((c) => c.maxRegen)),
     });
   }
   return out;

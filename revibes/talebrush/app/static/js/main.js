@@ -2,13 +2,26 @@
 
 import * as api from "./api.js";
 import { SketchCanvas } from "./canvas.js";
+import { CastBar } from "./cast.js";
 import { Editor } from "./editor.js";
 import { EXAMPLES } from "./examples.js";
 import { againTargets, runGeneration, sketchExtent, stopGeneration, strokeTargets } from "./generator.js";
 import { HistoryMenu, saveUnsaved } from "./history.js";
 import { scheduleRecognition } from "./recognizer.js";
 import * as Sk from "./sketch.js";
-import { changed, newStory, renderNow, restore, setStatus, state, subscribe } from "./store.js";
+import {
+  addCharacter,
+  changed,
+  isMulti,
+  labelOf,
+  newStory,
+  removeCharacter,
+  renderNow,
+  restore,
+  setStatus,
+  state,
+  subscribe,
+} from "./store.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -16,12 +29,30 @@ restore();
 
 // ---------------------------------------------------------------- what a stroke or an erasure does
 
-function onStroke(kind, slots) {
+// With one character, a stroke starts writing as soon as the pen is lifted (the paper's design).
+// With several characters, the writer usually draws more than one line for the same sentences,
+// so a stroke only marks its sentences (state.ui.strokeMarks) and the button turns into "Generate".
+function onStroke(kind, slots, characterId) {
   if (kind === "surprise") {
     setStatus("Surprise sketch updated. Press Generate Again to use it.", "info");
     return;
   }
   if (!slots.length) return;
+  if (isMulti()) {
+    for (const i of slots) {
+      const sid = state.sentences[i].id;
+      if (!state.ui.strokeMarks.has(sid)) state.ui.strokeMarks.set(sid, new Set());
+      state.ui.strokeMarks.get(sid).add(characterId);
+    }
+    const marked = strokeSlots().length;
+    setStatus(
+      `${labelOf(characterId)}'s line updated (${marked} sentence${marked === 1 ? "" : "s"} marked). ` +
+        "Draw the other characters' lines too, then press Generate.",
+      "info",
+    );
+    changed({ persist: false });
+    return;
+  }
   const targets = strokeTargets(slots);
   if (!targets.length) {
     setStatus(
@@ -34,19 +65,74 @@ function onStroke(kind, slots) {
   runGeneration(targets);
 }
 
-function onErase(kind, erased) {
+function onErase(kind, erased, characterId) {
   if (!erased) return;
-  setStatus(
-    kind === "fortune"
-      ? "Sketch erased. Press Generate Again to rewrite the sketched part; where the line is erased, sentences are written without a fortune target."
-      : "Surprise line erased. Those sentences use the default surprise.",
-    "info",
-  );
+  let message = "Surprise line erased. Those sentences use the default surprise.";
+  if (kind === "fortune" && !isMulti()) {
+    message =
+      "Sketch erased. Press Generate Again to rewrite the sketched part; where the line is erased, sentences are written without a fortune target.";
+  } else if (kind === "fortune") {
+    message =
+      `Part of ${labelOf(characterId)}'s line erased. Press Generate Again to rewrite the sketched part; ` +
+      `where ${labelOf(characterId)} has no line, the sentences have no target for ${labelOf(characterId)}.`;
+  }
+  setStatus(message, "info");
+}
+
+/** Indices of the sentences under strokes that were not generated yet. */
+function strokeSlots() {
+  return state.sentences.map((s, i) => (state.ui.strokeMarks.has(s.id) ? i : -1)).filter((i) => i >= 0);
 }
 
 // ---------------------------------------------------------------- components
 
 const editor = new Editor($("editor"), $("preview"));
+const castBar = new CastBar({
+  root: $("characters"),
+  prefix: $("fortunePrefix"),
+  suffix: $("fortuneSuffix"),
+  addButton: $("addCharacter"),
+  onSelect: selectCharacter,
+  onRename: (id, name) => {
+    const c = state.characters.find((x) => x.id === id);
+    if (!c) return;
+    c.name = name;
+    changed();
+    scheduleRecognition(1300); // this character's fortunes depend on its name
+  },
+  onRemove: (id) => {
+    if (state.ui.generating) return;
+    const name = labelOf(id);
+    const drawn = Sk.hasSamples(state.sketch.fortunes[id] || []);
+    if (drawn && !window.confirm(`Remove ${name}? The line drawn for ${name} is removed too.`)) return;
+    removeCharacter(id);
+    setStatus(
+      isMulti()
+        ? `Removed ${name}.`
+        : `Removed ${name}. With one character, TaleBrush writes as soon as you finish a stroke, as in the paper.`,
+      "info",
+    );
+    changed();
+  },
+  onAdd: () => {
+    if (state.ui.generating) return;
+    const c = addCharacter();
+    if (!c) return;
+    setStatus(
+      "Name the new character, then draw its fortune line. With several characters, TaleBrush writes when you press Generate.",
+      "info",
+    );
+    renderNow();
+    castBar.focus(c.id);
+    scheduleRecognition(1300); // rate the existing sentences for the new character
+  },
+});
+
+function selectCharacter(id) {
+  if (state.activeCharacter === id || !state.characters.some((c) => c.id === id)) return;
+  state.activeCharacter = id;
+  changed();
+}
 const fortuneCanvas = new SketchCanvas({ svg: $("fortuneCanvas"), wrap: $("fortuneWrap"), kind: "fortune", onStroke, onErase });
 const surpriseCanvas = new SketchCanvas({ svg: $("surpriseCanvas"), wrap: $("surpriseWrap"), kind: "surprise", onStroke, onErase });
 const historyMenu = new HistoryMenu($("historyBtn"), $("historyMenu"));
@@ -56,12 +142,6 @@ const historyMenu = new HistoryMenu($("historyBtn"), $("historyMenu"));
 $("title").addEventListener("input", (e) => {
   state.title = e.target.value;
   changed();
-});
-
-$("protagonist").addEventListener("input", (e) => {
-  state.protagonist = e.target.value;
-  changed();
-  scheduleRecognition(1300); // every fortune depends on who the protagonist is
 });
 
 $("surpriseToggle").addEventListener("change", (e) => {
@@ -81,23 +161,33 @@ document.addEventListener("keydown", (e) => {
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === "b" || e.key === "p") state.tool = "pen";
   else if (e.key === "e") state.tool = "eraser";
-  else return;
+  else if (/^[1-4]$/.test(e.key) && Number(e.key) <= state.characters.length) {
+    selectCharacter(state.characters[Number(e.key) - 1].id); // choose whose line the pen draws
+    return;
+  } else return;
   changed();
 });
 
-$("generateAgain").addEventListener("click", () => {
+// "Generate Again" rewrites everything under the sketch. With several characters, after new
+// strokes it is "Generate": it writes the sentences under those strokes, like a stroke does
+// with one character.
+$("generateAgain").addEventListener("click", async () => {
   if (state.ui.generating) return;
-  const targets = againTargets();
+  const marked = strokeSlots();
+  const targets = marked.length ? strokeTargets(marked) : againTargets();
   if (!targets.length) {
+    state.ui.strokeMarks.clear();
     setStatus(
       sketchExtent()
         ? "Every sentence under the sketch was written or edited by you, so there is nothing to regenerate. Clear a sentence to let TaleBrush rewrite it."
-        : "Sketch the protagonist's fortune on the canvas first.",
+        : "Sketch a character's fortune on the canvas first.",
       "info",
     );
     return;
   }
-  runGeneration(targets);
+  const written = await runGeneration(targets);
+  if (written) state.ui.strokeMarks.clear();
+  changed({ persist: false });
 });
 
 $("stopBtn").addEventListener("click", () => stopGeneration());
@@ -170,9 +260,8 @@ function setValue(input, value) {
 function renderChrome() {
   const busy = state.ui.generating;
   setValue($("title"), state.title);
-  setValue($("protagonist"), state.protagonist);
   $("title").disabled = busy;
-  $("protagonist").disabled = busy;
+  castBar.render();
   $("surpriseToggle").checked = state.surpriseEnabled;
   $("surpriseToggle").disabled = busy;
   $("surpriseWrap").hidden = !state.surpriseEnabled;
@@ -182,8 +271,14 @@ function renderChrome() {
     button.setAttribute("aria-pressed", String(active));
   }
   const again = $("generateAgain");
-  again.disabled = busy || !Sk.hasSamples(state.sketch.fortune);
+  const marked = !busy && strokeSlots().length > 0;
+  again.disabled = busy || !Sk.anyLine(state.sketch);
   again.classList.toggle("busy", busy);
+  again.classList.toggle("ready", marked);
+  $("generateLabel").textContent = marked ? "Generate" : "Generate Again";
+  again.title = marked
+    ? "Write the sentences under the lines you just drew"
+    : "Generate new sentences for the same sketch";
   $("newStory").disabled = busy;
   $("examplesBtn").disabled = busy;
 

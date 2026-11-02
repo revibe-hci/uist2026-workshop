@@ -2,10 +2,23 @@
 // Enter adds a bullet, Backspace on an empty bullet removes it. The bar on the left is grey
 // for the writer's sentences and blue for generated ones (Figure 1, B1). Each sentence is
 // highlighted with the colour of its fortune band (Figure 8).
+// Remix: with several characters, the highlight shows the fortune of the character selected
+// above the canvas, and the ">" tooltip lists every character's fortune.
 
+import { ABSENT, isRating, labels } from "./characters.js";
 import { bandOf } from "./config.js";
 import { scheduleRecognition } from "./recognizer.js";
-import { changed, insertSentence, removeSentence, renderNow, setSentenceText, state } from "./store.js";
+import {
+  activeCharacter,
+  changed,
+  insertSentence,
+  isMulti,
+  ratingOf,
+  removeSentence,
+  renderNow,
+  setSentenceText,
+  state,
+} from "./store.js";
 
 const SENTENCE_BREAK = /(?<=[.!?]["”’')\]]*)\s+(?=["“‘'(\[]?[A-Z0-9])/;
 
@@ -30,8 +43,23 @@ function autosize(ta) {
 function describe(s) {
   if (!s.text.trim()) return "Blank bullet: shown as a gap on the canvas";
   const who = s.source === "generated" ? "Written by TaleBrush" : "Written by you";
-  const f = s.fortune !== null ? `recognized fortune ${s.fortune.toFixed(2)}` : "fortune not rated yet";
-  return `${who}; ${f}`;
+  if (!isMulti()) {
+    const own = ratingOf(s, state.characters[0].id);
+    return `${who}; ${own !== null ? `recognized fortune ${own.toFixed(2)}` : "fortune not rated yet"}`;
+  }
+  const names = labels(state.characters);
+  const parts = state.characters.map((c, k) => {
+    const v = s.fortunes[c.id];
+    const text = isRating(v) ? `fortune ${v.toFixed(2)}` : v === ABSENT ? "not in this sentence" : "not rated yet";
+    return `${names[k]}: ${text}`;
+  });
+  return `${who}. ${parts.join("; ")}`;
+}
+
+/** The highlight colour of a sentence: the band of the selected character's fortune. */
+function bandColor(text, fortunes, id) {
+  const v = fortunes?.[id];
+  return text.trim() && isRating(v) ? bandOf(v).text : "transparent";
 }
 
 export class Editor {
@@ -122,16 +150,18 @@ export class Editor {
     el.classList.toggle("draft", !!s.draft);
     el.classList.toggle("target", isTarget);
     el.classList.toggle("linked", state.ui.linkSlot === i || state.ui.focusSlot === i);
-    el.style.setProperty("--band", !blank && s.fortune !== null ? bandOf(s.fortune).text : "transparent");
+    el.style.setProperty("--band", bandColor(s.text, s.fortunes, activeCharacter().id));
     row.gt.title = describe(s);
   }
 
   renderPreview(snap) {
-    if (this.previewKey === snap.id) return;
-    this.previewKey = snap.id;
+    // Highlight the selected character's fortune, or the stored story's protagonist if it lacks that character.
+    const id = snap.characters.some((c) => c.id === activeCharacter().id) ? activeCharacter().id : snap.characters[0].id;
+    if (this.previewKey === `${snap.id} ${id}`) return;
+    this.previewKey = `${snap.id} ${id}`;
     const rows = snap.sentences
       .map((s) => {
-        const band = s.text.trim() && s.fortune !== null ? bandOf(s.fortune).text : "transparent";
+        const band = bandColor(s.text, s.fortunes, id);
         const cls = s.source === "generated" && s.text.trim() ? "bullet generated" : "bullet";
         return `<div class="${cls}" style="--band:${band}"><span class="bar"></span><span class="gt">&gt;</span><div class="preview-text">${escapeHtml(s.text) || "&nbsp;"}</div></div>`;
       })

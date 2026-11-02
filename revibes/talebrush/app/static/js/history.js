@@ -3,9 +3,11 @@
 // stories; while it is open, their fortune arcs are drawn on the canvas in low opacity.
 // Hovering a story shows its text in the editor and highlights its arc; clicking it
 // rolls back to it. Stories can be renamed (pencil) and deleted (x), as in Figure 5.
+// Remix: a stored story also keeps its characters, each character's ratings and lines.
 
+import { ABSENT, isRating, modelNames } from "./characters.js";
 import { HISTORY_LIMIT } from "./config.js";
-import { recognitionKey } from "./keys.js";
+import { ratingKeys } from "./keys.js";
 import { scheduleRecognition } from "./recognizer.js";
 import * as Sk from "./sketch.js";
 import { changed, makeSentence, state } from "./store.js";
@@ -22,7 +24,7 @@ const ICON_X =
 
 /** The writer's text. A new sketch alone does not count as an unsaved change: the next generation stores it. */
 function textSignature(src) {
-  return JSON.stringify([src.title.trim(), src.protagonist.trim(), src.sentences.map((s) => s.text.trim())]);
+  return JSON.stringify([src.title.trim(), modelNames(src.characters), src.sentences.map((s) => s.text.trim())]);
 }
 
 function makeSnapshot(name) {
@@ -31,9 +33,12 @@ function makeSnapshot(name) {
     name,
     createdAt: Date.now(),
     title: state.title,
-    protagonist: state.protagonist,
-    sentences: state.sentences.map((s) => ({ text: s.text, source: s.source, fortune: s.fortune })),
-    sketch: { fortune: state.sketch.fortune.slice(), surprise: state.sketch.surprise.slice() },
+    characters: state.characters.map((c) => ({ ...c })),
+    sentences: state.sentences.map((s) => ({ text: s.text, source: s.source, fortunes: { ...s.fortunes } })),
+    sketch: {
+      fortunes: Object.fromEntries(state.characters.map((c) => [c.id, (state.sketch.fortunes[c.id] || []).slice()])),
+      surprise: state.sketch.surprise.slice(),
+    },
     surpriseEnabled: state.surpriseEnabled,
   };
   return snap;
@@ -80,18 +85,30 @@ export function saveGenerated() {
   return push(makeSnapshot(uniqueName(`Story ${state.storyCounter}`)));
 }
 
-/** Roll back to a stored story (its text, fortunes and sketch). */
+/** Roll back to a stored story (its text, characters, fortunes and sketch). */
 export function rollBack(id) {
   const snap = state.history.find((h) => h.id === id);
   if (!snap) return;
   saveUnsaved();
   state.title = snap.title;
-  state.protagonist = snap.protagonist;
-  state.sentences = snap.sentences.map((s) => makeSentence(s.text, s.source, s.fortune));
+  state.characters = snap.characters.map((c) => ({ ...c }));
+  if (!state.characters.some((c) => c.id === state.activeCharacter)) state.activeCharacter = state.characters[0].id;
+  state.sentences = snap.sentences.map((s) => makeSentence(s.text, s.source, s.fortunes));
+  const names = modelNames(state.characters);
   state.sentences.forEach((s, i) => {
-    if (s.fortune !== null && s.text.trim()) s.fortuneKey = recognitionKey(state.protagonist, state.sentences, i);
+    if (!s.text.trim()) return;
+    const keys = ratingKeys(state.characters, state.sentences, i, names);
+    state.characters.forEach((c, k) => {
+      const v = s.fortunes[c.id];
+      if (isRating(v) || v === ABSENT) s.keys[c.id] = keys[k];
+    });
   });
-  state.sketch = Sk.normalizeSketch(snap.sketch, state.sentences.length);
+  state.sketch = Sk.normalizeSketch(
+    snap.sketch,
+    state.sentences.length,
+    state.characters.map((c) => c.id),
+  );
+  state.ui.strokeMarks.clear();
   state.surpriseEnabled = !!snap.surpriseEnabled;
   state.activeHistoryId = snap.id;
   changed();

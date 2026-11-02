@@ -5,9 +5,13 @@ Serves the web interface (static/) and a small REST API for the paper's two
 language-model components:
 
     GET  /api/health      is the LLM bridge reachable, and which model answers
-    POST /api/recognize   fortune recognition for a batch of sentences
+    POST /api/recognize   fortune recognition for a batch of sentences, one
+                          rating per character
     POST /api/generate    fortune-controlled generation for sketched sentence
                           slots; streams newline-delimited JSON events
+
+Remix: both POST routes take a list of characters (the protagonist first)
+instead of one protagonist; see DEVELOPER.md.
 
 The paper used a Flask server. This one uses only the Python standard library,
 so nothing has to be installed. Model calls go through the workshop's LLM
@@ -34,6 +38,7 @@ from urllib.parse import urlparse
 APP_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(APP_DIR))
 
+from talebrush.cast import clean_characters  # noqa: E402
 from talebrush.generation import GenerationCancelled, Generator, parse_request  # noqa: E402
 from talebrush.llm import BridgeClient, BridgeError  # noqa: E402
 from talebrush.recognition import Recognizer  # noqa: E402
@@ -131,15 +136,16 @@ class Handler(BaseHTTPRequestHandler):
         items = body.get("items") if isinstance(body, dict) else None
         if not isinstance(items, list) or not all(isinstance(it, dict) for it in items):
             return self.send_json(400, {"error": "items must be a list of {context, sentence} objects."})
-        protagonist = " ".join(str(body.get("protagonist") or "").split())
+        characters = clean_characters(body.get("characters"), body.get("protagonist"))
         started = time.time()
         try:
-            fortunes = self.app.recognizer.recognize(protagonist, items)
+            fortunes = self.app.recognizer.recognize(characters, items)
         except BridgeError as e:
             log(f"recognition failed: {e}")
             return self.send_json(502, {"error": str(e)})
-        log(f"recognized {len(items)} sentence(s) in {time.time() - started:.1f}s")
-        self.send_json(200, {"fortunes": fortunes})
+        who = "" if len(characters) == 1 else f" for {len(characters)} characters"
+        log(f"recognized {len(items)} sentence(s){who} in {time.time() - started:.1f}s")
+        self.send_json(200, {"characters": characters, "fortunes": fortunes})
 
     def handle_generate(self, body):
         try:

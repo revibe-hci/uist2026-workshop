@@ -11,12 +11,17 @@ async function errorOf(r, fallback) {
   return new Error(data.error || `${fallback} (${r.status})`);
 }
 
-/** items: [{ context: [up to 3 previous sentences], sentence }] -> fortunes (number or null) */
-export async function recognize(protagonist, items) {
+/**
+ * characters: names, the protagonist first.
+ * items: [{ context: [up to 3 previous sentences], sentence, rate: [indices of the characters to rate] }]
+ * -> one row per item, one value per character: a fortune, "absent" (the sentence does not
+ *    involve that character), or null (not rated).
+ */
+export async function recognize(characters, items) {
   const r = await fetch("/api/recognize", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ protagonist, items }),
+    body: JSON.stringify({ characters, items }),
   });
   if (!r.ok) throw await errorOf(r, "Fortune recognition failed");
   const data = await r.json();

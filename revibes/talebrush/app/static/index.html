@@ -65,16 +65,18 @@
 
       <section class="panel canvas-panel" aria-label="Fortune sketch">
         <div class="canvas-head">
-          <input id="protagonist" class="name-input" placeholder="Name" autocomplete="off" aria-label="Protagonist's name" />
-          <span class="fortune-label">'s fortune</span>
+          <span id="fortunePrefix" class="fortune-label" hidden>Fortune of</span>
+          <div id="characters" class="characters" role="group" aria-label="Characters"></div>
+          <span id="fortuneSuffix" class="fortune-label">'s fortune</span>
+          <button id="addCharacter" class="add-char-btn" type="button" title="Add a character with its own fortune line (up to 4 characters)">+ Character</button>
           <button id="generateAgain" class="generate-btn" type="button" title="Generate new sentences for the same sketch">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66" /><path d="M20 4v5h-5" /></svg>
-            <span>Generate Again</span>
+            <span id="generateLabel">Generate Again</span>
           </button>
         </div>
 
         <div id="fortuneWrap" class="canvas-wrap fortune-wrap" title="">
-          <svg id="fortuneCanvas" class="sketch-canvas" role="img" aria-label="Fortune canvas: sketch the protagonist's fortune; higher is better"></svg>
+          <svg id="fortuneCanvas" class="sketch-canvas" role="img" aria-label="Fortune canvas: sketch each character's fortune; higher is better"></svg>
         </div>
 
         <div id="surpriseWrap" class="canvas-wrap surprise-wrap" hidden>
@@ -107,6 +109,7 @@
       (shown at the top right), prompted with the paper's fortune definition and calibration sentences. The paper
       used GPT-Neo 2.7B with trained soft prompts and a GeDi control model (GPT2-medium), which are not available
       here. The surprise level is given to the model in words, because the bridge has no temperature setting.
+      Remix, not in the paper: "+ Character" adds up to three more characters, each with its own fortune line.
       Your stories are saved in this browser.
     </footer>
 

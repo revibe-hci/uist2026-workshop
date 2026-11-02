@@ -86,6 +86,37 @@ at the top of the page. "Mike, the jazz guitarist" is the story from Figure 1.
 Your story and the history are saved in the browser, so reloading the page
 keeps them. **New story** starts over (the current story stays in History).
 
+## Several characters (remix, not in the paper)
+
+The paper sketches only the protagonist's fortune. This version also lets you
+sketch the fortunes of up to three more characters. To try it quickly, pick
+"Bob and Alice" from **Examples**.
+
+1. **Add a character** with **+ Character** next to the protagonist's name,
+   and type the character's name. Each character gets a colour. TaleBrush
+   rates the existing sentences for the new character (one model call). A
+   character without a name is ignored until you name it.
+2. **Choose whose line to draw** by clicking a character's chip, or by
+   pressing 1, 2, 3 or 4. The chosen chip is outlined. The pen and the eraser
+   act only on that character's line; the other lines are drawn faintly.
+3. **Draw each character's line.** With several characters, lifting the pen
+   does not start writing. The button turns green and reads **Generate**.
+   Press it when every line is drawn. TaleBrush then writes the sentences
+   under your new strokes.
+4. **Read the result.** Each character's rated fortune is a line of dots in
+   its colour: filled dots for TaleBrush's sentences, rings for yours. Where a
+   sentence does not involve a character, that character has no dot and its
+   line continues as a dotted segment. A sentence is rewritten when any
+   character with a line over it misses that line by more than 0.2, or when
+   the sentence leaves that character out.
+5. **The editor highlights** show the fortune of the character you chose.
+   Hover over the `>` of a sentence, or over a canvas column, to see every
+   character's fortune.
+6. **Remove a character** with the x on its chip. With one character left,
+   TaleBrush again writes as soon as you lift the pen, as in the paper.
+
+`../remixes.md` explains why this was added and what question it explores.
+
 ## Settings
 
 **Settings** at the top of the page has two options:
@@ -113,6 +144,9 @@ keeps them. **New story** starts over (the current story stays in History).
   described to the model in words.
 - **Speed.** Each model call takes about five seconds, so by default all
   sentences of a stroke are written together (see Settings).
+- **Several characters.** Not in the paper; see "Several characters" above.
+  With one character, TaleBrush behaves and prompts the model exactly as
+  before.
 - **Software.** The paper used React and Flask. This version uses plain
   JavaScript and a Python server with no extra packages, so it runs without
   installing anything.

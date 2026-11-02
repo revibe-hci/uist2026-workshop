@@ -1,5 +1,7 @@
-// What a sentence's fortune depends on: the protagonist, up to three previous
-// sentences (the paper's recognition context) and the sentence itself.
+// What a sentence's fortune depends on: the character, up to three previous sentences (the
+// paper's recognition context) and the sentence itself.
+
+import { modelNames } from "./characters.js";
 
 const squash = (t) => t.replace(/\s+/g, " ").trim();
 
@@ -12,6 +14,18 @@ export function contextFor(sentences, index) {
   return prev;
 }
 
-export function recognitionKey(protagonist, sentences, index) {
-  return JSON.stringify([squash(protagonist), contextFor(sentences, index), squash(sentences[index].text)]);
+/**
+ * The key of one character's rating of one sentence. The protagonist's key has the same form as
+ * before the remix, so ratings stored by the one-character version stay valid. Other characters'
+ * keys are marked "side", because they are rated with a different prompt (they may be absent).
+ */
+export function recognitionKey(name, sentences, index, side = false) {
+  const key = [squash(name), contextFor(sentences, index), squash(sentences[index].text)];
+  if (side) key.push("side");
+  return JSON.stringify(key);
+}
+
+/** The keys of every character's rating of sentence `index`, in character order. */
+export function ratingKeys(characters, sentences, index, names = modelNames(characters)) {
+  return characters.map((c, k) => recognitionKey(names[k], sentences, index, k > 0));
 }

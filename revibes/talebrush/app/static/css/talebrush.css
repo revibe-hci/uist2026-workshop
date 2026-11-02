@@ -479,8 +479,109 @@ button {
 
 .canvas-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+/* ---------------------------------------------------------------- characters (remix) */
+
+.characters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.char-chip {
+  display: inline-flex;
+  align-items: center;
+}
+
+.char-chip .chip-swatch,
+.char-chip .chip-remove {
+  display: none;
+}
+
+.characters.multi .char-chip {
+  gap: 5px;
+  padding: 2px 4px 2px 8px;
+  border: 1.5px solid #dcdcdc;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.characters.multi .char-chip:hover {
+  border-color: #bdbdbd;
+}
+
+.characters.multi .char-chip.active {
+  border-color: var(--c);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 18%, transparent);
+}
+
+.characters.multi .chip-swatch {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--c);
+  flex: none;
+}
+
+.characters.multi .name-input {
+  border: none;
+  padding: 3px 2px;
+  border-radius: 4px;
+  font-size: 13.5px;
+  background: transparent;
+}
+
+.characters.multi .name-input:focus {
+  outline: none;
+  background: #f5f5f3;
+}
+
+.characters.multi .chip-remove {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #999;
+  cursor: pointer;
+}
+
+.characters.multi .chip-remove[hidden] {
+  display: none;
+}
+
+.characters.multi .chip-remove:hover:not(:disabled) {
+  background: #f0e4e4;
+  color: #c04848;
+}
+
+.add-char-btn {
+  border: 1px dashed #c9c9c9;
+  background: #fff;
+  color: #777;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.add-char-btn:hover:not(:disabled) {
+  border-color: #9a9a9a;
+  color: #444;
+}
+
+.add-char-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .name-input {
@@ -527,6 +628,18 @@ button {
 
 .generate-btn.busy {
   opacity: 0.85;
+}
+
+/* Several characters: new strokes are waiting for the Generate button. */
+.generate-btn.ready {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  animation: ready 1.6s ease-in-out infinite;
+}
+
+.generate-btn.ready:hover:not(:disabled) {
+  background: #3aa86a;
 }
 
 .generate-btn.busy svg {
@@ -794,6 +907,71 @@ button {
   opacity: 1;
 }
 
+/* Several characters (remix): each character's line, envelope and dots take its colour (--c). */
+.multi .char-line .envelope {
+  stroke: var(--c);
+  stroke-opacity: 0.45;
+}
+
+.multi .char-line .envelope-center {
+  stroke: var(--c);
+  stroke-opacity: 0.4;
+}
+
+.multi .char-line:not(.active) {
+  opacity: 0.4;
+}
+
+.multi .char-arc .arc-seg.gen,
+.multi .char-arc .arc-seg.user {
+  stroke: var(--c);
+}
+
+.multi .char-arc .arc-seg.user {
+  stroke-opacity: 0.45;
+}
+
+.arc-seg.skipped {
+  stroke-dasharray: 1.5 5;
+}
+
+.multi .char-arc .dot.gen {
+  fill: var(--c);
+}
+
+.multi .char-arc .dot.user {
+  fill: #fff;
+  stroke: var(--c);
+  stroke-width: 2;
+}
+
+.multi .char-arc .dot.draft,
+.multi .char-arc .dot.stale {
+  fill: #fff;
+  stroke: var(--c);
+}
+
+.multi .char-arc:not(.active) {
+  opacity: 0.8;
+}
+
+.hist-char .hist-arc.hot {
+  stroke: var(--c);
+}
+
+.hist-char .hist-dot.hot {
+  fill: var(--c);
+}
+
+.tip-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 0;
+}
+
 .surprise-line {
   fill: none;
   stroke: #3a9a5c;
@@ -846,6 +1024,12 @@ button {
 @keyframes pulse {
   50% {
     opacity: 0.45;
+  }
+}
+
+@keyframes ready {
+  50% {
+    box-shadow: 0 0 0 4px rgba(69, 184, 120, 0.25);
   }
 }
 

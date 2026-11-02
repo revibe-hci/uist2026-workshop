@@ -4,6 +4,11 @@ This guide explains how the rebuilt TaleBrush is put together, what you need
 to run and change it, and where each feature of the paper lives in the code.
 For using the tool, see `README.md`.
 
+This version includes one remix that is not in the paper: up to four
+characters, each with its own fortune line. See "Several characters (remix)"
+below and `../remixes.md`. With one character, the page and every prompt are
+the same as in the version without the remix.
+
 ## What you need
 
 | Need | Why | Check |
@@ -44,7 +49,7 @@ http://localhost:8787/health.
 
     Browser: static/index.html + static/js/*.js
        |   GET  /api/health      is the bridge up, which model
-       |   POST /api/recognize   rate sentences' fortune
+       |   POST /api/recognize   rate sentences' fortune, per character
        |   POST /api/generate    write sentences for sketched slots (streamed)
        v
     server.py  (Python standard library HTTP server, also serves static/)
@@ -52,6 +57,7 @@ http://localhost:8787/health.
        |-- talebrush/recognition.py   fortune recognition (paper 5.2.1)
        |-- talebrush/generation.py    controlled generation (paper 5.2.2)
        |-- talebrush/prompts.py       all prompt text
+       |-- talebrush/cast.py          character names (remix)
        |-- talebrush/llm.py           client for the bridge
        v
     LLM bridge (llm-bridge/bridge.py, OpenAI Chat Completions format)
@@ -69,15 +75,18 @@ changed; see "Substitutions" below.
       talebrush/
         llm.py                   BridgeClient: POST /v1/chat/completions with JSON output; errors
         prompts.py               fortune definition, scale, calibration sentences, all prompts
-        recognition.py           Recognizer: batches sentences, keeps 3 sentences of context, caches
+        cast.py                  character names, ABSENT ("not in this sentence") (remix)
+        recognition.py           Recognizer: batches sentences, keeps 3 sentences of context, caches per character
         generation.py            parse_request, plan_runs, sequential_order, Generator (both pipelines)
       static/
         index.html               page layout (Figure 1)
         css/talebrush.css        styles, including SVG marks
         js/config.js             tunable constants (envelope widths, speeds, colours, delays)
+        js/characters.js         character list, colours, model names, loading old stories (remix)
+        js/cast.js               the character chips above the canvas (remix)
         js/sketch.js             the sketch data model (pure functions)
         js/geometry.js           monotone curve through the fortune dots
-        js/keys.js               what a sentence's fortune depends on (recognition key)
+        js/keys.js               what a sentence's fortune depends on (recognition key, per character)
         js/store.js              application state, render scheduling, localStorage
         js/api.js                fetch wrappers; reads the streamed generation events
         js/recognizer.js         rates the writer's sentences after typing pauses
@@ -130,32 +139,44 @@ every 30 seconds otherwise.
 
 ### `POST /api/recognize`
 
-    {"protagonist": "Mike",
-     "items": [{"context": ["up to three previous sentences"], "sentence": "Mike lost his guitar."}]}
-    -> {"fortunes": [0.12]}
+    {"characters": ["Bob", "Alice"],
+     "items": [{"context": ["up to three previous sentences"], "sentence": "Alice won the role.",
+                "rate": [0, 1]}]}
+    -> {"characters": ["Bob", "Alice"], "fortunes": [[0.3, 0.9]]}
 
-One model call rates up to 16 sentences. Results are cached in memory by
-(protagonist, last three context sentences, sentence). A value is `null` if
-the model gave no usable number.
+`characters` lists the names, the protagonist first (at most 4). `rate`
+(optional) lists the indices of the characters to rate; by default all are
+rated. The answer has one row per item and one value per character: a
+fortune, `"absent"` (the sentence does not involve that character; never for
+the protagonist), or `null` (not rated, or no usable number from the model).
+The old one-character form `{"protagonist": "Mike", ...}` still works and is
+treated as `characters: ["Mike"]`.
+
+One model call rates up to 16 sentences. Results are cached in memory per
+character, by (character, last three context sentences, sentence). So adding
+a character rates only that character.
 
 ### `POST /api/generate`
 
 Request: the whole story, one entry per bullet. Slots with a `target` are to
 be written; the others are context. Blank slots without a target are skipped.
 
-    {"protagonist": "Mike", "mode": "batch", "threshold": 0.2,
+    {"characters": ["Bob", "Alice"], "mode": "batch", "threshold": 0.2,
      "slots": [
-       {"text": "Mike is a jazz guitarist ...", "target": null},
+       {"text": "Bob and Alice both auditioned ...", "target": null},
        {"text": "", "previous": "old text or null",
-        "target": {"fortune": 0.31, "tolerance": 0.05, "maxRegen": 2, "surprise": 0.5}},
-       {"text": "", "target": {"fortune": null, "surprise": 0.5}}
+        "target": {"fortunes": [0.31, 0.8], "tolerances": [0.05, 0.12], "maxRegen": 2, "surprise": 0.5}},
+       {"text": "", "target": {"fortunes": [null, null], "surprise": 0.5}}
      ]}
 
-- `fortune`: the sketch's value for the slot, or `null` where the line is
-  erased (no fortune target).
-- `tolerance`: the envelope half-width (shown in the interface only).
+- `fortunes`: one value per character, the sketch's value for the slot, or
+  `null` where that character's line is erased or not drawn (no target for
+  that character). The old form `"protagonist"` plus one `"fortune"` still
+  works.
+- `tolerances`: the envelope half-widths (shown in the interface only).
 - `maxRegen`: rewrites allowed when a try misses by more than `threshold`
-  (2 for slow strokes, 1 for fast ones, 0 without a target).
+  (2 for slow strokes, 1 for fast ones, 0 without a target). With several
+  characters the page sends the largest value over the characters' strokes.
 - `previous`: the slot's earlier text, so the model writes something new.
 - `mode`: `batch` or `sequential` (see "Generation").
 
@@ -165,8 +186,12 @@ Response: newline-delimited JSON events, streamed as they happen:
 |---|---|---|
 | `plan` | `mode`, `runs: [{slots, task}]` | which slots are written, as continuation or infilling |
 | `status` | `message` | progress text shown under the canvas |
-| `draft` | `slot`, `text`, `fortune`, `attempt` | a try and its rating (the page shows it in italics) |
-| `sentence` | `slot`, `text`, `fortune`, `target`, `tolerance`, `surprise`, `maxRegen`, `task`, `attempts` | the chosen sentence for a slot |
+| `draft` | `slot`, `text`, `fortunes`, `attempt` | a try and its ratings (the page shows it in italics) |
+| `sentence` | `slot`, `text`, `fortunes`, `targets`, `tolerances`, `surprise`, `maxRegen`, `task`, `attempts` | the chosen sentence for a slot |
+
+`fortunes`, `targets` and `tolerances` have one value per character. The
+events also carry the protagonist's values as `fortune`, `target` and
+`tolerance`.
 | `missing` | `slot` | the model gave no usable sentence for the slot |
 | `error` | `message` | the bridge failed; the page puts unfinished slots back |
 | `done` | `seconds`, `calls`, `written`, `retried`, `missing` | summary |
@@ -191,6 +216,13 @@ number was added after one test on the Cinderella story (Figure 8): without
 it, the wedding sentence was rated 0.30; with it, 0.95, and the whole arc had
 the shape of the paper's Figure 8. That is one run of each prompt, not a
 measurement.
+
+With several characters (remix), a second prompt is used
+(`prompts.recognition_system_multi`). It names the protagonist and the other
+characters, lists the characters to rate, and asks for
+`{"ratings": [{"item", "reason", "fortunes": {"Bob": 0.3, "Alice": null}}]}`.
+`null` means the sentence does not involve that character. The page stores
+that as `"absent"`, and the protagonist always gets a number.
 
 The page asks for ratings 0.9 seconds after the writer stops typing
 (`config.RECOGNITION_DELAY_MS`), for every sentence whose recognition key
@@ -225,13 +257,15 @@ sentence.
 **Regeneration rule** (both pipelines, from Section 5.2.2): a try is rewritten
 when `|target - rating| > threshold` (0.2 by default), at most `maxRegen`
 times; the slot keeps the try with the smallest error. Slots without a target
-are written once.
+are written once. With several characters, a try's error is its largest miss
+over the characters that have a target, and a try that leaves out a character
+with a target (`"absent"`) has error 1.0.
 
 ## The sketch (`static/js/sketch.js`, `canvas.js`)
 
 - The sketch is stored per sentence slot: `SAMPLES_PER_SLOT` (32) samples
-  across each slot. `fortune[j]` is `[value, halfWidth]` or `null`;
-  `surprise[j]` is a value or `null`. Inserting or deleting a bullet inserts or
+  across each slot. `fortunes[characterId][j]` is `[value, halfWidth]` or
+  `null` (one line per character); `surprise[j]` is a value or `null`. Inserting or deleting a bullet inserts or
   deletes that slot's samples, so the sketch stays lined up with its sentences.
 - Pen speed is measured in pixels per millisecond and smoothed. It maps to the
   envelope half-width between `ENVELOPE.minHalfWidth` (0.03, slow) and
@@ -239,8 +273,8 @@ are written once.
 - A slot is **sketched** when the line covers half of it or passes its centre.
   Its target is the mean height of the line over the slot. Its `maxRegen` is 2
   if the mean half-width is below `ENVELOPE.tightBelow` (0.09), else 1.
-- The **sketched range** runs from the first to the last sketched slot.
-  Unsketched slots inside it count as erased.
+- The **sketched range** runs from the first to the last slot sketched by any
+  character. Unsketched slots inside it count as erased.
 - **Which slots are written.** After a pen stroke: the slots the stroke
   covers, plus blank slots inside the sketched range. After Generate Again:
   every slot inside the sketched range. In both cases a slot is written only
@@ -255,10 +289,15 @@ are written once.
 
 ## Front-end state (`static/js/store.js`)
 
-All state is in one object, `state`. Components re-render from it after
+All state is in one object, `state`. `state.characters` lists the characters
+(`{id, name, color}`, the protagonist first, with id `c0`), and
+`state.activeCharacter` is the id whose line the pen draws. Each sentence has
+`fortunes` and `keys`, both keyed by character id. Components re-render from it after
 `changed()`, at most once per animation frame. The story, sketch, history and
 settings are saved to `localStorage` under `talebrush-revibe-v1` 0.4 seconds
-after a change. In the browser console, `talebrush.state` shows the live
+after a change. The saved format is version 2; version 1 (one protagonist,
+from before the remix) is still read, and becomes a story with one
+character. In the browser console, `talebrush.state` shows the live
 state.
 
 History (`history.js`): every finished generation stores a snapshot (text,
@@ -319,4 +358,29 @@ inserting and deleting slots, the curve, and sentence splitting on paste.
   compare against.
 - **Not built:** the paper's technical evaluation and user study, and ideas
   the discussion lists as future work (smoothing the sketch, letting writers
-  correct the machine's ratings, several characters' fortunes).
+  correct the machine's ratings). Several characters' fortunes is built as a
+  remix (below).
+
+## Several characters (remix)
+
+Not in the paper. `../remixes.md` gives the reasons and the question it
+explores. Where it lives:
+
+| Behaviour | Code |
+|---|---|
+| characters, colours, names sent to the model, loading old stories | `static/js/characters.js` |
+| chips, + Character, remove, choosing a character (click or keys 1 to 4) | `static/js/cast.js`, `main.js` (`selectCharacter`, keydown) |
+| pen and eraser act on the chosen character's line | `canvas.js` `samples`, `down` |
+| one envelope and one rated line per character; dotted segment where a character is absent | `canvas.js` `renderSketch`, `characterPoints`, `renderArc`; styles under `.multi` in `talebrush.css` |
+| several characters: a stroke marks sentences; the button becomes Generate | `main.js` `onStroke`, `strokeSlots`, `#generateAgain` handler |
+| one target per character per slot; slowest stroke sets the retries | `sketch.js` `castSlots`, `generator.js` `runGeneration` |
+| unnamed characters are not sent to the model | `characters.js` `namedCast` |
+| per-character ratings and cache keys | `keys.js` `ratingKeys`, `recognizer.js`, `recognition.py` |
+| prompts with one target per character | `prompts.py` `*_multi`, `MULTI_RULES`, the branches in `fortune_instruction` and `feedback_lines` |
+| largest miss over characters; absent counts as 1.0 | `generation.py` `error_of` |
+
+The back-end tests check that a one-character request gets the
+one-character prompts (`test_one_character_prompts_have_the_one_character_form`).
+They do not compare against the code from before the remix. That comparison
+was made once while building: 8 one-character prompts rendered by the old and
+the new `prompts.py` were identical.

@@ -1,5 +1,15 @@
 // Application state, change notification, and saving to the browser's localStorage.
 
+import {
+  MAX_CHARACTERS,
+  PROTAGONIST_ID,
+  freeColor,
+  isRating,
+  labels,
+  makeCharacter,
+  normalizeCharacters,
+  normalizeRatings,
+} from "./characters.js";
 import { DEFAULT_BULLETS, DEFAULT_THRESHOLD, HISTORY_LIMIT, STORAGE_KEY } from "./config.js";
 import * as Sk from "./sketch.js";
 
@@ -8,15 +18,18 @@ let nextId = 1;
 /**
  * One bullet point of the text editor.
  * source: "user" (typed or edited by the writer) or "generated" (written by TaleBrush, untouched).
- * fortune: recognized fortune 0..1, fortuneKey: the recognition key it belongs to.
+ * fortunes: character id -> recognized fortune 0..1, or ABSENT when the sentence does not involve
+ *   that character. A character without an entry has not been rated yet.
+ * keys: character id -> the recognition key its rating belongs to (see keys.js).
  */
-export function makeSentence(text = "", source = "user", fortune = null) {
-  return { id: nextId++, text, source, fortune, fortuneKey: null, pending: false, draft: false, gen: null };
+export function makeSentence(text = "", source = "user", fortunes = {}) {
+  return { id: nextId++, text, source, fortunes: { ...fortunes }, keys: {}, pending: false, draft: false, gen: null };
 }
 
 export const state = {
   title: "",
-  protagonist: "",
+  characters: [makeCharacter("", 0, PROTAGONIST_ID)], // the first one is the protagonist
+  activeCharacter: PROTAGONIST_ID, // whose line the pen draws
   sentences: [],
   sketch: Sk.emptySketch(0),
   surpriseEnabled: false,
@@ -36,8 +49,60 @@ export const state = {
     previewId: null,
     bridge: null,
     recognizing: false,
+    strokeMarks: new Map(), // sentence id -> ids of the characters whose new strokes cover it, not generated yet (main.js)
   },
 };
+
+// ---------------------------------------------------------------- characters
+
+export function isMulti() {
+  return state.characters.length > 1;
+}
+
+export function protagonist() {
+  return state.characters[0];
+}
+
+export function activeCharacter() {
+  return state.characters.find((c) => c.id === state.activeCharacter) || state.characters[0];
+}
+
+/** The name shown for a character ("the protagonist" when the protagonist has no name). */
+export function labelOf(id) {
+  const k = state.characters.findIndex((c) => c.id === id);
+  return labels(state.characters)[Math.max(0, k)];
+}
+
+/** A sentence's rating for one character: a number, or null when absent or not rated. */
+export function ratingOf(s, id) {
+  const v = s?.fortunes?.[id];
+  return isRating(v) ? v : null;
+}
+
+export function addCharacter(name = "") {
+  if (state.characters.length >= MAX_CHARACTERS) return null;
+  const c = makeCharacter(name, freeColor(state.characters));
+  state.characters.push(c);
+  Sk.lineOf(state.sketch, c.id, state.sentences.length);
+  state.activeCharacter = c.id;
+  return c;
+}
+
+export function removeCharacter(id) {
+  const k = state.characters.findIndex((c) => c.id === id);
+  if (k <= 0) return; // the protagonist stays
+  state.characters.splice(k, 1);
+  delete state.sketch.fortunes[id];
+  for (const s of state.sentences) {
+    delete s.fortunes[id];
+    delete s.keys[id];
+  }
+  for (const [sid, marks] of state.ui.strokeMarks) {
+    marks.delete(id);
+    if (!marks.size) state.ui.strokeMarks.delete(sid);
+  }
+  if (state.activeCharacter === id) state.activeCharacter = state.characters[0].id;
+}
 
 // ---------------------------------------------------------------- change notification
 
@@ -73,15 +138,19 @@ export function setStatus(message, kind = "info") {
 
 // ---------------------------------------------------------------- story edits
 
-export function newStory({ title = "", protagonist = "", texts = [], bullets = DEFAULT_BULLETS } = {}) {
+/** Start a story. `characters` (names) is optional; without it the story has one protagonist. */
+export function newStory({ title = "", protagonist = "", characters = null, texts = [], bullets = DEFAULT_BULLETS } = {}) {
   const list = texts.slice();
   while (list.length < bullets) list.push("");
+  const names = Array.isArray(characters) && characters.length ? characters.slice(0, MAX_CHARACTERS) : [protagonist];
   state.title = title;
-  state.protagonist = protagonist;
+  state.characters = names.map((name, k) => makeCharacter(name, k, k === 0 ? PROTAGONIST_ID : null));
+  state.activeCharacter = PROTAGONIST_ID;
   state.sentences = list.map((t) => makeSentence(t, "user"));
-  state.sketch = Sk.emptySketch(state.sentences.length);
+  state.sketch = Sk.emptySketch(state.sentences.length, state.characters.map((c) => c.id));
   state.surpriseEnabled = false;
   state.activeHistoryId = null;
+  state.ui.strokeMarks.clear();
 }
 
 export function insertSentence(index, text = "", source = "user") {
@@ -90,7 +159,8 @@ export function insertSentence(index, text = "", source = "user") {
 }
 
 export function removeSentence(index) {
-  state.sentences.splice(index, 1);
+  const [gone] = state.sentences.splice(index, 1);
+  if (gone) state.ui.strokeMarks.delete(gone.id);
   Sk.deleteSlot(state.sketch, index);
   if (!state.sentences.length) insertSentence(0);
 }
@@ -119,14 +189,15 @@ function schedulePersist() {
 export function persist() {
   try {
     const data = {
-      version: 1,
+      version: 2,
       title: state.title,
-      protagonist: state.protagonist,
+      characters: state.characters,
+      activeCharacter: state.activeCharacter,
       sentences: state.sentences.map((s) => ({
         text: s.text,
         source: s.source,
-        fortune: s.fortune,
-        fortuneKey: s.fortuneKey,
+        fortunes: s.fortunes,
+        keys: s.keys,
         gen: s.gen,
       })),
       sketch: state.sketch,
@@ -146,8 +217,31 @@ export function persist() {
 const str = (v) => (typeof v === "string" ? v : "");
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
-function validSnapshot(h) {
-  return h && typeof h.id === "string" && typeof h.name === "string" && Array.isArray(h.sentences) && h.sketch;
+/**
+ * Check a stored story of the History list and bring it to the current form. Stories stored
+ * before the remix have one protagonist name, one fortune per sentence and one sketched line.
+ * Returns null for an entry that cannot be used.
+ */
+export function upgradeSnapshot(h) {
+  if (!h || typeof h.id !== "string" || typeof h.name !== "string" || !Array.isArray(h.sentences) || !h.sketch) {
+    return null;
+  }
+  const characters = normalizeCharacters(h.characters, h.protagonist);
+  const ids = characters.map((c) => c.id);
+  return {
+    id: h.id,
+    name: h.name,
+    createdAt: num(h.createdAt) ?? 0,
+    title: str(h.title),
+    characters,
+    sentences: h.sentences.map((s) => ({
+      text: str(s?.text),
+      source: s?.source === "generated" ? "generated" : "user",
+      fortunes: normalizeRatings(s, ids),
+    })),
+    sketch: Sk.normalizeSketch(h.sketch, h.sentences.length, ids),
+    surpriseEnabled: !!h.surpriseEnabled,
+  };
 }
 
 /** Load the last session from localStorage. Returns false (and starts fresh) if there is none. */
@@ -158,22 +252,28 @@ export function restore() {
   } catch {
     data = null;
   }
-  if (!data || data.version !== 1 || !Array.isArray(data.sentences) || !data.sentences.length) {
+  if (!data || (data.version !== 1 && data.version !== 2) || !Array.isArray(data.sentences) || !data.sentences.length) {
     newStory();
     return false;
   }
   state.title = str(data.title);
-  state.protagonist = str(data.protagonist);
+  state.characters = normalizeCharacters(data.characters, data.protagonist); // version 1 stored one protagonist
+  const ids = state.characters.map((c) => c.id);
+  state.activeCharacter = ids.includes(data.activeCharacter) ? data.activeCharacter : ids[0];
   state.sentences = data.sentences.map((s) => {
-    const x = makeSentence(str(s?.text), s?.source === "generated" ? "generated" : "user", num(s?.fortune));
-    x.fortuneKey = typeof s?.fortuneKey === "string" ? s.fortuneKey : null;
+    const x = makeSentence(str(s?.text), s?.source === "generated" ? "generated" : "user", normalizeRatings(s, ids));
+    if (s?.keys && typeof s.keys === "object") {
+      for (const id of ids) if (typeof s.keys[id] === "string") x.keys[id] = s.keys[id];
+    } else if (typeof s?.fortuneKey === "string") {
+      x.keys[ids[0]] = s.fortuneKey; // version 1: the protagonist's key has the same form
+    }
     x.gen = s?.gen && typeof s.gen === "object" ? s.gen : null;
     return x;
   });
-  state.sketch = Sk.normalizeSketch(data.sketch, state.sentences.length);
+  state.sketch = Sk.normalizeSketch(data.sketch, state.sentences.length, ids);
   state.surpriseEnabled = !!data.surpriseEnabled;
   state.tool = data.tool === "eraser" ? "eraser" : "pen";
-  state.history = Array.isArray(data.history) ? data.history.filter(validSnapshot) : [];
+  state.history = Array.isArray(data.history) ? data.history.map(upgradeSnapshot).filter(Boolean) : [];
   state.activeHistoryId = state.history.some((h) => h.id === data.activeHistoryId) ? data.activeHistoryId : null;
   state.storyCounter = num(data.storyCounter) ?? state.history.length;
   state.settings = {
@@ -182,3 +282,4 @@ export function restore() {
   };
   return true;
 }
+

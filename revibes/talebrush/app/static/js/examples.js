@@ -42,4 +42,14 @@ export const EXAMPLES = {
     texts: ["Melissa fought a dragon."],
     bullets: 6,
   },
+  // Remix example. The paper's Discussion (Section 8) names this case as a limit of its model:
+  // "in the story about Bob and Alice, it is hard to make Bob have a good fortune and Alice have
+  // a bad one". The opening sentence is ours, not the paper's.
+  bobAlice: {
+    label: "Bob and Alice, two characters (remix; from the paper's Discussion)",
+    title: "",
+    characters: ["Bob", "Alice"],
+    texts: ["Bob and Alice both auditioned for the lead role in their town's summer play."],
+    bullets: 7,
+  },
 };
