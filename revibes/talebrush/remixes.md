@@ -67,3 +67,38 @@ generator, a filter, or a way to adopt a curve they found?
   dimension: 12 distinct combinations.
 - **The generated dimensions were premise-specific,** not generic (none of
   Luminate's "creativity: least…most" problem in this run).
+
+### Update: a second protagonist, and setting chips that rewrite
+
+**What changed**
+- **Second protagonist** (TaleBrush §3, Fig. 3a: "multiple control panels").
+  "＋ Add protagonist" opens a panel under the fortune canvas, e.g. "Ana's
+  fortune". It works like the other lanes: sketch it or leave it blank to
+  explore. It's recognized per sentence, and it's an axis and a sparkline in
+  the design space. All prompts name both protagonists. Suggested dimensions
+  now include both (e.g. "Mike and Ana's bond").
+- **Where they interact.** A rating-only dimension asks, for each sentence,
+  whether the two protagonists directly interact. Those sentences are
+  highlighted (⇄ with a pink column) in both fortune panels and the editor.
+  Versions in the design space show pink ticks. It's never a target, and a
+  missing rating counts as "no".
+- **Setting chips rewrite the story.** Pinning a value only affected the
+  *next* generation, so chips looked broken. Picking one now regenerates the
+  story's generated, unedited sentences in the new setting. Each sentence keeps
+  its current fortune, lane levels and interactions as targets, so only the
+  setting changes. If there is no generated text yet, the sketched slots are
+  written instead.
+
+**What we noticed**
+- With Mike sketched down-then-up and Ana up-then-down, the story followed
+  both. Ana's recognized dots tracked her sketch closely.
+- **Interaction rating is discriminating.** "Ana quietly offered him her spare
+  cable" counted as an interaction. "Mike sold his guitar *while* Ana toured
+  Europe" (parallel lives in one sentence) did not.
+- Single-story generation tends to keep the two protagonists apart (1
+  interaction in 6 sentences). Exploring gave 2–4 interactions per version.
+  A sketchable interaction lane could steer that.
+- A genre change ("Magical realism with a supernatural guitar") rewrote the
+  story in about 42 s, and both arcs mostly held. The first version dropped the
+  existing interaction; it now carries interactions over as targets too. That
+  fix wasn't re-run live.

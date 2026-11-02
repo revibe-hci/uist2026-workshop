@@ -126,3 +126,19 @@ On the frontend, versions keep `base` (the writer's bullets when exploring),
 them into a full story for previews, sparklines and adopting. Axis categories
 for an arc dimension come from `shapeOf()`, applied to the version's own
 ratings, not to its requested shape.
+
+Second protagonist and interactions:
+- The second protagonist is an entry in `state.dims` with `kind: "protagonist"`,
+  `id: "p2"` and `person`, rendered in `#protagonists` at 170 px.
+- `arcDimDefs()` adds a rating-only dimension `meet` (`rateOnly: true`) when
+  the second protagonist has a name.
+- On the server, `rateOnly` dimensions are never explored, `variant_once()`
+  gives them no per-line targets, and `missing_value()` counts a missing
+  rating as 0.
+- `protagonist_line()` names both protagonists in every prompt.
+- `meetsAt(b)` (meet ≥ 0.5) drives `drawInteractions()` (canvas and panel),
+  the editor's `.bullet.meet`, and the sparkline ticks.
+
+Setting chips: `pickSetting()` pins a value and calls
+`generate(slots, {keepArc: true})`. That turns each slot's current fortune,
+lane levels and interaction rating into targets.

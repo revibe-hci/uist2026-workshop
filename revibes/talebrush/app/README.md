@@ -90,7 +90,14 @@ Not in the paper. See `../remixes.md` for the question it explores.
      loglines → full outlines.
 4. **Hover** a version to preview its text in the editor and its arcs on the
    canvas and lanes.
-5. **Click** a version to adopt it. Its dots are then corrected by the
+5. **Setting chips rewrite.** Picking a value (e.g. a genre) rewrites the
+   story's generated sentences in that setting right away, keeping their arcs.
+   "explore" unpins it.
+6. **＋ Add protagonist** (next to the name field) adds a second protagonist's
+   fortune panel under the canvas. Name them, then sketch their arc or leave it
+   blank to explore. Sentences where the two protagonists interact are marked
+   ⇄ in both panels and the editor.
+7. **Click** a version to adopt it. Its dots are then corrected by the
    recognition module. In the yellow panel, **Pin its curve** (fortune or any
    lane) copies that curve into your sketch, **Pin its settings** pins its
    chips, and **4 more like this** adds variations.

@@ -21,6 +21,7 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Does a scripted, perfectly regular stroke test speed→width fairly compared to a real hand?
 - Remix: Luminate dropped numeric dimensions as not useful; TaleBrush is built on one (fortune as a curve). Are numeric dimensions useful once they're curves over story time?
 - Remix: is there a faster model than Haiku? No — the bridge already uses Haiku; most latency is ~4 s of CLI startup per call plus chained calls.
+- Remix: the setting chips "didn't work": they pinned, but only the next generation used them. Should a pick rewrite right away? (Decided yes.)
 
 ## Challenges we faced (red)
 
@@ -42,6 +43,8 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix: browsers allow ~6 connections per host, so the fan-out had to move to the server and stream results back over one connection.
 - Remix: our first requirement sampling moved all dimensions in lockstep — 12 versions held only 5 shape combinations. Fixed with balanced, independently shuffled picks (12/12 distinct).
 - Remix: self-rated values are inflated — a version rated its fortune 0.83 → 0.11, the independent recognizer read it as nearly flat (0.62 … 0.40).
+- Remix: a missing rating defaulted to 0.5, which would have read as "the protagonists interact"; rating-only flags now default to 0.
+- Remix: the first genre rewrite dropped an existing interaction between Mike and Ana; interactions now carry over as targets.
 
 ## Ideas we came up with (green)
 
@@ -60,6 +63,9 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix: an "arcs" semantic-zoom level — a sparkline per dimension is the summary of a story version.
 - Remix: "Pin its curve" — adopt a curve found in the design space as your sketch, so exploring turns into sketching.
 - Remix: one bridge call per version (sentences + self-ratings), independent recognition only for the version you adopt.
+- Remix: a second protagonist as their own fortune panel (TaleBrush Fig. 3a), with ⇄ highlights where the two interact.
+- Remix: setting chips that rewrite the story while keeping its arcs, "same story, new genre".
+- Remix idea: make the interaction itself sketchable; single stories kept Mike and Ana apart (1 of 6 sentences).
 
 ## Iterations and decision points (blue)
 
@@ -80,6 +86,8 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Remix decision: combine generated dimensions (as lanes) with a Luminate design space; stay on the LLM bridge but run aggressively parallel and progressive.
 - Remix measurement: 12 trivial bridge calls took 16.8 s with 4 slots vs 7.1 s with 12; 12 realistic versions arrived 9.5–18.3 s in the benchmark, 14–36 s in the app (more dimensions to rate).
 - Remix decision: BRIDGE_PARALLEL=12, at most 10 slots for exploring so 2 stay free for recognition while editing.
+- Remix decision: the interaction is a rating-only dimension (never a target), read by recognition and by each version's self-ratings.
+- Remix test: Mike down-then-up, Ana up-then-down; the story followed both, Ana's dots tracked her sketch; the genre-chip rewrite took ~42 s with both arcs held.
 
 ## Remix ideas (green, bottom strip)
 
