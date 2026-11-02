@@ -41,7 +41,22 @@
           <div class="control-caption dimension-caption"><span>STORY DIMENSIONS</span><button id="remove-dimension" class="text-button" hidden>Remove custom dimension</button></div>
           <div class="selector-line"><div id="dimension-tabs" class="dimension-tabs" role="tablist" aria-label="Story dimensions"></div><button id="add-dimension" class="add-chip">＋ Custom</button></div>
         </div>
-        <div class="view-switch" role="group" aria-label="Story visualization"><button id="curve-view-button" aria-pressed="true">2D curves</button><button id="space-view-button" aria-pressed="false">3D / nD space <span>NEW</span></button></div>
+        <div class="view-switch" role="group" aria-label="Story visualization"><button id="curve-view-button" aria-pressed="true">2D curves</button><button id="space-view-button" aria-pressed="false">3D / nD space</button><button id="relationship-view-button" aria-pressed="false">Relationships <span>NEW</span></button></div>
+        <section id="relationships-view" hidden aria-label="Directional relationship curves">
+          <div id="relationship-empty" class="relationship-empty"><p>Add at least two characters to sketch a relationship.</p><button id="relationship-add-character" class="small-button">Add a character</button></div>
+          <div id="relationship-content">
+            <div class="relationship-selectors"><label>From<select id="relationship-from" aria-label="Relationship source"></select></label><button id="relationship-swap" class="small-button" title="Select the reverse relationship" aria-label="Swap relationship direction">⇄</button><label>To<select id="relationship-to" aria-label="Relationship target"></select></label><label>Relationship<select id="relationship-type" aria-label="Relationship type"></select></label></div>
+            <svg id="relationship-graph" viewBox="0 0 500 230" role="group" aria-label="Directed character relationships"></svg>
+            <p class="relationship-hint">Arrow direction matters. Click a character or arrow to select a pair.</p>
+            <label class="relationship-time">Show relationship at<select id="relationship-sentence" aria-label="Relationship sentence"></select></label>
+            <p id="relationship-score" class="space-coordinates"></p>
+            <h3 id="relationship-heading" class="relationship-heading"></h3><p id="relationship-description" class="dimension-description"></p>
+            <div class="chart-shell"><div id="relationship-high" class="axis-label top"></div><div id="relationship-canvas" class="drawing-surface"></div><div id="relationship-low" class="axis-label bottom"></div></div>
+            <div class="chart-caption"><span>STORY BEGINNING</span><span>One sentence per position</span><span>STORY END</span></div>
+            <div class="relationship-tools" role="group" aria-label="Relationship sketch tools"><button id="relationship-pen" class="small-button" aria-pressed="true">Draw relationship</button><button id="relationship-eraser" class="small-button" aria-pressed="false">Erase constraint</button><span>Green: target · Blue: recognized relationship</span></div>
+            <p class="relationship-hint">All drawn relationships and individual character curves guide generation together.</p>
+          </div>
+        </section>
         <section id="space-view" hidden aria-label="Interactive 3D story space">
           <div class="space-title"><strong><span id="space-character"></span>’s story space</strong><button id="space-reset" class="text-button">Reset camera</button></div>
           <div class="space-axis-selects"><label>X axis<select id="space-axis-x" aria-label="X axis"></select></label><label>Y axis<select id="space-axis-y" aria-label="Y axis"></select></label><label>Z axis<select id="space-axis-z" aria-label="Z axis"></select></label></div>

@@ -5,6 +5,8 @@ import {loadSavedWorkspace,saveWorkspace} from './storage.mjs';
 import {CastControls} from './cast.mjs';
 import {HologramSpace} from './space.mjs';
 import {setPointTargets} from './space-math.mjs';
+import {ensureRelationship,relationshipView,allArcTracks} from './relationship-state.mjs';
+import {RelationshipControls} from './relationships.mjs';
 
 const $ = id => document.getElementById(id);
 const KEY = 'talebrush.reconstruction.v1';
@@ -45,9 +47,18 @@ async function api(path,body){
 
 const fortuneCanvas=new SketchCanvas($('fortune-canvas'),{onBegin:pushUndo,onCommit:commitStroke,onHover:setHover,onFocus:focusSlot});
 const surpriseCanvas=new SketchCanvas($('surprise-canvas'),{kind:'surprise',onBegin:pushUndo,onCommit:commitStroke,onHover:setHover});
+const relationshipCanvas=new SketchCanvas($('relationship-canvas'),{onBegin:pushUndo,onCommit:commitStroke,onHover:setHover,onFocus:focusSlot});
+function selectRelationship(from,to,type){
+  if(busy||preview)return;ensureRelationship(state,from,to,type);state.activeCharacterId=from;state.viewMode='relationships';save();render();
+  message('This direction has its own curve. Sketch the relationship, or swap the arrow to edit how the other character feels.');
+}
+const relationshipControls=new RelationshipControls({onSelect:selectRelationship,onSentence(index){if(busy||preview)return;state.relationshipSentence=index;save();renderCanvases();},onTool:selectTool});
 const castControls=new CastControls({
-  onSelect(characterId,dimensionId){
-    if(busy||preview)return;state.activeCharacterId=characterId;state.activeDimensionId=dimensionId;hover=null;save();render();
+  onSelect(characterId,dimensionId,selection='dimension'){
+    if(busy||preview)return;state.activeCharacterId=characterId;state.activeDimensionId=dimensionId;hover=null;
+    if(selection==='curve'||(state.viewMode==='relationships'&&selection!=='character'))state.viewMode='curves';
+    if(state.viewMode==='relationships'&&state.characters.length>=2){const edge=state.relationshipTracks?.[state.activeRelationshipKey];ensureRelationship(state,characterId,edge?.targetCharacterId!==characterId&&state.characters.some(c=>c.id===edge?.targetCharacterId)?edge.targetCharacterId:state.characters.find(c=>c.id!==characterId).id,edge?.dimensionId||'trust');}
+    save();render();
     const view=trackView(state);message(`${view.character.name} · ${view.dimension.name}. Sketch this curve; generation considers every drawn curve. Analyze arcs to recognize it in existing text.`);
   },
   onChange(mutate){
@@ -55,7 +66,7 @@ const castControls=new CastControls({
     const before=copy(state);pushUndo();
     try{mutate(state);changed();render();}catch(error){state=before;undo.pop();render();throw error;}
   },
-  onNotice:message,
+  onNotice:message,onRelationship:selectRelationship,
 });
 const storySpace=new HologramSpace({
   onBegin:pushUndo,
@@ -78,11 +89,18 @@ function renderCanvases(){
   fortuneCanvas.setState(trackView(state),{history:overlays,preview:preview?trackView(preview):null,hover,busy,tool});
   surpriseCanvas.setState(state,{preview,hover,busy,tool});
   storySpace.setState(shown,{disabled:busy||!!preview});
+  relationshipControls.render(shown,{disabled:busy||!!preview,tool});
+  const relationship=relationshipView(shown);
+  if(relationship){
+    const key=shown.activeRelationshipKey,comparison=historyOpen?history.filter(h=>h.draft.relationshipTracks?.[key]).map(h=>({...h,draft:relationshipView(h.draft,key)})):[];
+    relationshipCanvas.setState(relationship,{history:comparison,preview:preview?relationship:null,hover,busy,tool});
+  }
 }
 function setHover(i){
   if(hover===i)return;hover=i;
   $('sentence-editor').querySelectorAll('.sentence-row').forEach(row=>row.classList.toggle('highlighted',Number(row.dataset.index)===i));
   fortuneCanvas.setHover(i);surpriseCanvas.setHover(i);
+  if(relationshipCanvas.state)relationshipCanvas.setHover(i);
 }
 function renderEditor(){
   const shown=preview||state;
@@ -134,10 +152,10 @@ function renderEditor(){
 function updateSentenceCount(shown=preview||state){$('sentence-count').textContent=`${shown.slots.filter(s=>s.text.trim()).length} / ${shown.slots.length} sentences`;}
 
 function render(){
-  const spatial=(preview||state).viewMode==='space';
-  $('space-view').hidden=!spatial;$('curve-view').hidden=spatial;
-  $('curve-view-button').setAttribute('aria-pressed',String(!spatial));$('space-view-button').setAttribute('aria-pressed',String(spatial));
-  $('curve-view-button').disabled=busy||!!preview;$('space-view-button').disabled=busy||!!preview;
+  const shown=preview||state,spatial=shown.viewMode==='space',relational=shown.viewMode==='relationships';
+  if(!preview&&relational&&!relationshipView(state)&&state.characters.length>=2)ensureRelationship(state,state.activeCharacterId,state.characters.find(c=>c.id!==state.activeCharacterId).id,'trust');
+  $('space-view').hidden=!spatial;$('curve-view').hidden=spatial||relational;$('relationships-view').hidden=!relational;
+  for(const [id,selected] of [['curve-view-button',!spatial&&!relational],['space-view-button',spatial],['relationship-view-button',relational]]){$(id).setAttribute('aria-pressed',String(selected));$(id).disabled=busy||!!preview;}
   renderEditor();castControls.render(preview||state,busy||!!preview);renderCanvases();
   $('history-count').textContent=history.length;
   $('surprise-toggle').checked=state.showSurprise;$('surprise-panel').hidden=!state.showSurprise;
@@ -154,6 +172,7 @@ function render(){
 function commitStroke(touched,kind,erased,cancelled){
   if(cancelled){if(undo.length)state=undo.pop();changed();render();return;}
   if(!touched.length)return;
+  if(state.viewMode==='relationships'&&kind!=='surprise')state.relationshipSentence=touched[0];
   changed();
   if(kind==='surprise'){message('Surprise sketch updated. Generate Again to use it.');renderCanvases();return;}
   const from=Math.min(...touched),to=Math.max(...touched);
@@ -231,12 +250,12 @@ document.addEventListener('keydown',e=>{
 function selectTool(value){tool=value;render();message(value==='eraser'?'Erase part of this curve’s green envelope. Other curves still guide generation.':'Draw across the canvas. Release your stroke to generate the touched part of the story using all drawn curves.');}
 $('pen-tool').addEventListener('click',()=>selectTool('pen'));
 $('eraser-tool').addEventListener('click',()=>selectTool('eraser'));
-for(const [id,mode] of [['curve-view-button','curves'],['space-view-button','space']])$(id).addEventListener('click',()=>{
+for(const [id,mode] of [['curve-view-button','curves'],['space-view-button','space'],['relationship-view-button','relationships']])$(id).addEventListener('click',()=>{
   if(busy||preview)return;state.viewMode=mode;if(mode==='space')state.autoGenerate=false;save();render();
-  message(mode==='space'?'Orbit the 3D space, drag sentence points in a chosen plane, or adjust all dimensions below. Generate Again applies planned targets.':'Choose a character and dimension to sketch a story curve.');
+  save();message(mode==='relationships'?'Choose who feels what toward whom. Draw a relationship curve; reciprocal directions are independent.':mode==='space'?'Orbit the 3D space, drag sentence points in a chosen plane, or adjust all dimensions below. Generate Again applies planned targets.':'Choose a character and dimension to sketch a story curve.');
 });
 $('generate-button').addEventListener('click',()=>{
-  let range=state.autoGenerate===false&&state.plannedRange?.length?state.plannedRange:state.lastRange?.length?state.lastRange:Object.values(state.tracks).flatMap(t=>t.controls.map((control,i)=>control?i:null).filter(i=>i!==null));
+  let range=state.autoGenerate===false&&state.plannedRange?.length?state.plannedRange:state.lastRange?.length?state.lastRange:allArcTracks(state).flatMap(t=>t.controls.map((control,i)=>control?i:null).filter(i=>i!==null));
   if(!range.length)range=state.slots.map((s,i)=>!s.text.trim()?i:null).filter(i=>i!==null);
   generateRange(range);
 });
@@ -250,7 +269,7 @@ $('recognize-button').addEventListener('click',()=>analyze(true));
 $('new-button').addEventListener('click',()=>{
   pendingGeneration=null;pushUndo();if(state.slots.some(s=>s.text.trim()))snapshot('Before new story');
   state.title='';state.slots=Array.from({length:10},()=>emptySlot());state.surprises=Array(10).fill(null);state.lastRange=[];state.plannedRange=[];state.spaceSentence=0;
-  for(const track of Object.values(state.tracks)){track.controls=Array(10).fill(null);track.values=Array(10).fill(null);}
+  for(const track of allArcTracks(state)){track.controls=Array(10).fill(null);track.values=Array(10).fill(null);}
   changed();closeHistory();render();message('A blank story with your cast and dimensions. Write the beginning, then sketch.');focusSlot(0);
 });
 $('export-button').addEventListener('click',()=>{

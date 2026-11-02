@@ -70,3 +70,11 @@ Training data collection, soft-prompt learning, modified GeDi token distribution
 ## Repository practice
 
 All new application files are under `revibes/talebrush/`. Shared bridge and paper files remain unchanged. The downloaded PDF is beside the checkout at `../TaleBrush-CHI2022.pdf`. The group's requested identity is recorded in the README; changes are on `codex/talebrush-table1-group2`. Do not push main, access the grading rubric, produce grades or advance workshop steps without the group's prompt.
+
+## Directed relationship extension
+
+Optional `relationshipTracks` map uses keys `rel:sourceId:targetId:type`. Each track contains `characterId`, `targetCharacterId`, `dimensionId` (trust/rivalry/affection/power), `controls` and `values`. `activeRelationshipKey` selects a curve. Definitions are separate from individual character dimensions. `relationship-state.mjs` supplies validation, migration, lifecycle hooks, `allArcTracks` and an SVG-compatible relationship view. `relationships.mjs` renders pair/type/time selectors, a directed graph and sketch controls.
+
+Backend validation rejects self-relationships, unknown endpoints/types/keys, malformed lengths and values. Generation combines relationship controls with individual controls; recognition receives named source/target identities and fixed meanings without the desired values. Scores return using relationship keys and are applied to the corresponding map. Candidate choice minimizes aggregate error when relational constraints are present; individual-only requests retain the original 0.2 acceptance threshold.
+
+The 2D relationship timeline edits directed pair states over sentence order. The existing 3D/nD view continues to manipulate individual attributes. Relationship histories, row insertion/deletion, score invalidation, endpoint rename/removal and New story share the existing lifecycle and storage protection.

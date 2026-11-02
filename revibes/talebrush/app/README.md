@@ -2,6 +2,14 @@
 
 A local reconstruction and user-directed remix of **TaleBrush: Sketching Stories with Generative Pretrained Language Models** (Chung et al., CHI 2022), built from the workshop's paper text and figures. Workshop identity: table 1, group 2.
 
+## Relationships as curves
+
+Select **Relationships** to control how one character relates to another. Choose From, To, and **Trust, Rivalry, Affection or Power**. The reverse direction is independent: Maya can distrust Mike while Mike trusts Maya. Click a graph node or arrow to select an edge, and use the sentence selector to inspect that moment in the relationship.
+
+Draw or erase targets on the relationship timeline, using the same sentence positions as the story editor. All drawn relationships and individual character curves guide generation together. Turn off Generate after drawing to plan several edges first. Analyze arcs independently recognizes the selected relationship and all constrained curves. Green is your target; blue is recognized from actual text. Relationship steering remains approximate.
+
+Relationships are saved in local drafts/history. Existing drafts start with no relationship curves. Removing a character removes incident edges; Undo restores them. New story clears all relationship targets and recognized values.
+
 ## Characters, dimensions, and 3D story space
 
 - Add up to **six named characters**, with optional roles, goals and relationships. Select a character to edit their independent curves; **Edit selected** renames/removes them. Undo restores removals.

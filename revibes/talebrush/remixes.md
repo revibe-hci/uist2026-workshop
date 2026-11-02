@@ -22,3 +22,11 @@ The 3D holographic appearance is a browser-rendered perspective visualization. M
 ## Validation
 
 Node/Python tests cover migration, storage failures, independent curves, row alignment, custom endpoints, opposing character values, joint generation, target-free recognition, 3D projection and inverse dragging, bounds and point picking. Browser checks preserve the existing eight-sentence draft and seven histories, add Maya and Trust, set custom spatial axes, and drag a point in XY while keeping Z fixed. A live generation from spatial targets produced a sentence where Mike succeeds confidently while Maya is doubtful, tense and reluctant to trust him, without changing the eight prior sentences.
+
+## Relationships as curves (additional remix)
+
+The group selected directional relationship curves from the proposed remix directions and approved trust, rivalry, affection and power. A new Relationships view selects source/target characters through selectors and a directed graph, sketches independent reciprocal curves, and shows targets versus recognized scores at a selected sentence. All constrained edges are used in generation alongside individual state curves.
+
+Question explored: can authors express asymmetric social dynamics more directly through directed curves than through isolated character attributes? The implementation retains the original draft/history, extends aligned track lifecycle to relational edges, and does not reinterpret existing custom individual Trust dimensions. Tests cover directed independence, lifecycle/migration, invalid endpoints and target-free joint scoring.
+
+Validation for the relationship extension: 25 Node tests and 17 Python tests pass. Browser checks confirm reciprocal curve isolation, persisted targets, graph direction controls and switching from relationship to individual curves. A bounded live generation produced independently recognized trust values of 0.98 for Mike → Maya and 0.20 for Maya → Mike, alongside the individual controls; it was run against a test draft, leaving the saved story unchanged.

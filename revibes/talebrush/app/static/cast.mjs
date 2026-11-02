@@ -1,9 +1,10 @@
 import {addCharacter,renameCharacter,removeCharacter,addDimension,removeDimension} from './tracks.mjs';
+import {RELATIONSHIP_TYPES} from './relationship-state.mjs';
 const $=id=>document.getElementById(id);
 
 export class CastControls{
-  constructor({onSelect,onChange,onNotice}){
-    this.onSelect=onSelect;this.onChange=onChange;this.onNotice=onNotice;
+  constructor({onSelect,onChange,onNotice,onRelationship}){
+    this.onSelect=onSelect;this.onChange=onChange;this.onNotice=onNotice;this.onRelationship=onRelationship;
     $('add-character').addEventListener('click',()=>this.editCharacter());
     $('edit-character').addEventListener('click',()=>this.editCharacter(this.state.activeCharacterId));
     $('add-dimension').addEventListener('click',()=>{$('dimension-form').reset();$('dimension-form-error').hidden=true;$('dimension-dialog').showModal();});
@@ -53,12 +54,12 @@ export class CastControls{
     state.characters.forEach((c,i)=>{
       const button=document.createElement('button');button.type='button';button.className='character-tab';button.setAttribute('role','tab');button.setAttribute('aria-selected',String(c.id===character.id));button.title=c.description||c.name;button.disabled=disabled;
       const dot=document.createElement('span');dot.className='character-dot';dot.style.background=['#4d8064','#ae7a57','#7e78a7','#528b9c','#a77d98','#a09955'][i];
-      button.append(dot,document.createTextNode(c.name));button.addEventListener('click',()=>this.onSelect(c.id,dimension.id));$('character-tabs').append(button);
+      button.append(dot,document.createTextNode(c.name));button.addEventListener('click',()=>this.onSelect(c.id,dimension.id,'character'));$('character-tabs').append(button);
     });
     $('dimension-tabs').replaceChildren();
     state.dimensions.forEach(d=>{
       const button=document.createElement('button');button.type='button';button.className='dimension-tab';button.textContent=d.name;button.setAttribute('role','tab');button.setAttribute('aria-selected',String(d.id===dimension.id));button.title=`${d.low} → ${d.high}`;button.disabled=disabled;
-      button.addEventListener('click',()=>this.onSelect(character.id,d.id));$('dimension-tabs').append(button);
+      button.addEventListener('click',()=>this.onSelect(character.id,d.id,'dimension'));$('dimension-tabs').append(button);
     });
     for(const id of ['add-character','edit-character','add-dimension','remove-dimension'])$(id).disabled=disabled;
     $('add-character').disabled=disabled||state.characters.length>=6;$('add-dimension').disabled=disabled||state.dimensions.length>=8;
@@ -67,16 +68,16 @@ export class CastControls{
     $('dimension-description').textContent=dimension.description||`${dimension.low} → ${dimension.high}`;
     $('axis-high').textContent=dimension.high.toUpperCase();$('axis-low').textContent=dimension.low.toUpperCase();
     $('generated-dimension-label').textContent=`Recognized ${dimension.name.toLowerCase()}`;
-    const constrained=Object.entries(state.tracks).filter(([,track])=>track.controls.some(Boolean));
+    const constrained=Object.entries({...state.tracks,...state.relationshipTracks}).filter(([,track])=>track.controls.some(Boolean));
     $('arc-overview-summary').textContent=`${constrained.length} drawn curve${constrained.length===1?'':'s'} · generation uses all`;
     $('arc-overview-items').replaceChildren();
     if(!constrained.length){const p=document.createElement('p');p.textContent='Choose a character and dimension, then sketch. Add more curves to guide the same story.';$('arc-overview-items').append(p);}
     for(const [,track] of constrained){
-      const c=state.characters.find(c=>c.id===track.characterId),d=state.dimensions.find(d=>d.id===track.dimensionId);
+      const c=state.characters.find(c=>c.id===track.characterId),target=state.characters.find(c=>c.id===track.targetCharacterId),d=target?RELATIONSHIP_TYPES.find(d=>d.id===track.dimensionId):state.dimensions.find(d=>d.id===track.dimensionId);
       const button=document.createElement('button');button.type='button';button.className='track-shortcut';button.disabled=disabled;
-      const name=document.createElement('span');name.textContent=`${c.name} · ${d.name}`;
+      const name=document.createElement('span');name.textContent=`${c.name}${target?' → '+target.name:''} · ${d.name}`;
       const count=document.createElement('small');count.textContent=`${track.controls.filter(Boolean).length} sentence targets`;
-      button.append(name,count);button.addEventListener('click',()=>this.onSelect(c.id,d.id));$('arc-overview-items').append(button);
+      button.append(name,count);button.addEventListener('click',()=>target?this.onRelationship?.(c.id,target.id,d.id):this.onSelect(c.id,d.id,'curve'));$('arc-overview-items').append(button);
     }
   }
 }

@@ -1,3 +1,6 @@
+import {allArcTracks,assertRelationships} from './relationship-state.mjs';
+export {allArcTracks} from './relationship-state.mjs';
+
 export const BUILTIN_DIMENSIONS = [
   {id:'fortune',name:'Fortune',low:'Bad fortune',high:'Good fortune',description:'Outcomes and progress toward this character’s goals.',builtin:true},
   {id:'mood',name:'Mood',low:'Unhappy',high:'Happy',description:'This character’s emotional state, independent of objective fortune.',builtin:true},
@@ -29,14 +32,20 @@ export function assertDraft(state){
   }
   if(Object.keys(state.tracks).some(k=>!expected.has(k)))throw new Error('Unknown saved arc.');
   if(!Array.isArray(state.surprises)||state.surprises.length!==state.slots.length||!state.surprises.every(v=>v===null||validUnit(v)))throw new Error('Invalid surprise arc.');
+  assertRelationships(state);
   return state;
 }
 
 export function upgradeDraft(raw){
   const state=clone(raw);
-  if(state?.schemaVersion===2)return assertDraft(state);
+  if(state?.schemaVersion===2){
+    if(state.relationshipTracks===undefined)state.relationshipTracks={};
+    if(state.activeRelationshipKey===undefined)state.activeRelationshipKey=null;
+    return assertDraft(state);
+  }
   if(!state||typeof state.title!=='string'||typeof state.protagonist!=='string'||!Array.isArray(state.slots)||!Array.isArray(state.controls)||state.controls.length!==state.slots.length)throw new Error('Unrecognized saved draft.');
   const character={id:'legacy-protagonist',name:state.protagonist.trim()||'Character 1',description:''};
+  state.relationshipTracks={};state.activeRelationshipKey=null;
   state.schemaVersion=2;state.characters=[character];state.dimensions=clone(BUILTIN_DIMENSIONS);state.tracks={};
   for(const d of state.dimensions)state.tracks[keyFor(character.id,d.id)]=blankTrack(character.id,d.id,state.slots.length);
   const fortune=state.tracks[keyFor(character.id,'fortune')];fortune.controls=clone(state.controls);fortune.values=state.slots.map(s=>s.fortune??null);
@@ -72,13 +81,15 @@ export function renameCharacter(state,id,name,description=''){
   name=text(name,'Character name');
   if(state.characters.some(c=>c.id!==id&&c.name.toLowerCase()===name.toLowerCase()))throw new Error('That character name already exists.');
   if(typeof description!=='string'||description.length>400)throw new Error('Use a description of at most 400 characters.');
-  if(character.name!==name||character.description!==description.trim())for(const t of Object.values(state.tracks))if(t.characterId===id)t.values.fill(null);
+  if(character.name!==name||character.description!==description.trim())for(const t of allArcTracks(state))if(t.characterId===id||t.targetCharacterId===id)t.values.fill(null);
   character.name=name;character.description=description.trim();
 }
 export function removeCharacter(state,id){
   if(state.characters.length<=1)throw new Error('Keep at least one character.');
   state.characters=state.characters.filter(c=>c.id!==id);
   for(const [key,track] of Object.entries(state.tracks))if(track.characterId===id)delete state.tracks[key];
+  for(const [key,track] of Object.entries(state.relationshipTracks||{}))if(track.characterId===id||track.targetCharacterId===id)delete state.relationshipTracks[key];
+  if(state.activeRelationshipKey&&!Object.hasOwn(state.relationshipTracks||{},state.activeRelationshipKey))state.activeRelationshipKey=null;
   if(state.activeCharacterId===id)state.activeCharacterId=state.characters[0].id;
 }
 export function addDimension(state,name,low,high){
@@ -97,10 +108,10 @@ export function removeDimension(state,id){
   for(const [key,track] of Object.entries(state.tracks))if(track.dimensionId===id)delete state.tracks[key];
   if(state.activeDimensionId===id)state.activeDimensionId='fortune';
 }
-export function invalidateScores(state,from=0){for(const track of Object.values(state.tracks))track.values.fill(null,from);}
+export function invalidateScores(state,from=0){for(const track of allArcTracks(state))track.values.fill(null,from);}
 export function scoredPairs(state){return Object.entries(state.tracks).filter(([key,t])=>key===keyFor(state.activeCharacterId,state.activeDimensionId)||t.controls.some(Boolean)).map(([key,t])=>({key,characterId:t.characterId,dimensionId:t.dimensionId}));}
 export function applyScores(state,rows){
-  for(const row of rows)for(const [key,value] of Object.entries(row.values))if(state.tracks[key])state.tracks[key].values[row.index]=value;
+  for(const row of rows)for(const [key,value] of Object.entries(row.values))if(Object.hasOwn(state.tracks,key))state.tracks[key].values[row.index]=value;else if(Object.hasOwn(state.relationshipTracks||{},key))state.relationshipTracks[key].values[row.index]=value;
 }
 export function recordPlannedRange(state,range){
   state.lastRange=[...new Set(range)].sort((a,b)=>a-b);
