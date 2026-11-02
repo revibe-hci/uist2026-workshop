@@ -26,6 +26,8 @@ import { repairCode } from './lib/repair.js';
 import { PARKS_CODE, SAMPLE_EXAMPLES, SAMPLE_SOURCES } from './lib/samples.js';
 import { RemixProvider } from './remix/RemixContext.jsx';
 import RemixControls from './remix/RemixControls.jsx';
+import BlendArena from './remix/BlendArena.jsx';
+import {captureGameSource,captureGameResult,normalizedRect} from './remix/game-assets.js';
 import { blendEvents } from './remix/events.js';
 import { cleanInput, inputForFlags, sketchImage, steeringPrompt } from './remix/steering.js';
 import { useRemix } from './remix/context.js';
@@ -241,7 +243,10 @@ function Workspace() {
     blendRequests.current.get(nodeId)?.abort();
     const controller = new AbortController(); blendRequests.current.set(nodeId, controller);
     const timeout = setTimeout(() => controller.abort(), 330000);
-    const run = blendEvents.onBlendStart(nodeId, { sources: spec.sources || { A: 'Source UI', B: 'Reference' }, initialCode: getNode(nodeId)?.data.code });
+    const run = blendEvents.onBlendStart(nodeId, { arena:!!(remixFlags.game&&remixFlags.builders), blendLabel:spec.kind==='global'?'Global blend':spec.aspects?.join(' + '), assets:{reference:spec.image,referenceIsCrop:spec.kind==='drop'}, sources: spec.sources || { A: 'Source UI', B: 'Reference' }, initialCode: getNode(nodeId)?.data.code });
+    const sourceId=spec.parentId||edges.find(e=>e.target===nodeId&&getNode(e.source)?.type==='source')?.source;
+    const preview=document.querySelector(`[data-misty-preview="${sourceId||nodeId}"]`);
+    if(remixFlags.game&&remixFlags.builders)captureGameSource(preview,spec.sourceRegion).then(assets=>blendEvents.onAssets(nodeId,run,assets)).catch(()=>{});
     const input = inputForFlags(getNode(nodeId)?.data.waitInput || spec.steering, remixFlags);
     patchNode(nodeId, { status: 'loading', error: null, renderError: null, categories: [], blendRunId: run, appliedWaitInput: input });
     try {
@@ -285,7 +290,7 @@ function Workspace() {
     const siblings = edges.filter((e) => e.source === parentId).length;
     const width = parent.measured?.width ?? 460;
     const id = nextId('source');
-    spec = { ...spec, steering: cleanInput(parent.data.waitInput), sources: { A: parent.data.blendLabel || 'Source UI', B: getNode(exampleId)?.data.name || 'Reference' } };
+    spec = { ...spec, parentId, steering: cleanInput(parent.data.waitInput), sources: { A: parent.data.blendLabel || 'Source UI', B: getNode(exampleId)?.data.name || 'Reference' } };
     const node = {
       id,
       type: 'source',
@@ -344,6 +349,19 @@ function Workspace() {
     const attempt = (node.data.attempt ?? 0) + 1;
     patchNode(id, { attempt });
     requestBlend(id, node.data.blend, attempt);
+  };
+
+  const replayAssembly = async (id) => {
+    const node=getNode(id);if(!node?.data.blend||node.data.status==='loading')return;
+    const spec=node.data.blend,sourceId=spec.parentId||edges.find(e=>e.target===id&&getNode(e.source)?.type==='source')?.source;
+    const root=document.querySelector(`[data-misty-preview="${id}"]`),parent=document.querySelector(`[data-misty-preview="${sourceId}"]`);
+    const run=blendEvents.onBlendStart(id,{arena:true,replayOnly:true,blendLabel:node.data.blendLabel,sources:spec.sources,assets:{reference:spec.image,referenceIsCrop:spec.kind==='drop'}});
+    try{
+      const source=await captureGameSource(parent||root,spec.sourceRegion);
+      const output=await captureGameResult(root,source.sourceRegions);
+      blendEvents.onAssets(id,run,{...source,...output});blendEvents.onResponseReceived(id,run,node.data.code);
+      blendEvents.onPreviewReady(id,run,node.data.code,output.resultRegions.map(r=>({...r,kind:r.kind||'region'})),false);
+    }catch(e){blendEvents.onBlendError(id,run,`Screenshot capture failed: ${e.message}`);}
   };
 
   // Semantic diff: toggling asks the model for updated code (Section 4.3). A state
@@ -494,6 +512,7 @@ function Workspace() {
           crop: drag.crop,
           nodeId: over.nodeId,
           targetHtml: over.target.outerHTML.slice(0, 4000),
+          sourceRegion: {...normalizedRect(over.target,over.target.closest('[data-misty-preview]')),label:over.target.innerText?.trim().split('\n')[0]?.slice(0,70)||'Selected target'},
           x: event.clientX,
           y: event.clientY,
         });
@@ -529,6 +548,7 @@ function Workspace() {
       aspects,
       custom,
       targetHtml: drop.targetHtml,
+      sourceRegion: drop.sourceRegion,
     });
   };
 
@@ -562,6 +582,7 @@ function Workspace() {
       resetAll: (...args) => resetAllRef.current(...args),
       editChange: (...args) => editChangeRef.current(...args),
       regenerate: (...args) => regenerateRef.current(...args),
+      replayAssembly: (...args) => replayAssemblyRef.current(...args),
       fixRender: (...args) => fixRenderRef.current(...args),
     }),
     [patchNode, startCropDrag]
@@ -574,6 +595,8 @@ function Workspace() {
   editChangeRef.current = editChange;
   const regenerateRef = useRef(regenerate);
   regenerateRef.current = regenerate;
+  const replayAssemblyRef = useRef(replayAssembly);
+  replayAssemblyRef.current = replayAssembly;
   const fixRenderRef = useRef(fixRender);
   fixRenderRef.current = fixRender;
 
@@ -631,6 +654,7 @@ function Workspace() {
         }}
       >
         <RemixControls onTutorialOpen={() => setDemoOpen(false)} onBaseDemo={() => setDemoOpen(true)}/>
+        <BlendArena/>
         <div className="m-canvas">
           <ReactFlow
             nodes={nodes}

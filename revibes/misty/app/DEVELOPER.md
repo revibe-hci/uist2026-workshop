@@ -218,3 +218,14 @@ from the group 1 "xhigh" revibe.
 Two fixes: Reset All now also restores class values edited in the panel (`original` on each
 change), so the list matches the code again. Pasted code with an unknown wrapper component no
 longer loses its text.
+
+### Live blend arena implementation
+
+`game-assets.js` uses html-to-image to snapshot the actual source and rendered output. A local
+crop stores its normalized target rectangle and uses the exact selected reference image.
+`game-renderer.js` draws the game HUD, cut outlines, armored agents, screenshot textures and fog
+in one canvas RAF loop. `BlendArena.jsx` subscribes to real blend events and records its native
+canvas stream with MediaRecorder; `game-audio.js` supplies an opt-in Web Audio destination for
+speakers and recording. Replay uses persisted blend inputs and current result, without an API
+call. Snapshot textures stay in the in-memory event store. The game presentation does not claim
+that model output streams region by region or that transfer animation measures model provenance.

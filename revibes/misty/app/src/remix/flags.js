@@ -6,4 +6,5 @@ export const PRESETS = {
   sound: { fog: false, builders: false, input: false, voice: false, tutorial: true, three: false },
   all: { fog: true, builders: true, input: true, voice: true, tutorial: true, three: true },
 };
+Object.entries(PRESETS).forEach(([name,preset])=>{preset.game=['all','builders'].includes(name);});
 export const DEFAULT_FLAGS = { ...PRESETS.all, reduceMotion: false };

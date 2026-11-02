@@ -1,4 +1,12 @@
 /* Self-contained Table 7 experience. Existing m-* canvas styles stay independent. */
+.rm-arena-backdrop{position:fixed;inset:0;z-index:120;background:#030915ed;display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
+.rm-arena{width:min(1600px,100%);max-height:calc(100dvh - 36px);display:flex;flex-direction:column;background:#080f1b;color:#cfe0f3;border:1px solid #304c65;border-radius:10px;overflow:auto;box-shadow:0 0 100px #19a7aa12;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.rm-arena>header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid #263d53;flex-shrink:0}
+.rm-arena>header>div{display:flex;align-items:center;gap:12px}.rm-arena>header>div>svg{color:#4ce1cd}.rm-arena>header strong{font-size:15px}.rm-arena>header span{font-size:11px;color:#819bb6}
+.rm-arena button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:8px 12px;background:#132337;color:#cfe0f3;border:1px solid #304c65;border-radius:4px;font:inherit;font-size:11px;cursor:pointer}
+.rm-arena button:hover{border-color:#4fe2cd;background:#1a3045}.rm-arena button:focus-visible{outline:2px solid #55e9d2;outline-offset:3px}.rm-arena button:disabled{opacity:.4;cursor:default}.rm-arena>canvas{display:block;width:100%;min-height:0;aspect-ratio:16/9;object-fit:contain;flex-shrink:1}
+.rm-arena>footer{padding:12px 18px;border-top:1px solid #263d53;flex-shrink:0}.rm-arena-buttons{display:flex;flex-wrap:wrap;gap:8px}.rm-arena .rm-record{background:#54dfc3;border-color:#54dfc3;color:#061c21;font-weight:700}.rm-arena footer p{font-size:10px;color:#819bb6;margin:9px 0 0}.rm-arena-static{padding:60px 25px;text-align:center}
+@media(max-width:760px){.rm-arena-backdrop{padding:8px}.rm-arena{max-height:calc(100dvh - 16px)}.rm-arena>header span{display:none}.rm-arena>header,.rm-arena>footer{padding:10px}.rm-arena button{font-size:10px;padding:7px;min-height:42px}}
 .rm-controls,.rm-dialog,.rm-blend-overlay,.rm-wait-input,.rm-source-legend{--rm-ink:#30283d;--rm-muted:#645d70;--rm-line:#ded8e5;--rm-paper:#fff;--rm-a:#76539f;--rm-b:#367891;--rm-soft:#f5f2f8;font-family:inherit;color:var(--rm-ink);box-sizing:border-box}
 .rm-controls *, .rm-dialog *, .rm-wait-input *, .rm-blend-overlay *{box-sizing:border-box}
 .rm-controls{position:fixed;top:16px;right:16px;z-index:12;display:flex;gap:4px;background:#fff;border:1px solid var(--rm-line);border-radius:9px;padding:5px}

@@ -7,6 +7,7 @@ import RemixTutorial from './RemixTutorial.jsx';
 import RemixPreview from './RemixPreview.jsx';
 
 const options = [
+  ['game', 'Live game assembly', 'Real screenshot fragments and digital agents during an actual blend.'],
   ['fog', 'Fog of war', 'Soft mist over a blending result.'],
   ['builders', 'Builder agents', 'Original geometric workers carry A/B blocks.'],
   ['three', '3D builders', 'Load Three.js only when builders are shown.'],

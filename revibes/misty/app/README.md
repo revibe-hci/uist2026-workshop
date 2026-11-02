@@ -146,3 +146,12 @@ hands-on practice with base Misty; that older demo resets the canvas, as its pic
 
 Run `npm test` for progress, retry/error, steering payload, voice and sound lifecycle tests;
 run `npm run build` to create the production app.
+
+### Live game-style assembly
+
+With All features enabled, make a real blend to open **Blend arena**. Its digital agents carry
+actual screenshot fragments from the source and selected reference. The center reveals the real
+model output after it renders. Use **Replay blend** above a result to reopen its assembly without
+another model call. In the arena, **Enable game audio** plays original synthesized effects;
+**Record 10s + sound** downloads a 1600×900 recording of that real blend's replay. Chrome/Edge
+support the native WebM recorder. Closing the arena returns to the saved canvas.

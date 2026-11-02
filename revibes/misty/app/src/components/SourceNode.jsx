@@ -1,6 +1,6 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useRef, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Hammer, Loader2, Sparkles, SquareTerminal } from 'lucide-react';
+import { Crosshair, Hammer, Loader2, Sparkles, SquareTerminal } from 'lucide-react';
 import { useMisty } from '../context.js';
 import AppliedChanges from './AppliedChanges.jsx';
 import CodeRender from './CodeRender.jsx';
@@ -8,9 +8,11 @@ import BlendOverlay, { SourceLegend } from '../remix/BlendOverlay.jsx';
 import WaitInput, { SketchOverlay } from '../remix/WaitInput.jsx';
 import { useBlendSession, useRemix } from '../remix/context.js';
 import { blendEvents, collectRegions } from '../remix/events.js';
+import {captureGameResult} from '../remix/game-assets.js';
 
 function SourceNode({ id, data, selected }) {
-  const { regenerate, fixRender, openCode, patchNode } = useMisty();
+  const { regenerate, fixRender, openCode, patchNode, replayAssembly } = useMisty();
+  const capturedRun=useRef(null);
   const loading = data.status === 'loading';
   const hasBlend = Boolean(data.blend);
   const session = useBlendSession(id), { flags, reduced } = useRemix();
@@ -28,7 +30,10 @@ function SourceNode({ id, data, selected }) {
   );
   const onRendered = useCallback((root, code) => {
     const current = blendEvents.getSnapshot(id);
-    if (current?.phase === 'rendering' && current.code === code) blendEvents.onPreviewReady(id, current.run, code, collectRegions(root), reduced);
+    if (current?.phase === 'rendering' && current.code === code) {
+      if(current.arena&&capturedRun.current!==current.run){capturedRun.current=current.run;captureGameResult(root,current.assets?.sourceRegions).then(assets=>blendEvents.onAssets(id,current.run,assets)).catch(()=>{});}
+      blendEvents.onPreviewReady(id, current.run, code, collectRegions(root), reduced);
+    }
     else if (current?.phase === 'error') blendEvents.onPreviewRepaired(id, current.run, code);
   }, [id, reduced]);
 
@@ -43,6 +48,7 @@ function SourceNode({ id, data, selected }) {
 
           {(hasBlend || data.renderError) && (
             <div className="m-node-tools nodrag">
+              {hasBlend&&<button className="m-link" disabled={loading||visualBusy} onClick={()=>replayAssembly(id)}><Crosshair size={15}/>Replay blend</button>}
               <button
                 className={`m-link ${data.renderError ? 'is-alert' : ''}`}
                 disabled={loading || visualBusy || data.toggling}

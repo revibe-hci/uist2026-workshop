@@ -87,3 +87,19 @@ change: who, what changed, and what question it explores.
   tutorial remain available. The sample is labeled, costs no model calls and preserves the canvas.
 - **Question:** can an explicit combined preview make an atmospheric remix discoverable while
   preserving independent comparisons and honest progress feedback?
+
+## Live digital game assembly
+
+- **Who:** Table 7, implemented with Codex (GPT-6).
+- **What:** a real Blend arena opens during model requests. Digital armored agents cut and carry
+  actual source-preview screenshot regions and the actual selected reference crop into the returned
+  UI. The generated screen is captured only after rendering; failed requests preserve the original.
+  Replay blend on a result reuses its real input/output without another model call. The arena has
+  opt-in synthesized game audio and a native Record 10s + sound export. The animation illustrates
+  requested A/B roles rather than verified pixel-level model provenance.
+- **Question:** can visible, game-like transport of real selected fragments make a conceptual blend
+  easier to understand than generic workers or an external concept video?
+- **Verification:** a real screenshot crop was dropped onto a park card with Color + Layout. The
+  Codex bridge returned a working interface; the new result stayed on the canvas. The arena's
+  native recording exported an actual 10-second, 1600×900 video with sound. Existing tests and
+  production build pass.

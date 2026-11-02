@@ -1,13 +1,14 @@
 // The blend pipeline owns facts; renderers only subscribe. No synthetic generation percentages.
 export function createBlendEvents({ schedule = setTimeout, cancel = clearTimeout } = {}) {
   const sessions = new Map(), listeners = new Set(), timers = new Map();
-  let sequence = 0;
-  const notify = () => listeners.forEach((fn) => fn());
+  let sequence = 0, revision = 0;
+  const notify = () => { revision++; listeners.forEach((fn) => fn()); };
   const clear = (id) => { (timers.get(id) || []).forEach(cancel); timers.delete(id); };
   const current = (id, run) => { const s = sessions.get(id); return s?.run === run ? s : null; };
   const write = (id, patch) => { sessions.set(id, { ...sessions.get(id), ...patch }); notify(); };
   const api = {
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+    getRevision() { return revision; },
     getSnapshot(id) { return sessions.get(id) || null; },
     getAll() { return [...sessions.values()]; },
     onBlendStart(id, details = {}) {
@@ -20,6 +21,7 @@ export function createBlendEvents({ schedule = setTimeout, cancel = clearTimeout
       if (current(id, run)?.phase !== 'waiting') return false;
       write(id, { phase: 'rendering', code }); return true;
     },
+    onAssets(id,run,assets){const s=current(id,run);if(!s)return false;write(id,{assets:{...s.assets,...assets}});return true;},
     onPartGenerated(id, run, part, source) {
       const s = current(id, run);
       if (!s?.ready || s.phase !== 'assembling') return false;
@@ -49,11 +51,11 @@ export function createBlendEvents({ schedule = setTimeout, cancel = clearTimeout
       const handles = [];
       regions.forEach((region, index) => {
         const land = () => api.onPartGenerated(id, run, region, 'A+B');
-        if (immediate) land(); else handles.push(schedule(land, 140 + index * 160));
+        if (immediate) land(); else handles.push(schedule(land, s.arena ? 1800 + index * 1000 : 140 + index * 160));
       });
       if (immediate) api.onBlendComplete(id, run);
       else {
-        handles.push(schedule(() => api.onBlendComplete(id, run), 340 + regions.length * 160));
+        handles.push(schedule(() => api.onBlendComplete(id, run), s.arena ? Math.max(8600,2200+regions.length*1000) : 340 + regions.length * 160));
         timers.set(id, handles);
       }
       return true;
