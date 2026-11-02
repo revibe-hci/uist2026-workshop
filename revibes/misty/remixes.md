@@ -31,4 +31,5 @@ change: who, what changed, and what question it explores.
   browser, with no server or model. It plays a scripted debate between a hiking app and a
   weekend-plans list with the same voices and stage, and builds the blend from your rulings
   in the page. It also shows the text the remix would add to the blend prompt.
+  `argue-demo.mp4` next to it is a 33-second recording of the demo, with sound.
 
