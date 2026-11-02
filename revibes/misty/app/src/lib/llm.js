@@ -1,5 +1,5 @@
 // All model calls go through the workshop's LLM bridge (OpenAI format).
-export const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || 'http://localhost:8787';
+export const BRIDGE_URL = import.meta.env?.VITE_BRIDGE_URL || 'http://localhost:8787';
 
 export async function bridgeHealth() {
   const response = await fetch(`${BRIDGE_URL}/health`);
@@ -7,21 +7,24 @@ export async function bridgeHealth() {
   return response.json();
 }
 
-export async function callModel(prompt, image) {
+export async function callModel(prompt, image, { signal, extraImages = [] } = {}) {
   const content = [{ type: 'text', text: prompt }];
   if (image) content.push({ type: 'image_url', image_url: { url: image } });
+  for (const annotation of extraImages.filter(Boolean)) content.push({ type: 'image_url', image_url: { url: annotation } });
 
   let response;
   try {
     response = await fetch(`${BRIDGE_URL}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal,
       body: JSON.stringify({
         messages: [{ role: 'user', content }],
         response_format: { type: 'json_object' },
       }),
     });
-  } catch {
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('Blend cancelled or timed out. Your saved input is kept.');
     throw new Error(`Cannot reach the LLM bridge at ${BRIDGE_URL}. Is it running?`);
   }
   if (!response.ok) {

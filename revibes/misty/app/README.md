@@ -84,3 +84,57 @@ demo resets the canvas. This mode is an addition for this revibe and is not a fe
 - `/stock/` holds generated landscape placeholders instead of real stock photos.
 - The sample examples are drawn for this rebuild, not the study's materials.
 - The paper does not publish its toggle prompt, and does not describe Fix Render. Both are our own.
+
+## Table 7: blending experience remix
+
+The **Remix lab** and **Tutorial** buttons are at the top right. Fog and builders start on; notes,
+voice and sound start off. No API key is needed. The bridge can use the signed-in Claude or Codex
+CLI; if Claude reports `Not logged in`, sign in to Claude Code or start
+`python3 llm-bridge/bridge.py codex` instead. Do not run both on the same port.
+
+The remix adds independent experiences on top of the shared Misty base:
+
+- **Fog:** a soft animated mist covers a blending preview. The current bridge returns a complete
+  response, so waiting animation is labeled illustrative. Once the returned code renders, the
+  available regions are revealed in sequence. The app never claims that an unfinished response is done.
+- **Builders:** original geometric figures carry labeled A/B buttons, cards, navigation and image
+  blocks from opposite trays into a miniature layout. **A** means the source UI's content;
+  **B** means visual inspiration from the reference. This communicates requested roles rather than
+  verified attribution of generated pixels. Three.js loads on demand, with a flat fallback.
+- **Notes + sketch:** enable it in Remix lab, then open **Add input for the next iteration** beneath
+  a result. Type a note or choose **Draw on preview**. Finish the sketch and choose **Remix with
+  saved input** after the running blend ends. With input enabled, Regenerate includes saved text and a sketch overlay
+  image in the next model request. Input is attached to that node and saved with the canvas.
+- **Push-to-talk:** enable the separate switch and hold **Hold to speak**, or hold Space/Enter on
+  the focused button. Release to stop. Final transcription is appended to the note. This needs a
+  supported browser and microphone permission; the browser may use its own speech service. Type
+  a note if recognition is unsupported or permission is denied. Recording stops after 45 seconds.
+- **Duck sounds:** explicitly choose **Enable duck sounds**. Quiet ambience accompanies blending;
+  synthesized placement quacks and a completion call accompany the reveal. Mute is immediate,
+  and sound starts off again after reload. Reduced motion and background tabs suppress sound.
+
+Choose **Hide effects** during a request to inspect the preview without cancelling the blend.
+If it fails, the builders stop, the mist settles and the error explains recovery. Original inputs
+and saved notes remain available. System `prefers-reduced-motion` replaces the moving builders
+with static progress carrying the same A/B and stage information. Remix lab also provides a
+**Reduce motion for this demo** switch, which cannot override a system request to reduce motion.
+
+### Try each experience independently
+
+Remix lab's presets have **Open solo** links. These URLs open the same canvas with independent
+feature settings: `?remix=base`, `?remix=fog`, `?remix=builders`, `?remix=input`, `?remix=sound`,
+and `?remix=all`. The sound preset still requires an explicit sound opt-in. Individual switches
+also let you combine features without duplicating the app.
+
+### First-time walkthrough
+
+Choose **Tutorial**, then **Next** through seven steps: base/remix credits, A/B roles, fog,
+builders, next-iteration input, optional sound, and result/error recovery. The visual rehearsal
+uses an explicitly labeled bundled sample and makes no model calls. **Replay**, **Simulate failure**
+and **Try render failure** demonstrate progress and recovery. Tutorial notes stay in the tutorial;
+they do not alter your real canvas. Back, step selection and Escape are supported, and finishing
+returns you to your existing workspace. The original **Guided Demo** remains available for
+hands-on practice with base Misty; that older demo resets the canvas, as its picker explains.
+
+Run `npm test` for progress, retry/error, steering payload, voice and sound lifecycle tests;
+run `npm run build` to create the production app.

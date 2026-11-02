@@ -24,6 +24,11 @@ import { BRIDGE_URL, bridgeHealth, callModel, normalizeCategories } from './lib/
 import { dropBlendPrompt, fixRenderPrompt, globalBlendPrompt, togglePrompt } from './lib/prompts.js';
 import { repairCode } from './lib/repair.js';
 import { PARKS_CODE, SAMPLE_EXAMPLES, SAMPLE_SOURCES } from './lib/samples.js';
+import { RemixProvider } from './remix/RemixContext.jsx';
+import RemixControls from './remix/RemixControls.jsx';
+import { blendEvents } from './remix/events.js';
+import { cleanInput, inputForFlags, sketchImage, steeringPrompt } from './remix/steering.js';
+import { useRemix } from './remix/context.js';
 
 const nodeTypes = { example: ExampleNode, source: SourceNode };
 
@@ -42,6 +47,7 @@ const toggleKey = (categories) =>
 
 function Workspace() {
   const flow = useReactFlow();
+  const { flags: remixFlags } = useRemix();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [drag, setDrag] = useState(null);
@@ -57,10 +63,18 @@ function Workspace() {
   const codeInput = useRef(null);
   const started = useRef(false);
   const [loaded, setLoaded] = useState(false);
+  const blendRequests = useRef(new Map());
+  useEffect(() => () => { blendRequests.current.forEach(c => c.abort()); blendEvents.getAll().forEach(s => blendEvents.remove(s.id)); }, []);
 
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
   const getNode = (id) => nodesRef.current.find((n) => n.id === id);
+  useEffect(() => {
+    const ids = new Set(nodes.map(n => n.id));
+    for (const session of blendEvents.getAll()) if (!session.rehearsal && !ids.has(session.id)) {
+      blendRequests.current.get(session.id)?.abort(); blendRequests.current.delete(session.id); blendEvents.remove(session.id);
+    }
+  }, [nodes]);
 
   const say = useCallback((message) => {
     setToast(message);
@@ -129,6 +143,8 @@ function Workspace() {
   );
 
   const seedCanvas = useCallback(async () => {
+    blendRequests.current.forEach(c => c.abort()); blendRequests.current.clear();
+    blendEvents.getAll().filter(s => !s.rehearsal).forEach(s => blendEvents.remove(s.id));
     nodesRef.current = [];
     setNodes([]);
     setEdges([]);
@@ -222,7 +238,12 @@ function Workspace() {
   // ---- blending -----------------------------------------------------------
 
   const requestBlend = async (nodeId, spec, attempt) => {
-    patchNode(nodeId, { status: 'loading', error: null, categories: [] });
+    blendRequests.current.get(nodeId)?.abort();
+    const controller = new AbortController(); blendRequests.current.set(nodeId, controller);
+    const timeout = setTimeout(() => controller.abort(), 330000);
+    const run = blendEvents.onBlendStart(nodeId, { sources: spec.sources || { A: 'Source UI', B: 'Reference' }, initialCode: getNode(nodeId)?.data.code });
+    const input = inputForFlags(getNode(nodeId)?.data.waitInput || spec.steering, remixFlags);
+    patchNode(nodeId, { status: 'loading', error: null, renderError: null, categories: [], blendRunId: run, appliedWaitInput: input });
     try {
       const prompt =
         spec.kind === 'global'
@@ -234,11 +255,13 @@ function Workspace() {
               targetHtml: spec.targetHtml,
               attempt,
             });
-      const result = await callModel(prompt, spec.image);
+      const result = await callModel(prompt + steeringPrompt(input), spec.image, { signal: controller.signal, extraImages: [sketchImage(input)] });
+      if (!getNode(nodeId) || blendEvents.getSnapshot(nodeId)?.run !== run) return;
       if (!result.updatedCode) throw new Error('The model returned no code. Try Regenerate.');
       const code = repairCode(result.updatedCode);
       const categories = normalizeCategories(result.categorizedChanges);
       const allOn = toggleKey(categories);
+      blendEvents.onResponseReceived(nodeId, run, code);
       patchNode(nodeId, {
         status: 'idle',
         code,
@@ -249,8 +272,10 @@ function Workspace() {
         toggleCache: { [allOn]: code, '': spec.parentCode },
       });
     } catch (error) {
+      if (!getNode(nodeId) || blendEvents.getSnapshot(nodeId)?.run !== run) return;
+      blendEvents.onBlendError(nodeId, run, error);
       patchNode(nodeId, { status: 'idle', error: error.message });
-    }
+    } finally { clearTimeout(timeout); if (blendRequests.current.get(nodeId) === controller) blendRequests.current.delete(nodeId); }
   };
 
   // A blend creates a new source node with the updated code; the parent stays.
@@ -260,6 +285,7 @@ function Workspace() {
     const siblings = edges.filter((e) => e.source === parentId).length;
     const width = parent.measured?.width ?? 460;
     const id = nextId('source');
+    spec = { ...spec, steering: cleanInput(parent.data.waitInput), sources: { A: parent.data.blendLabel || 'Source UI', B: getNode(exampleId)?.data.name || 'Reference' } };
     const node = {
       id,
       type: 'source',
@@ -604,6 +630,7 @@ function Workspace() {
           importFiles([...e.dataTransfer.files]);
         }}
       >
+        <RemixControls onTutorialOpen={() => setDemoOpen(false)} onBaseDemo={() => setDemoOpen(true)}/>
         <div className="m-canvas">
           <ReactFlow
             nodes={nodes}
@@ -777,7 +804,7 @@ function Workspace() {
 export default function App() {
   return (
     <ReactFlowProvider>
-      <Workspace />
+      <RemixProvider><Workspace /></RemixProvider>
     </ReactFlowProvider>
   );
 }

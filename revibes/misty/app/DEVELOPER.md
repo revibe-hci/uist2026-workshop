@@ -31,6 +31,11 @@ BRIDGE_MODEL=sonnet python3 llm-bridge/bridge.py claude
 
 There is no `.env` file and no API key. Do not change `llm-bridge/`; other groups share it.
 
+The remix remains compatible with either bridge backend. If Claude is not signed in, the
+signed-in Codex CLI can provide calls with `python3 llm-bridge/bridge.py codex`. The UI's model
+badge reports the actual backend/model substitution. A separately running bridge on 8788 can
+be selected with `VITE_BRIDGE_URL=http://localhost:8788` when starting Vite.
+
 ## Stack
 
 | Library | Role |
@@ -69,6 +74,74 @@ public/
   stock/                   Generated placeholder photos, from scripts/make_stock.py
   examples/                Sample examples as SVG
 ```
+
+## Table 7: isolated blend experience
+
+All new visual/input/tutorial logic lives under `src/remix/`, with scoped `rm-*` CSS. Integration
+touches only the app's blend lifecycle, source preview callbacks and optional model-request
+arguments. Existing Appendix A.3 prompts, semantic toggles, source editing and Guided Demo remain.
+
+### Facts and progress hooks
+
+`callModel()` buffers a single JSON response. It does not stream tokens or individual UI parts.
+`App.jsx:requestBlend()` emits `onBlendStart`, then `onResponseReceived` after JSON parsing and
+repair, or `onBlendError` on transport/parsing failure. `CodeRender` reports runtime/compile errors
+and a successful preview after two animation frames. `SourceNode` measures visible semantic
+regions in one read-only layout batch, then calls `onPreviewReady`. Only then does the event store
+permit part reveals and completion. During the wait, the scene is explicitly illustrative;
+after rendering, part events are a visual replay of an already available result.
+
+`events.js` exports `createBlendEvents()` and a shared `blendEvents` instance. Its interface is
+`onBlendStart(id, details) -> run`, `onResponseReceived(id, run, code)`,
+`onPreviewReady(id, run, code, regions, immediate)`, `onPartGenerated(id, run, part, source)`,
+`onBlendComplete(id, run)` and `onBlendError(id, run, error)`. React subscribers use
+`useSyncExternalStore`. Sessions move through waiting → rendering → assembling → complete, or
+error. Run IDs reject stale responses; retries clear old reveal timers. Empty/broken previews
+cannot complete. Deleting/resetting nodes aborts requests and removes sessions. A request timeout
+is 330 seconds. The reduced-motion path emits the same region data immediately without animation
+timers. A future streaming pipeline can provide verified part events through this interface.
+`onPreviewRepaired` removes a settled error overlay after Fix Render or editing produces a
+different, successfully rendered component; stale or unchanged previews cannot dismiss an error.
+
+### Files and independent flags
+
+- `flags.js`, `context.js`, `RemixContext.jsx`: presets, stable React context, preferences, sound
+  opt-in and system motion. Fog/builders start on, input/voice off, tutorial on. Sound is separate
+  session state and never persisted. Query presets override initial local settings per tab.
+- `BlendOverlay.jsx`, `FogCanvas.jsx`: dismissible progress, low-resolution cached cloud/grain
+  canvas, region cutouts and static error/reduced-motion presentation.
+- `BuilderStage.jsx`, `three-stage.js`: lazy Three.js scene, original round/square-headed workers,
+  labeled source A/B blocks and a CSS fallback. Rendering uses one RAF loop and cached geometry;
+  it pauses drawing offscreen/in background, caps DPR at 1.5, and disposes geometries, materials,
+  textures, renderer and context on exit. `data-fps` is a one-second diagnostic on the canvas.
+- `WaitInput.jsx`, `steering.js`: bounded normalized sketch strokes, text and persistence via
+  source node `waitInput`. A request snapshots input at start into `appliedWaitInput`; input added
+  while it runs remains for the next iteration. Regenerate or a new blend from that result adds
+  its note and a transparent 375×720 sketch PNG to the request, separately from the reference.
+  Disabled input flags exclude stored input from requests without deleting it; voice-only mode
+  includes text/transcripts but omits sketch strokes.
+- `voice.js`: push-to-talk browser recognition adapter. Explicit gesture only; final results
+  append to notes; 45-second limit; permission/error/unsupported feedback and abort on dismissal.
+- `sound.js`: original Web Audio synthesis; no audio assets or microphone. Quiet ambience,
+  filtered duck-like placement/completion calls, immediate mute and node disposal. Sound requires
+  user activation, is suppressed with reduced motion/hidden tabs, and follows device/browser
+  volume and mute. Browsers expose no universal API for reading OS silent/DND settings.
+- `RemixControls.jsx`, `RemixTutorial.jsx`, `modal.js`: independent preset links, feature switches,
+  seven-step modal, source/base credits, labeled offline rehearsal, actual preview-error exercise,
+  focus trapping, Escape, focus return and inert background. The tutorial never resets the canvas.
+
+Source letters encode the requested blend roles (A content, B visual inspiration). They are
+explanatory animation, not measured pixel/code provenance. No extra model calls are made to infer
+that attribution. WebGL falls back to flat builders; speech support depends on the browser.
+
+### Verification
+
+`npm test` runs the deterministic event-store, steering request, voice-adapter and audio resource
+lifecycle tests without model calls. `npm run build` confirms production chunks; Three.js must
+remain in the dynamically imported `three-stage-*` chunk. Exercise the tutorial replay/failure
+buttons for a no-credit visual check. Check a real blend separately: while waiting add a note and
+mark, then Regenerate; verify the requested edit, retained mark, and untouched source. Test reduced
+motion, mute, independent presets, mobile modal scrolling and keyboard focus return.
 
 ## How a blend runs
 
@@ -142,4 +215,3 @@ from the group 1 "xhigh" revibe.
 Two fixes: Reset All now also restores class values edited in the panel (`original` on each
 change), so the list matches the code again. Pasted code with an unknown wrapper component no
 longer loses its text.
-
