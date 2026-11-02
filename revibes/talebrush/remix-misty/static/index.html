@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaleBrush × Misty</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <!-- Text editor (Figure 1 A2 / B1) -->
+    <section class="panel editor-panel">
+      <div class="editor-head">
+        <input id="title" class="title" placeholder="Title" aria-label="Story title">
+        <div class="history-wrap">
+          <button id="historyBtn" class="history-btn" aria-haspopup="true" aria-expanded="false">History ▿</button>
+          <div id="historyMenu" class="history-menu" hidden>
+            <div class="history-empty">No stored stories yet. Each generation is stored here.</div>
+            <ul id="historyList"></ul>
+          </div>
+        </div>
+      </div>
+      <div id="editor" class="editor" aria-label="Story sentences"></div>
+      <p class="hint">One sentence per bullet. <kbd>Enter</kbd> adds a bullet, <kbd>Backspace</kbd> on an empty bullet removes it.</p>
+
+      <!-- Misty remix: example stories to blend from -->
+      <div class="examples">
+        <div class="ex-head">
+          <h2>Examples</h2>
+          <span class="remix-tag">Misty remix</span>
+        </div>
+        <p class="ex-hint">Drag a whole example by <span class="grip">⠿</span> onto the fortune canvas to blend it globally, or brush across part of its arc and drag that selection onto the sentences you want to blend it into.</p>
+        <div id="exampleList" class="ex-list"></div>
+        <details id="exAdd" class="ex-add">
+          <summary>+ Add an example story</summary>
+          <input id="exName" placeholder="Name (e.g., Cinderella)">
+          <textarea id="exText" rows="4" placeholder="Paste a short story or a summary. Each sentence becomes one point on its arc."></textarea>
+          <div class="ex-add-row">
+            <span class="ex-suggest">Try: <button data-sample="0">Cinderella</button> <button data-sample="1">Icarus</button> <button data-sample="2">The Tortoise and the Hare</button></span>
+            <button id="exAddBtn" class="primary">Add example</button>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Canvas (Figure 1 A1, A3 / B2–B5) -->
+    <section class="panel canvas-panel">
+      <div class="canvas-head">
+        <label class="protagonist"><input id="protagonist" value="" placeholder="Name" aria-label="Protagonist name"><span>'s fortune</span></label>
+        <button id="againBtn" class="again-btn" title="Generate new sentences for the same sketch">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
+          <span>Generate Again</span>
+        </button>
+      </div>
+      <svg id="fortuneCanvas" class="canvas" viewBox="0 0 640 380" preserveAspectRatio="none" role="img" aria-label="Fortune canvas: x is the sentence, y is the protagonist's fortune (higher is better)">
+        <defs>
+          <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#86d6a0" stroke-width="2.2"/>
+          </pattern>
+        </defs>
+        <g id="fBands"></g><g id="fGrid"></g><g id="fHistory"></g><g id="fSketch"></g><g id="fArc"></g><g id="fCursor"></g>
+      </svg>
+      <label class="surprise-toggle"><input type="checkbox" id="surpriseOn"> Surprise in a separate panel.</label>
+      <div id="surpriseWrap" class="surprise-wrap" hidden>
+        <div class="surprise-labels"><span class="hi">High Surprise</span><span class="lo">Low Surprise</span></div>
+        <svg id="surpriseCanvas" class="canvas surprise" viewBox="0 0 640 200" preserveAspectRatio="none" aria-label="Surprise canvas: higher means a more surprising sentence">
+          <g id="sGrid"></g><g id="sSketch"></g><g id="sCursor"></g>
+        </svg>
+      </div>
+      <div class="tools" role="toolbar" aria-label="Sketch tools">
+        <button id="penBtn" class="tool active" title="Brush: sketch the fortune arc. Draw slowly for a tight envelope, fast for a loose one." aria-pressed="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 21h6v-7l-1-2V4a2 2 0 0 0-4 0v8l-1 2z" fill="currentColor"/></svg>
+        </button>
+        <button id="eraserBtn" class="tool" title="Eraser: erase parts of the sketch. Erased slots get unconstrained sentences." aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="5" y="9" width="14" height="7" rx="1.5" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <div id="status" class="status" aria-live="polite"></div>
+
+      <!-- Misty remix: semantic diff of the last generation -->
+      <div id="diffPanel" class="diff" hidden>
+        <div class="ex-head"><h2>Changes</h2><span class="remix-tag">Misty remix · semantic diff</span></div>
+        <p class="ex-hint">What the last generation changed, by meaning. Switch a change off to undo it, or click its label to describe a different change.</p>
+        <ul id="diffList"></ul>
+      </div>
+    </section>
+  </main>
+  <footer id="modelNote" class="model-note"></footer>
+  <div id="tooltip" class="tooltip" hidden></div>
+  <div id="dragGhost" class="drag-ghost" hidden></div>
+  <div id="blendDialog" class="dialog-backdrop" hidden>
+    <form class="dialog" id="blendForm">
+      <h3>Pick Blending Option</h3>
+      <p id="blendWhat" class="dialog-sub"></p>
+      <label class="opt"><input type="checkbox" name="aspect" value="arc" checked><span><b>Arc</b> Sketch the example's fortune shape onto these sentences</span></label>
+      <label class="opt"><input type="checkbox" name="aspect" value="events"><span><b>Events</b> Borrow what happens in each example sentence</span></label>
+      <label class="opt"><input type="checkbox" name="aspect" value="style"><span><b>Tone &amp; style</b> Write in the example's voice and imagery</span></label>
+      <label class="opt"><input type="checkbox" name="aspect" value="custom" id="customChk"><span><b>Customize</b> <input id="customText" placeholder="What to borrow, e.g., 'a magical helper'"></span></label>
+      <div class="dialog-actions"><button type="button" id="blendCancel">Cancel</button><button type="submit" class="primary">Blend</button></div>
+    </form>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
