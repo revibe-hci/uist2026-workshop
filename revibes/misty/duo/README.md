@@ -168,25 +168,10 @@ Launch arguments, for demos and testing:
 - `-MistyURL http://192.168.1.20:5173/?duo` loads Misty from another address.
 - `-MistySimulatedHinge YES` uses the slider even when a real hinge is present.
 
-## Without the phone: the browser simulator
+## Without the iOS app
 
-Run Misty and the bridge as in `../app/README.md`, then open http://localhost:5173/?sim in a
-browser. It shows Misty on a simulated iPhone Duo, loaded with the demo blend:
-
-- **Fold** by dragging the right half of the phone in the hinge dial (a top view of the phone),
-  scrolling over it, the slider, or the arrow keys. The buttons open, half fold, close slowly
-  (3 s) and close quickly (under half a second).
-- **Screens** switch as iOS does on the real phone: a slow close moves Misty to the outer screen
-  at about 20°, a quick one at about 60°, and opening brings it back to the inner screen only
-  above 155°. On the outer screen Misty sees the phone as closed, as in the iOS app.
-- **The fold** divides the inner screen down the middle, so the level picker and preview sit on
-  either side of it, and both halves shade as the phone folds.
-- **Haptics** show as a badge on the phone (tick, tap, success) and in the event list. Browsers
-  that can vibrate (Chrome on Android) also vibrate.
-
-`?sim&canvas` uses your own canvas instead of the demo. The demo replaces the canvas saved in
-that browser. `?duo` alone keeps the plain page with a small "Simulated hinge" slider at the top
-right.
+Open http://localhost:5173/?duo in a browser. A "Simulated hinge" slider appears at the top
+right and drives the same three postures.
 
 ## Files
 
@@ -197,6 +182,5 @@ right.
 - `Info.plist`: local network access for the dev server.
 - `../app/src/lib/duo.js`: postures, angle and fold position in the web app.
 - `../app/src/components/DuoView.jsx`: the fold scrub, the outer display, the browser slider.
-- `../app/src/components/DuoSimulator.jsx`: the browser simulator (`?sim`).
 - `../app/src/lib/duo-demo.json`: the recorded demo blend.
 - `../app/vite.config.js`: `/bridge` forwarding and the address guard for `npm run dev:phone`.

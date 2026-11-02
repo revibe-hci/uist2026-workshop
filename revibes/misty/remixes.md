@@ -35,8 +35,7 @@ change: who, what changed, and what question it explores.
   On iOS 27.1 the app reads the real hinge and where the fold divides the screen, keeps the
   scrub's render off the crease, and follows the screen iOS puts it on. Tested in the iPhone Duo
   simulator (iOS 27.2) and on a physical iPhone Duo, over cable and eduroam. `?duo&demo` loads a
-  recorded blend to fold at once. Without the phone, `?sim` opens a browser simulator of the iPhone
-  Duo: drag a hinge dial to fold, and it switches screens as iOS does and shows the haptics.
+  recorded blend to fold at once. In a browser, `?duo` adds a hinge slider instead.
   `npm run dev:phone` serves Misty and the bridge to a phone on the network. On the `iphone-duo`
   branch. See `duo/README.md`.
 - **Question:** does picking a blend level with the fold, and committing it by closing the phone,

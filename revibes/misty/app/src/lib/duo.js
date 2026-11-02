@@ -11,11 +11,8 @@ export const DUO_MODE = params.has('duo');
 // ?duo&demo starts from a recorded blend (lib/duo-demo.json), so the fold can be tried
 // without a model call or any tapping. It replaces the saved canvas.
 export const DEMO_MODE = DUO_MODE && params.has('demo');
-// The browser simulator (?sim, components/DuoSimulator.jsx) loads Misty in an iframe with
-// ?duo&sim-shell and plays the iOS app's part: it sets the angle and fold, and gets the haptics.
-export const SIM_SHELL = DUO_MODE && params.has('sim-shell') && window.parent !== window;
-export const IN_SHELL = Boolean(window.__mistyDuoShell) || SIM_SHELL;
-if (window.__mistyDuoShell) document.documentElement.classList.add('m-duo-shell');
+export const IN_SHELL = Boolean(window.__mistyDuoShell);
+if (IN_SHELL) document.documentElement.classList.add('m-duo-shell');
 
 // Below CLOSED the phone counts as shut and the outer display takes over. Above FLAT it counts
 // as open and the full canvas shows. In between, the fold scrubs the focused blend.
@@ -72,11 +69,9 @@ export const blendAmount = (value) => Math.max(0, Math.min(1, (value - CLOSED) /
 
 // Haptics: a web page can't vibrate an iPhone, so the page asks the iOS app to play one.
 // 'level' when the fold crosses into a new level, 'select' when holding still selects it,
-// 'apply' when closing applies it. In the browser simulator, the simulator shows them.
-// Elsewhere this does nothing.
+// 'apply' when closing applies it. Outside the app this does nothing.
 export function haptic(kind) {
   try {
-    if (SIM_SHELL) window.parent.postMessage({ mistyHaptic: kind }, window.location.origin);
     window.webkit?.messageHandlers?.mistyHaptic?.postMessage(kind);
   } catch {
     // No app to play it.

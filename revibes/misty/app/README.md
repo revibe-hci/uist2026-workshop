@@ -29,9 +29,8 @@ cd revibes/misty/app && npm install && npm run dev
 Open http://localhost:5173. The bar at the bottom of the canvas warns you if the bridge is
 unreachable.
 
-**Foldable iPhone remix.** http://localhost:5173/?sim opens Misty on a simulated iPhone Duo in the
-browser: fold it with the hinge dial to pick a blend level, and close it to apply the level. The
-iOS app for the real phone is in `../duo/`; its README covers both.
+**Foldable iPhone remix.** The iOS app for the iPhone Duo is in `../duo/`. In a browser,
+http://localhost:5173/?duo adds a hinge slider that stands in for the fold.
 
 **If blends fail:** the error appears under the new node.
 

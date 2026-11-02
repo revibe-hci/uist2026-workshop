@@ -171,14 +171,4 @@ Select restores Misty's behaviour. `panOnDrag` stays on in both, because turning
 React Flow also turns off pinch zoom on touch screens. The mode is kept in `localStorage`.
 
 **Haptics:** `haptic(kind)` in `src/lib/duo.js` posts `level`, `select` or `apply` to the iOS app's
-`mistyHaptic` message handler (`duo/MistyDuo/Haptics.swift`). In the browser simulator it posts
-them to the simulator instead; elsewhere in a browser it does nothing.
-
-**Browser simulator (`?sim`):** `src/main.jsx` renders `components/DuoSimulator.jsx` instead of
-the app. It loads Misty in an iframe with `?duo&sim-shell` (plus `&demo` unless `?sim&canvas`) at
-the iPhone Duo's screen sizes (inner 626 x 890, outer 466 x 678) and plays the iOS app's part
-through the iframe's `window.mistyDuo`: it sets the angle and the fold rect, and listens for the
-haptics. It copies iOS's screen hysteresis as measured in the iPhone Duo simulator: to the outer
-screen below 20° (60° when folding faster than 150°/s), back to the inner screen above 155°. On the
-outer screen the page sees 0°, as in the iOS app. `sim-shell` sets `IN_SHELL` in `duo.js`, which
-hides the page's own hinge slider.
+`mistyHaptic` message handler (`duo/MistyDuo/Haptics.swift`). In a browser it does nothing.
