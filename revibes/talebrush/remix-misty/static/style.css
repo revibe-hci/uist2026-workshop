@@ -161,3 +161,42 @@ button.primary:disabled { opacity: .5; }
 .switch input:checked + span::before { transform: translateX(14px); }
 .switch input:disabled + span { cursor: progress; }
 .row.diffhl { background: var(--misty-soft); }
+
+/* ---------- tutorial walkthrough ---------- */
+.tour-btn { border: 1px solid #e3c6dc; background: var(--misty-soft); color: var(--misty); border-radius: 14px; padding: 3px 12px; font-size: 12px; cursor: pointer; font-weight: 600; }
+.tour-btn:hover { background: #f1dcea; }
+@keyframes tourpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(176,86,154,.45); } 50% { box-shadow: 0 0 0 6px rgba(176,86,154,0); } }
+.tour-btn.pulse { animation: tourpulse 1.8s ease-in-out infinite; }
+.tour-root { position: fixed; inset: 0; z-index: 60; }
+.tour-block { position: absolute; inset: 0; }
+.tour-root.dim .tour-block { background: rgba(25,25,25,.5); }
+.tour-spot { position: fixed; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(25,25,25,.5); outline: 2px solid #fff; pointer-events: none; transition: all .25s ease; }
+.tour-card { position: fixed; width: 380px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; background: #fff; border-radius: 12px; padding: 16px 18px 14px; box-shadow: 0 14px 44px rgba(0,0,0,.3); transition: left .25s ease, top .25s ease; font-size: 13.5px; }
+.tour-card h3 { margin: 8px 0 6px; font-size: 16px; }
+.tour-body p { margin: 6px 0; color: #333; }
+.tour-top { display: flex; justify-content: space-between; align-items: center; }
+.tour-x { border: none; background: none; font-size: 20px; line-height: 1; color: #999; cursor: pointer; }
+.tour-badge { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 10px; padding: 2px 9px; white-space: nowrap; }
+.o-talebrush { background: #e5f6ea; color: #2e8b50; }
+.o-misty { background: var(--misty-soft); color: var(--misty); }
+.o-remix { background: linear-gradient(90deg, #e5f6ea, var(--misty-soft)); color: #6a4a7a; }
+.o-welcome { background: #eef1f6; color: #4a5a78; }
+.tour-legend { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.tour-legend li { display: flex; gap: 8px; align-items: baseline; color: #444; font-size: 12.5px; }
+.tour-swatch { display: inline-block; width: 4px; height: 14px; vertical-align: -2px; margin: 0 4px 0 2px; }
+.tour-swatch.gray { background: var(--gray); } .tour-swatch.blue { background: var(--blue); }
+.tour-note { color: var(--muted) !important; font-size: 12.5px; }
+.tour-mock { border: 1px dashed #d9c3d3; border-radius: 8px; padding: 6px 10px; margin: 6px 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #555; }
+.tour-mock b { color: var(--ink); margin-right: 4px; }
+.tour-diff { display: flex; align-items: center; gap: 8px; }
+.tour-diff.off { opacity: .55; }
+.tour-switch { width: 26px; height: 15px; border-radius: 8px; background: #ccc; position: relative; flex: none; }
+.tour-switch::after { content: ""; position: absolute; width: 11px; height: 11px; border-radius: 50%; background: #fff; top: 2px; left: 2px; }
+.tour-switch.on { background: var(--misty); } .tour-switch.on::after { left: 13px; }
+.tour-try { padding-left: 20px; margin: 6px 0; } .tour-try li { margin: 4px 0; }
+.tour-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; }
+.tour-dots { display: flex; flex-wrap: wrap; gap: 4px; }
+.tour-dots button { width: 7px; height: 7px; padding: 0; border-radius: 50%; border: none; background: #ddd; cursor: pointer; }
+.tour-dots button.on { background: var(--misty); }
+.tour-nav { display: flex; gap: 6px; flex: none; }
+.tour-nav button:not(.primary) { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }

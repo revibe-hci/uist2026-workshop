@@ -154,3 +154,9 @@ It is slower and uses more of the plan.
 - **Blends survive Generate Again**: `state.lastBlends` keeps the blend for each slot.
   Redrawing a slot by hand removes its blend.
 - localStorage key: `talebrush-misty-state-v1`, separate from the revibe.
+- **Tutorial** (`static/tour.js`): a self-contained modal tour. `STEPS` lists each
+  step's target selector, origin badge (`talebrush` / `misty` / `remix`) and text. A
+  spotlight box with a large `box-shadow` dims everything around the target. When a
+  target is hidden (no example yet, no diff yet), the step falls back to `fallback`
+  or is centred with its `missing` note. The tour makes no model calls. The
+  `talebrush-misty-tour-seen` localStorage flag stops the button's pulse.

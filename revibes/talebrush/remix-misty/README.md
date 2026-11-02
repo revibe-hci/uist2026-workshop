@@ -18,6 +18,9 @@ From the repository root, in two terminals:
 
 Open **http://localhost:5058**. It can run next to the revibe on 5057.
 
+New here? Press **? Tutorial** (top of the editor) for a walkthrough of every part of the
+interface. Each step is labelled *From TaleBrush*, *From Misty*, or *Remix*.
+
 The footer reports which model answers. If it says the bridge is not reachable, start
 step 1. Port settings: `TALEBRUSH_PORT=5060` changes TaleBrush's port, and
 `BRIDGE_URL=http://localhost:8788` points it at a bridge on another port.

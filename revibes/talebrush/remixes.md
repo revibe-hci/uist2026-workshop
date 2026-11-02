@@ -22,6 +22,9 @@ Code: `remix-misty/`, run on port 5058. The revibe in `app/` is unchanged.
 - **Semantic diff** (from Misty's semantic diffs): each generation or blend is
   summarized as changes by meaning. Each change can be toggled off (only its
   sentences are rewritten, and their fortune is re-recognized) or reworded.
+- **Tutorial**: a "? Tutorial" button opens a 15-step walkthrough for first-time
+  viewers. It spotlights each part and labels it *From TaleBrush*, *From Misty*, or
+  *Remix*.
 
 **What it explores**
 - Does an *example* help writers say what they want better than sketching from
