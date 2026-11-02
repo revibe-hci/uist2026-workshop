@@ -1,5 +1,6 @@
 // The arena is the application's live renderer, also recorded with canvas.captureStream.
 // Every texture is captured from this blend's actual input/output; there are no sample screens.
+import { gameTimeline } from './game-timeline.js';
 const C=['#a987ff','#47e5cc'];
 const clamp=x=>Math.max(0,Math.min(1,x));
 const ease=x=>{x=clamp(x);return x*x*(3-2*x);};
@@ -38,14 +39,17 @@ export function createGameRenderer(canvas){
     if(disposed)return;
     const t=now/1000,hasResult=!!images.result;
     if(hasResult&&start===null)start=now;
-    const p=start===null?0:Math.max(0,(now-start)/1000),done=hasResult&&p>=9;
+    const p=start===null?0:Math.max(0,(now-start)/1000);
+    const regions=state.assets?.sourceRegions?.slice(0,2)||[];
+    if(!regions.length)regions.push({label:'Selected UI',rect:{x:.04,y:.12,w:.92,h:.3}});
+    const timing=gameTimeline(p,regions.length),done=hasResult&&timing.done;
     c.clearRect(0,0,W,H);c.fillStyle='#080f1b';c.fillRect(0,0,W,H);
     const glow=c.createRadialGradient(800,410,20,800,420,850);glow.addColorStop(0,'#142d40');glow.addColorStop(1,'#080f1b');c.fillStyle=glow;c.fillRect(0,0,W,H);
     c.strokeStyle='#173044';c.lineWidth=.6;
     for(let x=0;x<W;x+=40){c.beginPath();c.moveTo(x,125);c.lineTo(x,H);c.stroke();}
     for(let y=125;y<H;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke();}
     c.fillStyle='#080f1bef';c.fillRect(0,0,W,112);
-    label(c,'MISTY',40,47,26,'#effaff');label(c,'/ BLEND ARENA',146,47,18,'#7fa3bd');
+    label(c,'MISTY',40,47,26,'#effaff');label(c,'/ BLEND RAIDERS',146,47,18,'#7fa3bd');
     label(c,state.replay?'REAL BLEND / REPLAY':state.phase==='waiting'?'LIVE MODEL REQUEST':'LIVE BLEND / GENERATED RESULT',40,80,12,state.phase==='waiting'?'#f6c97b':'#69ecd4');
     label(c,state.label||'SOURCE + REFERENCE',1550,48,14,'#9cb2ca','right');
     label(c,done?'ASSEMBLY COMPLETE':state.phase==='error'?'BLEND STOPPED':hasResult?'ASSEMBLING RETURNED UI':'WAITING FOR THE BRIDGE',1550,80,12,done?'#69ecd4':'#a8b9d2','right');
@@ -58,24 +62,28 @@ export function createGameRenderer(canvas){
     }
     if(images.result){c.drawImage(images.result,ia[1].x,ia[1].y,ia[1].w,ia[1].h);}
     // Fog is masked only after the actual output screenshot exists.
-    const regions=state.assets?.sourceRegions?.slice(0,2)||[];
-    if(!regions.length)regions.push({label:'Selected UI',rect:{x:.04,y:.12,w:.92,h:.3}});
     const resultRegions=state.assets?.resultRegions||regions;
-    const fog=1-ease((p-7.7)/1.1);
+    const fog=1-ease((p-7.45)/.8);
     if(!done){
       c.save();c.beginPath();c.rect(areas[1].x,areas[1].y,areas[1].w,areas[1].h);
-      if(hasResult)regions.forEach((_,i)=>{if(p>i*3.6+3.25){const r=rectIn(resultRegions[i]?.rect||regions[i].rect,ia[1]);c.rect(r.x+r.w,r.y,-r.w,r.h);}});
+      if(hasResult)regions.forEach((_,i)=>{if(timing.revealed[i]){const r=rectIn(resultRegions[i]?.rect||regions[i].rect,ia[1]);c.rect(r.x+r.w,r.y,-r.w,r.h);}});
       c.clip('evenodd');c.fillStyle=`rgba(10,23,39,${hasResult?fog*.98:.99})`;c.fillRect(areas[1].x,areas[1].y,areas[1].w,areas[1].h);
       c.globalAlpha=(hasResult?fog:1)*.3;
       for(let k=0;k<7;k++){const gy=210+k*77+Math.sin(t*.8+k)*16;const g=c.createRadialGradient(785+Math.sin(t*.6+k)*65,gy,0,790,gy,180);g.addColorStop(0,'#506a92');g.addColorStop(1,'#506a9200');c.fillStyle=g;c.fillRect(645,171,310,560);}
       c.restore();
     }
     if(!hasResult){label(c,state.phase==='error'?'CONNECTION FAILED':'MODEL IS WORKING',800,410,16,'#bcd2e3','center');label(c,'Input fragments preview below',800,441,11,'#7592ad','center');}
-    const index=hasResult?Math.min(regions.length-1,Math.floor(p/3.6)):Math.floor(t/4)%regions.length;
-    const region=regions[index],local=hasResult?p-index*3.6:(t%4),phase=local;
-    let travel=phase<1.2?0:phase<2.4?ease((phase-1.2)/1.2):phase<3.3?1:1-ease((phase-3.3)/.3);
-    if(done||p>regions.length*3.6)travel=0;
-    const busy=!done&&p<regions.length*3.6;
+    const index=hasResult?timing.index:Math.floor(t/4)%regions.length;
+    const region=regions[index],phase=hasResult?timing.phase:(t%4);
+    let travel=phase<1.2?0:phase<1.85?ease((phase-1.2)/.65):phase<3.25?1:1-ease((phase-3.25)/.35);
+    if(done||(hasResult&&!timing.busy))travel=0;
+    const busy=!done&&(!hasResult||timing.busy);
+    const impact={x:800,y:408},colliding=hasResult&&timing.collision;
+    if(colliding){
+      const blast=(phase-2.35)/.5;
+      c.save();c.globalAlpha=.52*(1-blast);const flash=c.createRadialGradient(impact.x,impact.y,2,impact.x,impact.y,150);flash.addColorStop(0,'#f1ffff');flash.addColorStop(.35,'#67efdf');flash.addColorStop(1,'#8a6cff00');c.fillStyle=flash;c.fillRect(640,248,320,320);c.restore();
+      for(let i=0;i<22;i++){const angle=i*2.39996,rad=35+blast*130+Math.sin(i*8)*15,x=impact.x+Math.cos(angle)*rad,y=impact.y+Math.sin(angle)*rad*.72;c.save();c.translate(x,y);c.rotate(angle+blast*4);c.globalAlpha=(1-blast)*.9;c.fillStyle=i%2?C[0]:C[1];c.fillRect(-3,-2,8+i%4,3);c.restore();}
+    }
     for(let role=0;role<2;role++){
       const color=C[role],home=role?1110:490,end=role?1030:570,ax=mix(home,end,travel),ay=664;
       const refRect=state.assets?.referenceIsCrop?{x:0,y:0,w:1,h:1}:{x:.07,y:Math.min(.7,region.rect.y),w:.86,h:Math.min(.32,region.rect.h)};
@@ -88,19 +96,27 @@ export function createGameRenderer(canvas){
         if(z<source.w)sx+=z;else if((z-=source.w)<source.h){sx+=source.w;sy+=z;}else if((z-=source.h)<source.w){sx+=source.w-z;sy+=source.h;}else{z-=source.w;sy+=source.h-z;}
         if(phase<1.2){c.shadowColor=color;c.shadowBlur=14;c.fillStyle='#e9ffff';c.fillRect(sx-4,sy-4,8,8);c.shadowBlur=0;c.strokeStyle=color+'88';c.beginPath();c.moveTo(ax+(role?-35:35),ay-68);c.lineTo(sx,sy);c.stroke();}
       }
-      mech(c,ax,ay,t,color,busy&&phase>1.2&&phase<2.4?1:0,busy&&phase>1&&phase<2.7);
+      mech(c,ax,ay,t,color,busy&&phase>1.2&&phase<1.85?1:0,busy&&phase>1&&phase<1.9);
       label(c,role?'AGENT 02 / STYLE':'AGENT 01 / CONTENT',home,710,10,color,'center');
       if(busy&&phase>.55&&phase<3.3){
         let w=158,h=Math.max(44,Math.min(100,source.h/source.w*158)),x=ax-w/2,y=ay-80-h/2;
         if(phase<1.2){const q=ease((phase-.55)/.65);w=mix(source.w,w,q);h=mix(source.h,h,q);x=mix(source.x,x,q);y=mix(source.y,y,q)-Math.sin(q*Math.PI)*48;}
-        else if(phase>2.4&&hasResult){const q=ease((phase-2.4)/.9);x=mix(x,dr.x,q);y=mix(y,dr.y,q)-Math.sin(q*Math.PI)*72;w=mix(w,dr.w,q);h=mix(h,dr.h,q);}
+        let rotation=0,alpha=1;
+        if(phase>1.85&&hasResult){
+          const side=role?1:-1,tw=156,th=Math.min(96,Math.max(48,h));
+          if(phase<2.35){const q=ease((phase-1.85)/.5);x=mix(x,impact.x-tw/2+side*12,q);y=mix(y,impact.y-th/2,q)-Math.sin(q*Math.PI)*95;w=mix(w,tw,q);h=mix(h,th,q);rotation=side*q*.24;}
+          else if(phase<2.85){const q=(phase-2.35)/.5;x=impact.x-tw/2+Math.sin(q*15+role*3)*26;y=impact.y-th/2+Math.cos(q*13+role*3)*20;w=tw;h=th;rotation=side*(.24+Math.sin(q*11)*.3);alpha=1-q*.15;}
+          else{const q=ease((phase-2.85)/.4);x=mix(impact.x-tw/2,dr.x,q);y=mix(impact.y-th/2,dr.y,q);w=mix(tw,dr.w,q);h=mix(th,dr.h,q);rotation=side*.18*(1-q);alpha=1-ease((phase-3.02)/.23);}
+        }
+        c.save();c.globalAlpha=alpha;c.translate(x+w/2,y+h/2);c.rotate(rotation);c.translate(-x-w/2,-y-h/2);
         c.shadowColor=color;c.shadowBlur=15;box(c,x-3,y-3,w+6,h+6,3,'#0b1525',color);c.shadowBlur=0;crop(c,role?images.reference:images.source,sr,{x,y,w,h});box(c,x+w-23,y-13,25,23,2,color);label(c,role?'B':'A',x+w-10,y+3,12,'#0b1423','center');
-        if(hasResult&&phase>2.4){c.strokeStyle=color+'66';c.beginPath();c.moveTo(ax,ay-75);c.lineTo(x+w/2,y+h/2);c.stroke();}
+        c.restore();
+        if(hasResult&&phase>1.85&&phase<2.35){c.strokeStyle=color+'66';c.beginPath();c.moveTo(ax,ay-75);c.lineTo(x+w/2,y+h/2);c.stroke();}
       }
       if(hasResult&&busy&&phase>3.1){c.strokeStyle=color;c.lineWidth=2;c.strokeRect(dr.x-4-role*3,dr.y-4-role*3,dr.w+8+role*6,dr.h+8+role*6);}
     }
     c.fillStyle='#08101def';c.fillRect(0,781,W,119);c.strokeStyle='#244057';c.beginPath();c.moveTo(0,781);c.lineTo(W,781);c.stroke();
-    let caption=state.phase==='error'?'Blend stopped — original source is safe.':done?'RESULT SAVED ON THE MISTY CANVAS':!hasResult?'LIVE REQUEST · selected input fragments remain visible':phase<1.2?'CUT / '+region.label:phase<2.4?'TRANSPORT / actual screenshot fragments':phase<3.3?'ASSEMBLE / source content + reference treatment':'LOCK / reveal the returned UI region';
+    let caption=state.phase==='error'?'Blend stopped — original source is safe.':done?'BLEND COMPLETE / THE ACTUAL GENERATED INTERFACE':!hasResult?'LIVE REQUEST · selected input fragments remain visible':phase<1.2?'CUT / '+region.label:phase<1.85?'CARRY / actual screenshot fragments':phase<2.35?'THROW / two inputs, one target':phase<2.85?'COLLIDE / a little controlled chaos':phase<3.25?'RESOLVE / snap into the generated layout':'REVEAL / the real blended result';
     label(c,caption.slice(0,86),800,819,17,done?'#6ae4ca':'#e0eaf6','center');
     label(c,hasResult?'Returned interface · region transfers illustrate the requested blend roles':'No generated regions have arrived yet.',800,849,11,'#819db7','center');
     ['SELECT','CUT','TRANSPORT','ASSEMBLE','REVEAL'].forEach((s,i)=>{label(c,s,450+i*175,880,10,done||p>i*1.6?'#78dacc':'#3c556f','center');});

@@ -103,3 +103,15 @@ change: who, what changed, and what question it explores.
   Codex bridge returned a working interface; the new result stayed on the canvas. The arena's
   native recording exported an actual 10-second, 1600×900 video with sound. Existing tests and
   production build pass.
+
+## Blend Raiders: collision into a clean result
+
+- **Who:** Table 7, implemented with Codex (GPT-6).
+- **What:** named the game view Blend Raiders. Agents throw the actual selected screenshot
+  fragments into a shared impact point. The pieces briefly rotate and collide with a particle
+  burst, then snap toward their destination and dissolve into the actual rendered UI. The final
+  screen stays clean; the collision does not alter the source code or the model's output. Sound
+  follows the throw, impact and resolution. A single selected region gets a longer animation so
+  the collision is visible. The 10-second recording ends with the actual result unobstructed.
+- **Question:** does a brief moment of controlled chaos make the combination legible while a
+  clean reveal makes the generated result easier to assess?

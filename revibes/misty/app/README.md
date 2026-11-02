@@ -149,6 +149,9 @@ run `npm run build` to create the production app.
 
 ### Live game-style assembly
 
+This experience is named **Blend Raiders**. Its screenshot pieces collide briefly, then resolve
+into the clean, actual generated interface. The collision changes the presentation, not the code.
+
 With All features enabled, make a real blend to open **Blend arena**. Its digital agents carry
 actual screenshot fragments from the source and selected reference. The center reveals the real
 model output after it renders. Use **Replay blend** above a result to reopen its assembly without
