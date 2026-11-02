@@ -17,6 +17,10 @@ from the **repository root** (`uist2026-workshop/`):
 
        python3 llm-bridge/bridge.py claude
 
+   For the remix's design space, allow more parallel calls:
+
+       BRIDGE_PARALLEL=12 python3 llm-bridge/bridge.py claude
+
    Check it at http://localhost:8787/health.
 
 2. Start TaleBrush:
@@ -67,3 +71,26 @@ another port, set `BRIDGE_URL=http://localhost:8788`.
 
 Each generation takes several seconds: it is one or more model calls through
 the bridge, plus re-reading the results.
+
+## Remix: TaleBrush × Luminate (branch `remix/talebrush-luminate`)
+
+Not in the paper. See `../remixes.md` for the question it explores.
+
+1. Write an opening and name the protagonist, then **✦ Suggest dimensions**.
+   Arc dimensions appear as lanes under the fortune canvas; setting dimensions
+   (genre, point of view, …) appear as chips. Type into "+ add your own
+   dimension" to add one.
+2. **Sketch what you know, leave the rest blank.** Draw on the fortune canvas
+   or any lane, and pin setting chips. Blank lanes and settings left on
+   "explore" vary across versions.
+3. **Explore versions** writes 6, 12 or 18 versions in parallel. They appear in
+   the Design space as they arrive.
+   - Choose x and y axes (a lane's shape, or a setting).
+   - Zoom with • ∿ T ¶ ☰, or pinch / Ctrl+scroll: dots → arcs → titles →
+     loglines → full outlines.
+4. **Hover** a version to preview its text in the editor and its arcs on the
+   canvas and lanes.
+5. **Click** a version to adopt it. Its dots are then corrected by the
+   recognition module. In the yellow panel, **Pin its curve** (fortune or any
+   lane) copies that curve into your sketch, **Pin its settings** pins its
+   chips, and **4 more like this** adds variations.

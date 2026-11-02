@@ -1,0 +1,69 @@
+# TaleBrush remixes
+
+## TaleBrush × Luminate: sketch some dimensions, explore the rest
+
+Branch `remix/talebrush-luminate`, built by Claude Code (Claude Opus 5.5) on
+top of the group 2 revibe (v2).
+
+**Question it explores.** Luminate (Suh et al., CHI 2024) dropped numeric
+dimensions because they "do not deliver meaningful interactions". TaleBrush is
+built on one: fortune, as a curve over story time. Can writers *sketch* the
+dimensions they have intentions about and *browse* a space of versions along
+the ones they don't? Does exploring first change what the sketch is for: a
+generator, a filter, or a way to adopt a curve they found?
+
+**What changed**
+- **Generated dimensions** (Luminate §4.1.1). The protagonist, title and
+  opening sentences produce 3 *arc* dimensions specific to the premise (e.g.
+  "Mike's belief in the fusion idea") and 3–4 *setting* dimensions (genre,
+  point of view, era, tone). Writers can add their own arc dimension.
+- **Arc dimensions are lanes.** Each is a thin sketch lane aligned under the
+  fortune canvas, like TaleBrush's surprise panel. A sketched lane is a
+  constraint, a blank lane is explored. Each lane also shows where the current
+  story is, from the recognition module scoring every dimension in one call.
+- **Setting chips.** Each value can be pinned, or left on "explore".
+- **Design space** (Luminate §4.1.2–4.1.5). "Explore versions" writes 6/12/18
+  versions in parallel.
+  - Every open lane gets a story shape (rising, falling, dip, peak, steady) and
+    every unpinned setting a value. Picks are balanced and shuffled
+    independently per dimension.
+  - Versions stream in as they finish, can be arranged on two axes (a lane's
+    shape, or a setting), and use 5 semantic zoom levels: dot, arcs (one
+    sparkline per dimension), title, logline, outline.
+- **Linking.** Hovering a version previews its text in the editor and draws
+  its arcs on the fortune canvas and every lane. The other versions stay faint
+  there, like TaleBrush's History overlay.
+- **Converge.** Clicking a version adopts it: it goes into the editor and
+  History, and the recognition module re-reads its sentences to correct its
+  self-rated dots. "Pin its curve" copies the version's curve on any dimension
+  into the sketch, so exploring turns into sketching. Also "Pin its settings"
+  and "4 more like this" (Luminate §4.1.4).
+- **Normal TaleBrush generation** (pen stroke, Generate Again) now also follows
+  sketched lanes and pinned settings.
+
+**Latency decisions** (staying on the LLM bridge)
+- One bridge call per version returns its sentences *and* its self-rated
+  values on every dimension. There's no recognize-and-retry loop while
+  exploring; only the adopted version is re-read.
+- Start the bridge with `BRIDGE_PARALLEL=12`. The app uses at most 10 slots for
+  exploring (`TALEBRUSH_EXPLORE_SLOTS`), leaving 2 for recognition while you
+  edit.
+- Results stream to the browser as NDJSON over one connection, because the
+  browser allows only about 6 connections per host. Bridge connections are
+  spaced 30 ms apart, because the bridge queues at most 5 pending connections
+  and a burst of 12 was reset.
+- Measured: 12 realistic versions with 3 lanes and 4 settings arrived between
+  14 and 36 s (most by 23 s); "4 more like this" took 8–32 s. One plain
+  TaleBrush generation took 23–33 s.
+
+**What we noticed**
+- **Self-ratings are inflated.** An adopted version rated its own fortune as
+  0.83 → 0.11 (a clean fall); the independent recognizer read the same
+  sentences as 0.62, 0.42, 0.40, 0.38, 0.45, 0.40 (nearly flat). Converging
+  with independent recognition matters.
+- **Shapes moved in lockstep at first.** The first sampling cycled every
+  dimension with fixed offsets, so 12 versions held only 5 shape
+  combinations. Now picks are balanced and shuffled independently per
+  dimension: 12 distinct combinations.
+- **The generated dimensions were premise-specific,** not generic (none of
+  Luminate's "creativity: least…most" problem in this run).

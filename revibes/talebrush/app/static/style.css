@@ -33,6 +33,12 @@ body {
   min-height: 100vh;
 }
 @media (max-width: 860px) { .app { grid-template-columns: 1fr; } }
+/* Remix: the design space sits beside the canvas on wide screens, below it otherwise. */
+.space-pane { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+@media (min-width: 1400px) {
+  .app { grid-template-columns: minmax(280px, 0.8fr) minmax(420px, 1.1fr) minmax(380px, 1.1fr); }
+  .space-pane { grid-column: auto; border-top: none; border-left: 1px solid var(--line); }
+}
 
 /* ---------- editor ---------- */
 .editor-pane { padding: 20px 20px 40px; border-right: 1px solid var(--line); background: var(--panel); }
@@ -109,3 +115,74 @@ body {
 .tool.subtle { font-size: 12px; color: #e3e3e3; }
 .hint { color: var(--muted); font-size: 12px; max-width: 640px; }
 .model-note { color: #999; font-size: 11px; margin-top: 12px; }
+
+/* ---------- remix: lanes ---------- */
+.lanes { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.lane { background: #fff; border: 1px solid #eee; border-radius: 10px; overflow: hidden; }
+.lane-head { display: flex; align-items: center; gap: 8px; padding: 4px 8px; font-size: 12px; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.lane-name { font-weight: 600; }
+.lane-scale { color: var(--muted); font-size: 11px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lane-state { color: #b08bd8; font-size: 11px; white-space: nowrap; }
+.lane-state.on { color: var(--green-ink); }
+.lane-btn { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 2px 4px; }
+.lane-btn:hover { color: var(--ink); }
+.lane-canvas { display: block; width: 100%; height: 104px; touch-action: none; cursor: crosshair; }
+.lane-canvas.eraser { cursor: cell; }
+.dims-bar { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.dim-btn { border: 1px solid #d6c7f2; color: #6a3fc7; background: #faf7ff; border-radius: 6px; padding: 5px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+.dim-btn:disabled { opacity: .6; cursor: default; }
+.add-dim { flex: 1; min-width: 200px; }
+.add-dim input { width: 100%; border: 1px dashed #ccc; border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px; background: transparent; }
+.settings { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.setting-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; }
+.setting-name { font-weight: 600; margin-right: 4px; }
+.chip { border: 1px solid #ddd; background: #fff; border-radius: 12px; padding: 2px 9px; cursor: pointer; font: inherit; font-size: 12px; color: #555; }
+.chip.any { border-style: dashed; color: #8a6fc0; }
+.chip.on { background: #6a3fc7; border-color: #6a3fc7; color: #fff; }
+
+/* ---------- remix: design space ---------- */
+.space-pane { padding: 20px; background: #fdfcff; }
+.space-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.space-head h2 { font-size: 16px; margin: 0 6px 0 0; }
+.n-pick { font-size: 12px; color: var(--muted); }
+.explore-btn { border: 1.5px solid #6a3fc7; background: #6a3fc7; color: #fff; border-radius: 6px; padding: 6px 14px; font: inherit; cursor: pointer; }
+.explore-btn:disabled { opacity: .6; cursor: default; }
+.stop-btn { border: 1px solid #ccc; background: #fff; border-radius: 6px; padding: 5px 10px; font: inherit; cursor: pointer; }
+.space-status { font-size: 12px; color: var(--muted); }
+.space-controls { display: flex; gap: 12px; align-items: center; margin: 10px 0; font-size: 12px; flex-wrap: wrap; }
+.space-controls select { font: inherit; font-size: 12px; max-width: 200px; }
+.zoom { display: flex; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; margin-left: auto; }
+.zoom button { border: none; background: #fff; padding: 4px 10px; cursor: pointer; font-size: 13px; }
+.zoom button.active { background: #6a3fc7; color: #fff; }
+.space { min-height: 240px; max-height: 70vh; overflow: auto; border: 1px solid #ece6f7; border-radius: 12px; background: #fff; padding: 10px; }
+.space-empty, .space-pending { color: var(--muted); font-size: 13px; margin: 8px; }
+.space-grid { display: grid; gap: 8px; align-items: start; }
+.axis-head { font-size: 11px; font-weight: 600; color: #6a3fc7; text-transform: capitalize; padding: 2px 4px; }
+.axis-head.y { writing-mode: horizontal-tb; align-self: center; }
+.cell { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; min-height: 30px; padding: 6px; border-radius: 8px; background: #faf8fe; }
+.vnode { background: #fff; border: 1px solid #e3dcf2; border-radius: 8px; cursor: pointer; transition: box-shadow .15s, border-color .15s; }
+.vnode:hover, .vnode.hover { border-color: #6a3fc7; box-shadow: 0 2px 10px rgba(106,63,199,.18); }
+.vnode.selected { border: 2px solid #f2b705; }
+.vnode.fresh { animation: pop .35s ease-out; }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.vnode.l0 { width: 14px; height: 14px; border-radius: 50%; background: #7b5bd0; border: none; }
+.vnode.l0.selected { background: #f2b705; }
+.vnode.l1 { padding: 3px; }
+.vnode.l2 { padding: 4px 6px; width: 100px; }
+.vnode.l3 { padding: 6px 8px; width: 170px; }
+.vnode.l4 { padding: 8px 10px; width: 100%; max-width: 420px; }
+.spark { display: block; }
+.v-title { font-size: 11px; font-weight: 600; line-height: 1.25; margin-top: 3px; }
+.vnode.l3 .v-title, .vnode.l4 .v-title { font-size: 13px; }
+.v-logline { font-size: 12px; color: #555; margin-top: 3px; }
+.v-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.v-tags span { font-size: 10px; background: #f1ecfb; color: #6a3fc7; border-radius: 8px; padding: 1px 6px; }
+.v-outline { margin: 6px 0 0; padding-left: 20px; font-size: 12px; color: #888; }
+.v-outline li.gen { color: #333; }
+.space-detail { margin-top: 10px; padding: 10px 12px; border: 1px solid #f2d27a; background: #fffaf0; border-radius: 10px; font-size: 13px; }
+.detail-title { font-weight: 600; }
+.detail-logline { color: #555; margin: 2px 0 8px; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; }
+.pin-btn, .more-btn { border: 1px solid #ccc; background: #fff; border-radius: 6px; padding: 3px 8px; cursor: pointer; font: inherit; font-size: 12px; }
+.more-btn { border-color: #6a3fc7; color: #6a3fc7; margin-left: auto; }

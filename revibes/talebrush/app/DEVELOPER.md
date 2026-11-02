@@ -95,3 +95,34 @@ From the repository root:
 - To change the regeneration policy, edit `slotSpec()` (tolerance and retries)
   and `generate()` in `server.py`.
 - Prompts are `RECOGNIZE_SYSTEM` and `GENERATE_SYSTEM` in `server.py`.
+
+## Remix: TaleBrush × Luminate (branch `remix/talebrush-luminate`)
+
+New files: `static/lanes.js` (dimensions, lanes, setting chips) and
+`static/space.js` (design space). They share `app.js`'s global state and
+helpers. `app.js` calls three hooks if they exist: `drawSpaceOverlay()`,
+`renderLanes()` and `laneTargets()`.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /api/dimensions` | One call. From name, title and opening sentences: `{arc: [{name, low, high}], setting: [{name, values}]}`. With `custom`, returns that one arc dimension with labels. |
+| `POST /api/recognize` with `dims` | One call rates every target sentence on fortune and each arc dimension: `{values: {index: {dimId: v}}}`. |
+| `POST /api/explore` | Streams NDJSON: one `{"type": "variant", ...}` line per version as it finishes, then `{"type": "done"}`. |
+
+How `/api/explore` works:
+- `plan_requirements()` gives every open dimension a shape and every free
+  setting a value. `balanced()` uses each option about equally often, shuffled
+  per dimension.
+- `variant_once()` turns shapes into per-slot targets, using `SHAPES`, and asks
+  for sentences plus a 0–1 rating of every line on every dimension in one call.
+- Threads share `EXPLORE_SLOTS` (env `TALEBRUSH_EXPLORE_SLOTS`, default 10).
+- `stagger()` spaces all bridge connections 30 ms apart, because the bridge
+  queues at most 5 pending connections.
+- If the browser disconnects (Stop, or Explore again), versions not yet
+  started are skipped. Calls already running finish and are discarded.
+
+On the frontend, versions keep `base` (the writer's bullets when exploring),
+`slots`, `sentences`, `values` and `requirement`. `versionBullets(v)` merges
+them into a full story for previews, sparklines and adopting. Axis categories
+for an arc dimension come from `shapeOf()`, applied to the version's own
+ratings, not to its requested shape.

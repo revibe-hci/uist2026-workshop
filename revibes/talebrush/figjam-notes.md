@@ -19,6 +19,8 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Nothing was graded partial/failure. Should v2 still change things? We decided yes: fix the caveats written in "What we saw".
 - Is our 1.00 comparable to Group 1's 0.20 → 0.40? Our agent saw the rubric before building AND graded its own work, theirs didn't.
 - Does a scripted, perfectly regular stroke test speed→width fairly compared to a real hand?
+- Remix: Luminate dropped numeric dimensions as not useful; TaleBrush is built on one (fortune as a curve). Are numeric dimensions useful once they're curves over story time?
+- Remix: is there a faster model than Haiku? No — the bridge already uses Haiku; most latency is ~4 s of CLI startup per call plus chained calls.
 
 ## Challenges we faced (red)
 
@@ -36,6 +38,10 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Grading by hand at a precise drawing speed is hard; we scripted pointer events to get repeatable slow / fast / mixed strokes.
 - On the hackathon page, cmd+A in a notes field didn't select its text, so our v2 notes were appended to the v1 notes; we rewrote them as "v1: … | v2: …".
 - Self-grading bias: every test came out Full. Humans grading might be stricter (e.g., on T-13's surprise or T-07's coherence).
+- Remix: 12 simultaneous connections to the bridge were refused/reset — its HTTP server queues only 5 pending connections. Spacing connections 30 ms apart fixed it (bridge left unchanged).
+- Remix: browsers allow ~6 connections per host, so the fan-out had to move to the server and stream results back over one connection.
+- Remix: our first requirement sampling moved all dimensions in lockstep — 12 versions held only 5 shape combinations. Fixed with balanced, independently shuffled picks (12/12 distinct).
+- Remix: self-rated values are inflated — a version rated its fortune 0.83 → 0.11, the independent recognizer read it as nearly flat (0.62 … 0.40).
 
 ## Ideas we came up with (green)
 
@@ -49,6 +55,11 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Ignore strokes shorter than ~12 columns and require 40% slot coverage, so accidental clicks never regenerate text.
 - Make surprise an explicit contrast in the prompt (LOW = no twists, VERY HIGH = near-absurd), since the bridge ignores temperature.
 - Show which retry round generation is in, so a 45 s wait feels less broken.
+- Remix: sketch some dimensions, explore the rest — sketched lanes constrain every version, blank lanes and unpinned settings vary across versions.
+- Remix: generate premise-specific arc dimensions (e.g. "Mike's belief in the fusion idea") and show them as lanes aligned under the fortune canvas.
+- Remix: an "arcs" semantic-zoom level — a sparkline per dimension is the summary of a story version.
+- Remix: "Pin its curve" — adopt a curve found in the design space as your sketch, so exploring turns into sketching.
+- Remix: one bridge call per version (sentences + self-ratings), independent recognition only for the version you adopt.
 
 ## Iterations and decision points (blue)
 
@@ -66,6 +77,9 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Step 5, v2: no failed tests, so it fixed 3 caveats: stray-click regeneration (T-11), widest band reachable with a normal swipe (T-05, fast 70 → ~100 units), stronger surprise prompt (T-13).
 - Step 6, v2 re-test: stray click → no generation; T-07 still Full in 23 s; T-11 only slots 7–8 changed; T-13 final sentence now clearly surprising (raccoons in the guitar case). All 15 stay Full (1.00).
 - Table scores at the end: Group 1 0.20 → 0.40, Group 2 1.00 → 1.00.
+- Remix decision: combine generated dimensions (as lanes) with a Luminate design space; stay on the LLM bridge but run aggressively parallel and progressive.
+- Remix measurement: 12 trivial bridge calls took 16.8 s with 4 slots vs 7.1 s with 12; 12 realistic versions arrived 9.5–18.3 s in the benchmark, 14–36 s in the app (more dimensions to rate).
+- Remix decision: BRIDGE_PARALLEL=12, at most 10 slots for exploring so 2 stay free for recognition while editing.
 
 ## Remix ideas (green, bottom strip)
 
@@ -75,4 +89,5 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Edit-level regeneration: rewrite part of a sentence instead of replacing it (the user study's complaint in Section 7.3.1).
 - Show the model's fortune rating next to each bullet so writers can disagree with it, and use their correction as feedback.
 - Meta-remix for the workshop: does seeing the rubric before building inflate revibe scores? Compare our build to Group 1's on the same tests.
+- Built on remix/talebrush-luminate: generated arc lanes + setting chips + streamed design space with axes, 5-level semantic zoom, linked hover, adopt, pin curve, more like this.
 

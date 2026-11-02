@@ -30,7 +30,7 @@ function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 // State
 // ---------------------------------------------------------------------------
 let nextId = 1;
-const newBullet = (text = "", kind = "user") => ({ id: nextId++, text, kind, edited: false, fortune: null, recText: null, recName: null });
+const newBullet = (text = "", kind = "user") => ({ id: nextId++, text, kind, edited: false, fortune: null, values: {}, recText: null, recName: null });
 
 const state = {
   name: "",
@@ -121,6 +121,19 @@ async function runRecognition() {
   recInFlight = true;
   renderEditorMarks();
   try {
+    const dims = typeof arcDimDefs === "function" ? arcDimDefs() : [];
+    if (dims.length) {
+      const res = await api("/api/recognize", { name, sentences: sentSnapshot, indices: idx, dims: [{ id: "fortune" }, ...dims] });
+      idx.forEach((i, k) => {
+        const b = state.bullets.find(x => x.id === ids[k]);
+        const v = res.values[String(i)];
+        if (b && v && b.text.trim() === sentSnapshot[i]) {
+          b.fortune = v.fortune; b.values = { ...b.values, ...v }; delete b.values.fortune;
+          b.recText = sentSnapshot[i]; b.recName = name; b.selfRated = false;
+        }
+      });
+      return;
+    }
     const res = await api("/api/recognize", { name, sentences: sentSnapshot, indices: idx });
     idx.forEach((i, k) => {
       const b = state.bullets.find(x => x.id === ids[k]);
@@ -290,6 +303,9 @@ function renderCanvas() {
     drawArc(h.bullets, h.nSlots, hov ? { color: "#1d5fc4", width: 3, opacity: 0.95, dots: true } : { color: "#6d8fbf", width: 1.5, opacity: 0.22, dots: true, r: 2.5 });
   }
 
+  // Remix: variants from the design space (faint), the hovered one highlighted.
+  if (typeof drawSpaceOverlay === "function") drawSpaceOverlay();
+
   // Sketched band.
   drawBand(state.sketch, liveStroke ? liveStroke.cols : null);
 
@@ -300,6 +316,7 @@ function renderCanvas() {
   if (eraserCursor) el("circle", { cx: eraserCursor.x, cy: eraserCursor.y, r: ERASER_R, fill: "none", stroke: "#999", "stroke-dasharray": "3 2" }, canvas);
   updateGenerateButton();
   renderSurprise();
+  if (typeof renderLanes === "function") renderLanes();
 }
 
 function drawBand(sketch, overlay) {
@@ -499,6 +516,7 @@ function slotSpec(i, n) {
     tol: covered ? Math.max(0.08, hw) : 0.2,           // envelope = tolerance (Section 4.2.2)
     retries: covered ? (hw < 0.12 ? 2 : 1) : 0,        // slower sketch -> more tries (Section 5.2.2)
     surprise: state.surpriseOn && ks ? sumS / ks : null,
+    dims: typeof laneTargets === "function" ? laneTargets(i, n) : {},
   };
 }
 
@@ -558,13 +576,18 @@ async function generate(slotIdx, { label, avoidCurrent }) {
   state.pendingSlots = new Set(slotIdx);
   renderEditor();
   try {
-    const res = await api("/api/generate", { name: state.name.trim(), sentences, slots: specs, fortunes, avoid });
+    const res = await api("/api/generate", { name: state.name.trim(), sentences, slots: specs, fortunes, avoid,
+      title: $("title").value, arcDims: typeof arcDimDefs === "function" ? arcDimDefs() : [],
+      settings: typeof pinnedSettings === "function" ? pinnedSettings() : {} });
     for (const s of res.sentences) {
       const b = state.bullets[s.index] || (state.bullets[s.index] = newBullet());
       b.text = s.text; b.kind = "gen"; b.edited = false;
       b.fortune = s.fortune; b.recText = s.text; b.recName = state.name.trim();
       b.target = s.target;
+      // With remix lanes, re-read every generated sentence so the lanes get values too.
+      if (typeof arcDimDefs === "function" && arcDimDefs().length) b.recText = null;
     }
+    if (typeof arcDimDefs === "function" && arcDimDefs().length) scheduleRecognition(50);
     pushHistory(label);
     showBanner(state.model && state.model.stub ? $("banner").textContent : null);
   } catch (e) {
@@ -588,7 +611,7 @@ function setBusy(on, text) {
 // Multi-story management (Section 4.2.3, Figure 5)
 // ---------------------------------------------------------------------------
 function snapshotBullets() {
-  return state.bullets.map(b => ({ ...b }));
+  return state.bullets.map(b => ({ ...b, values: { ...(b.values || {}) } }));
 }
 function pushHistory(label) {
   const entry = {
@@ -628,7 +651,7 @@ function renderHistory() {
 }
 
 function rollBack(h) {
-  state.bullets = h.bullets.map(b => ({ ...b, id: nextId++ }));
+  state.bullets = h.bullets.map(b => ({ ...b, values: { ...(b.values || {}) }, id: nextId++ }));
   state.sketch = h.sketch.map(v => v && { ...v });
   state.surprise = h.surprise.slice();
   state.surpriseOn = h.surpriseOn; $("surpriseToggle").checked = h.surpriseOn;

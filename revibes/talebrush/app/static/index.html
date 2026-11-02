@@ -45,6 +45,14 @@
         <div class="axis-label bottom s">Low surprise</div>
       </div>
 
+      <!-- Remix: Luminate-style generated dimensions, sketched as lanes over story time -->
+      <div id="lanes" class="lanes"></div>
+      <div class="dims-bar">
+        <button id="suggestDims" class="dim-btn" title="Ask the model for dimensions that fit this story">✦ Suggest dimensions</button>
+        <form id="addDimForm" class="add-dim"><input id="addDimInput" placeholder="+ add your own dimension (e.g. Mike's loneliness)" aria-label="Add a dimension"></form>
+      </div>
+      <div id="settings" class="settings" aria-label="Whole-story settings"></div>
+
       <label class="surprise-toggle"><input type="checkbox" id="surpriseToggle"> Surprise in a separate panel.</label>
 
       <div class="tools" role="toolbar" aria-label="Sketch tools">
@@ -57,7 +65,33 @@
         Each sketched slot between the subtle vertical lines is one sentence. Drawing generates; redraw part of the band to regenerate only that part.</p>
       <p id="modelNote" class="model-note"></p>
     </section>
+
+    <!-- Remix: the design space of story versions (Luminate) -->
+    <section class="space-pane" aria-label="Design space">
+      <div class="space-head">
+        <h2>Design space</h2>
+        <label class="n-pick">versions <select id="spaceN"><option>6</option><option selected>12</option><option>18</option></select></label>
+        <button id="exploreBtn" class="explore-btn">Explore versions</button>
+        <button id="stopBtn" class="stop-btn" hidden>Stop</button>
+        <span id="spaceStatus" class="space-status"></span>
+      </div>
+      <div class="space-controls">
+        <label>x <select id="axisX"></select></label>
+        <label>y <select id="axisY"></select></label>
+        <div class="zoom" role="group" aria-label="Semantic zoom">
+          <button data-level="0" title="Dots">•</button>
+          <button data-level="1" title="Arcs" class="active">∿</button>
+          <button data-level="2" title="Titles">T</button>
+          <button data-level="3" title="Loglines">¶</button>
+          <button data-level="4" title="Full outlines">☰</button>
+        </div>
+      </div>
+      <div id="space" class="space"><p class="space-empty">Sketch what you know (fortune or any lane), leave the rest blank, and explore versions. Blank lanes and unpinned settings vary across versions.</p></div>
+      <div id="spaceDetail" class="space-detail" hidden></div>
+    </section>
   </main>
   <script src="app.js"></script>
+  <script src="lanes.js"></script>
+  <script src="space.js"></script>
 </body>
 </html>
