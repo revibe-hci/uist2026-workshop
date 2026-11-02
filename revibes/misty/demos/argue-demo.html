@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The inputs argue: a Misty remix demo</title>
+<!--
+  Self-contained demo of the "inputs argue" remix (branch remix/misty-table7-argue).
+  Open this file in a browser: no server, no model, no network. The debate is scripted;
+  in the remix, Misty writes a new one for each blend and the blend itself comes from the model.
+  The voices are the remix's Web Audio synth (src/lib/simlish.js), copied in below.
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: #f5f3fa; color: #2a2540; }
+  .top { max-width: 1080px; margin: 0 auto; padding: 22px 20px 4px; }
+  .top h1 { margin: 0 0 4px; font-size: 22px; }
+  .top p { margin: 0; color: #6b6585; font-size: 14px; line-height: 1.45; }
+  .row { max-width: 1080px; margin: 16px auto 0; padding: 0 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .col h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #6b6585; margin: 0 0 8px; display: flex; gap: 8px; align-items: center; }
+  .col h2 .tag { text-transform: none; letter-spacing: 0; font-weight: 500; background: #e6e1f3; color: #5b3fa8; border-radius: 99px; padding: 1px 8px; font-size: 11.5px; }
+  .phone { height: 330px; border-radius: 22px; background: #fff; border: 6px solid #2a2540; overflow: hidden; position: relative; box-shadow: 0 10px 28px rgba(40,30,80,.16); }
+  .phone-inner { height: 100%; overflow-y: auto; font-size: 13px; }
+
+  /* The reference example: "Trailhead", a hiking app */
+  .ex { background: #f3f6f1; min-height: 100%; }
+  .ex-head { background: #1f4d36; color: #fff; padding: 16px 14px 14px; }
+  .ex-head b { font-size: 19px; letter-spacing: .01em; }
+  .ex-head div { opacity: .75; font-size: 12px; margin-top: 2px; }
+  .ex-hero { height: 108px; margin: 12px; border-radius: 16px; background: linear-gradient(180deg, #9fd0e8 0%, #cfe8d8 52%, #5c9a6a 53%, #2f6d45 100%); position: relative; overflow: hidden; }
+  .ex-hero::before { content: ""; position: absolute; left: 18%; bottom: 46%; border: 34px solid transparent; border-bottom: 44px solid #4f7f62; border-top: 0; }
+  .ex-hero::after { content: ""; position: absolute; left: 46%; bottom: 46%; border: 46px solid transparent; border-bottom: 58px solid #3c6a4f; border-top: 0; }
+  .chips { display: flex; gap: 6px; padding: 0 12px 10px; flex-wrap: wrap; }
+  .chip { background: #ffcf4a; color: #3b2a00; font-weight: 700; border-radius: 99px; padding: 4px 11px; font-size: 12px; }
+  .chip.alt { background: #d7ecdf; color: #1f4d36; }
+  .ex-card { display: flex; gap: 10px; margin: 0 12px 10px; background: #fff; border-radius: 16px; padding: 10px; box-shadow: 0 3px 10px rgba(31,77,54,.12); }
+  .thumb { width: 54px; height: 54px; border-radius: 12px; flex: none; background: linear-gradient(160deg, #a8d8b0, #3f7d55); }
+  .thumb.t2 { background: linear-gradient(160deg, #a9cdea, #3c6f9a); }
+  .thumb.t3 { background: linear-gradient(160deg, #f3d39b, #b5763a); }
+  .ex-card b { display: block; font-size: 14px; }
+  .ex-card span { color: #5d6f63; font-size: 12px; }
+
+  /* The user's UI: "Weekend plans", plain and functional */
+  .u { min-height: 100%; background: #fff; }
+  .u-head { padding: 14px 14px 6px; font-size: 16px; font-weight: 600; color: #333; border-bottom: 1px solid #e4e4e4; }
+  .u-search { display: block; width: calc(100% - 24px); margin: 10px 12px; padding: 7px 9px; border: 1px solid #ccc; border-radius: 3px; font: inherit; font-size: 13px; }
+  .u-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #ececec; }
+  .u-row .txt { flex: 1; min-width: 0; }
+  .u-row b { display: block; font-weight: 500; color: #222; }
+  .u-row small { color: #888; }
+  .u-del { border: 0; background: #d9534f; color: #fff; border-radius: 3px; padding: 4px 8px; font-size: 11.5px; }
+
+  /* The blend, built from the user's rulings */
+  .b-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #9a94b3; text-align: center; padding: 24px; font-size: 13px; }
+  .b-empty .q { font-size: 42px; color: #d2cce4; }
+  .b { min-height: 100%; animation: b-in .5s ease-out; }
+  @keyframes b-in { from { opacity: 0; filter: blur(6px); transform: scale(.97); } }
+  .b.tinted { background: #eef6ef; }
+  .b-head-green { background: #1f4d36; color: #fff; padding: 16px 14px 12px; font-size: 17px; font-weight: 700; }
+  .b-row-card { margin: 0 12px 10px; border: 0; border-radius: 16px; background: #fff; box-shadow: 0 3px 10px rgba(31,77,54,.12); }
+  .b .u-row:first-of-type.b-row-card { margin-top: 12px; }
+  .b-list-gap { height: 10px; }
+  .b .thumb { width: 46px; height: 46px; }
+  .b-photo { height: 90px; margin: 12px 12px 6px; border-radius: 16px; background: linear-gradient(180deg, #9fd0e8 0%, #cfe8d8 52%, #5c9a6a 53%, #2f6d45 100%); }
+  .changes { margin-top: 8px; font-size: 12px; color: #4a4466; line-height: 1.45; min-height: 20px; }
+  .changes b { color: #2a2540; }
+  .changes .ok { color: #2f8a46; } .changes .no { color: #c0423e; } .changes .judg { color: #6b6585; }
+
+  /* The debate stage (from the remix's styles.css) */
+  .stage-wrap { max-width: 1080px; margin: 10px auto 30px; padding: 0 20px; }
+  .m-debate { background: #fff; border-radius: 16px; box-shadow: 0 12px 34px rgba(40,30,80,.18); font-size: 14px; color: #2a2540; border: 1px solid #e7e2f2; }
+  .m-debate-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px 6px; }
+  .m-debate-head strong { font-size: 15px; }
+  .m-debate-sub { flex: 1; color: #6b6585; font-size: 12.5px; }
+  .m-debate-icon { border: 0; background: none; padding: 4px 6px; border-radius: 6px; color: #6b6585; cursor: pointer; font-size: 15px; }
+  .m-debate-icon:hover { background: #f2eff9; }
+  .m-debate-arena { display: grid; grid-template-columns: 104px 1fr 104px; gap: 8px; align-items: end; padding: 4px 12px 8px; }
+  .m-debate-lines { list-style: none; margin: 0; padding: 4px 2px; height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .m-debate-wait { display: flex; flex-direction: column; gap: 10px; align-items: center; color: #6b6585; justify-content: center; padding-top: 50px; text-align: center; }
+  .m-line { display: flex; flex-direction: column; max-width: 82%; animation: m-pop .2s ease-out; }
+  @keyframes m-pop { from { opacity: 0; transform: scale(.92); } }
+  .m-line-example { align-self: flex-start; align-items: flex-start; }
+  .m-line-ui { align-self: flex-end; align-items: flex-end; }
+  .m-line-compromise { align-self: center; max-width: 92%; }
+  .m-bubble { margin: 0; padding: 8px 12px; border-radius: 14px; line-height: 1.35; }
+  .m-line-example .m-bubble { background: #e3f1e6; border-bottom-left-radius: 4px; }
+  .m-line-ui .m-bubble { background: #efe6fb; border-bottom-right-radius: 4px; }
+  .m-line-compromise .m-bubble { background: #fff6d8; font-weight: 500; text-align: center; }
+  .m-line.is-speaking .m-bubble { box-shadow: 0 0 0 2px #7fd36b; }
+  .m-ruling { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: #5e5878; }
+  .m-proposal { font-style: italic; }
+  .m-rule { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #d8d3e8; background: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #8a84a3; padding: 0; font-size: 13px; line-height: 1; }
+  .m-rule-keep.is-on { background: #3aa856; border-color: #3aa856; color: #fff; }
+  .m-rule-reject.is-on { background: #d9534f; border-color: #d9534f; color: #fff; }
+  .m-rule:hover { transform: scale(1.1); }
+  .m-debate-foot { display: flex; gap: 8px; padding: 8px 14px 12px; border-top: 1px solid #f0edf7; }
+  .m-debate-note { flex: 1; border: 1px solid #dcd7ea; border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 13px; }
+  .btn { display: inline-flex; align-items: center; gap: 5px; border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; border: 1px solid #dcd7ea; background: #fff; color: #5e5878; }
+  .btn-go { border: 0; background: #5b3fa8; color: #fff; font-weight: 600; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn-start { font-size: 15px; padding: 10px 18px; }
+
+  .m-char { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; padding-top: 26px; }
+  .m-char-body { width: 70px; height: 78px; border-radius: 46% 46% 40% 40%; position: relative; box-shadow: inset 0 -8px 0 rgba(0,0,0,.08), 0 6px 14px rgba(40,30,80,.18); }
+  .m-char-badge { position: absolute; width: 26px; height: 26px; right: -8px; bottom: -4px; border-radius: 6px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.2); background: linear-gradient(180deg, #9fd0e8 0%, #cfe8d8 50%, #3c6a4f 51%); }
+  .m-char-eyes { position: absolute; top: 24px; left: 0; right: 0; display: flex; justify-content: center; gap: 14px; }
+  .m-char-eyes span { width: 9px; height: 11px; background: #2a2540; border-radius: 50%; animation: m-blink 4s infinite; }
+  @keyframes m-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  .m-char-mouth { position: absolute; left: 50%; top: 46px; width: 22px; height: 12px; margin-left: -11px; background: #3a2030; border-radius: 0 0 12px 12px; transform-origin: top; transition: transform .06s; transform: scaleY(.2); }
+  .m-char-name { font-size: 12px; font-weight: 600; color: #4a4466; }
+  .m-char.is-talking .m-char-body { animation: m-bob .32s ease-in-out infinite alternate; }
+  .m-char.is-talking.is-insist .m-char-body { animation: m-shake .18s ease-in-out infinite alternate; }
+  .m-char.is-talking.is-joke .m-char-body { animation: m-wiggle .4s ease-in-out infinite alternate; }
+  @keyframes m-bob { to { transform: translateY(-5px); } }
+  @keyframes m-shake { from { transform: translateX(-3px) rotate(-3deg); } to { transform: translateX(3px) rotate(3deg); } }
+  @keyframes m-wiggle { from { transform: rotate(-7deg); } to { transform: rotate(7deg) translateY(-3px); } }
+  .m-plumbob { position: absolute; top: 0; width: 14px; height: 22px; background: linear-gradient(160deg, #b8f59a, #3fbf3a 60%, #1f8c2a); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); opacity: 0; transition: opacity .2s; animation: m-float 1.6s ease-in-out infinite; }
+  .m-char.is-active .m-plumbob { opacity: 1; }
+  @keyframes m-float { 50% { transform: translateY(-4px) rotate(8deg); } }
+
+  details.prompt { margin-top: 12px; font-size: 12.5px; color: #4a4466; }
+  details.prompt summary { cursor: pointer; font-weight: 600; }
+  details.prompt pre { white-space: pre-wrap; background: #fbfaff; border: 1px solid #e7e2f2; border-radius: 8px; padding: 10px; font-size: 12px; line-height: 1.45; }
+  @media (max-width: 860px) { .row { grid-template-columns: 1fr; } .phone { height: 360px; } }
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>The inputs argue</h1>
+    <p>A remix of Misty (CHI 2024). Before Misty blends an example into your UI, the two argue about it in gibberish voices, and you side with or against each point. The blend follows your rulings.
+      <br />This page is a self-contained demo: the debate is scripted and the blend is built in the page, so no model or server is needed. In the remix, Misty writes a new debate for each blend and the model makes the blend. Turn your sound on.</p>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <h2>Example <span class="tag">reference screenshot</span></h2>
+      <div class="phone"><div class="phone-inner">
+        <div class="ex">
+          <div class="ex-head"><b>Trailhead</b><div>Find your next hike</div></div>
+          <div class="ex-hero"></div>
+          <div class="chips"><span class="chip">Easy</span><span class="chip alt">Lakes</span><span class="chip alt">Dogs ok</span></div>
+          <div class="ex-card"><div class="thumb"></div><div><b>Pine Ridge Loop</b><span>5.2 km · 2 h · 4.8 ★</span></div></div>
+          <div class="ex-card"><div class="thumb t2"></div><div><b>Mirror Lake</b><span>3.1 km · 1 h · 4.6 ★</span></div></div>
+          <div class="ex-card"><div class="thumb t3"></div><div><b>Canyon Steps</b><span>8.4 km · 4 h · 4.9 ★</span></div></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="col">
+      <h2>Your UI <span class="tag">work in progress</span></h2>
+      <div class="phone"><div class="phone-inner" id="mine"></div></div>
+    </div>
+    <div class="col">
+      <h2>Blend <span class="tag" id="blend-tag">not yet</span></h2>
+      <div class="phone"><div class="phone-inner" id="blend">
+        <div class="b-empty"><div class="q">?</div>Start the debate, rule on the points, then blend.</div>
+      </div></div>
+      <div class="changes" id="changes"></div>
+    </div>
+  </div>
+
+  <div class="stage-wrap">
+    <section class="m-debate" id="stage" aria-label="The inputs argue">
+      <header class="m-debate-head">
+        <strong>The inputs argue</strong>
+        <span class="m-debate-sub" id="sub">Press start. Browsers only play sound after a click.</span>
+        <button class="m-debate-icon" id="mute" aria-label="Mute the voices" title="Voices on">🔊</button>
+      </header>
+      <div class="m-debate-arena">
+        <div class="m-char" id="char-example">
+          <div class="m-plumbob" aria-hidden="true"></div>
+          <div class="m-char-body" style="background:#8cc79a"><div class="m-char-badge"></div><div class="m-char-eyes"><span></span><span></span></div><div class="m-char-mouth"></div></div>
+          <div class="m-char-name">Example</div>
+        </div>
+        <ol class="m-debate-lines" id="lines">
+          <li class="m-debate-wait">
+            <span>The example and your UI are ready to argue about the blend.</span>
+            <button class="btn btn-go btn-start" id="start">▶ Start the debate</button>
+          </li>
+        </ol>
+        <div class="m-char" id="char-ui">
+          <div class="m-plumbob" aria-hidden="true"></div>
+          <div class="m-char-body" style="background:#B79FD8"><div class="m-char-eyes"><span></span><span></span></div><div class="m-char-mouth"></div></div>
+          <div class="m-char-name">Your UI</div>
+        </div>
+      </div>
+      <footer class="m-debate-foot">
+        <input class="m-debate-note" id="note" placeholder="Have your say (optional), e.g. “keep my colors, take the cards”" />
+        <button class="btn" id="replay" disabled title="Play the debate again">↺ Replay</button>
+        <button class="btn" id="skip" title="Blend without your rulings">⏭ Skip</button>
+        <button class="btn btn-go" id="go" disabled>▶ Blend</button>
+      </footer>
+    </section>
+    <details class="prompt">
+      <summary>What Misty would add to the blend prompt</summary>
+      <pre id="prompt">Rule on a point to see it here.</pre>
+    </details>
+  </div>
+
+<script>
+// ---------- Simlish voices (copied from the remix's src/lib/simlish.js) ----------
+let ctx = null, master = null, muted = false;
+function audio() {
+  if (!ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 0.22;
+    master.connect(ctx.destination);
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+function setMuted(v) { muted = v; if (master) master.gain.value = v ? 0 : 0.22; }
+const FORMANTS = { a: [800, 1200], e: [500, 1900], i: [320, 2400], o: [500, 900], u: [350, 700], y: [320, 2200] };
+function syllables(line) {
+  const words = String(line).toLowerCase().match(/[a-z']+|[?!.,]/g) || [];
+  const out = [];
+  for (const w of words) {
+    if (/[?!.,]/.test(w)) { out.push({ pause: w === ',' ? 0.08 : 0.16 }); continue; }
+    const parts = w.match(/[^aeiouy]*[aeiouy]+(?:[^aeiouy]*$)?/g) || [w];
+    for (const p of parts) {
+      const vowel = (p.match(/[aeiouy]/) || ['a'])[0];
+      out.push({ vowel, consonant: /^[^aeiouy]/.test(p), stress: p.length > 3 });
+    }
+    out.push({ pause: 0.035 });
+  }
+  return out;
+}
+const MOOD = {
+  insist: { lift: 1.25, wobble: 3, speed: 0.85, loud: 1.25 },
+  question: { lift: 1.05, wobble: 2, speed: 1, loud: 1 },
+  agree: { lift: 0.92, wobble: 1, speed: 1.05, loud: 0.9 },
+  joke: { lift: 1.15, wobble: 4, speed: 0.9, loud: 1 },
+  default: { lift: 1, wobble: 2, speed: 1, loud: 1 },
+};
+function speak(line, voice, mood, onSyllable) {
+  const ac = audio();
+  const sylls = syllables(line);
+  const m = MOOD[mood] || MOOD.default;
+  const unit = 0.095 * m.speed;
+  if (!ac || muted) return paceOnly(sylls, unit, onSyllable);
+  let t = ac.currentTime + 0.03;
+  const question = /\?\s*$/.test(line);
+  const n = sylls.length;
+  sylls.forEach((s, i) => {
+    if (s.pause) { t += s.pause; return; }
+    const progress = i / Math.max(1, n - 1);
+    let f0 = voice.pitch * m.lift * (1 + 0.08 * Math.sin(progress * Math.PI));
+    if (progress > 0.75) f0 *= question ? 1 + (progress - 0.75) * 1.6 : 1 - (progress - 0.75) * 0.5;
+    f0 *= 2 ** (((Math.random() - 0.5) * m.wobble) / 12);
+    if (s.stress) f0 *= 1.06;
+    const dur = unit * (s.stress ? 1.25 : 1) * (0.85 + Math.random() * 0.3);
+    blip(ac, t, dur, f0, FORMANTS[s.vowel] || FORMANTS.a, voice.timbre, m.loud, s.consonant);
+    if (onSyllable) setTimeout(() => onSyllable(i), Math.max(0, (t - ac.currentTime) * 1000));
+    t += dur;
+  });
+  return new Promise((r) => setTimeout(r, (t - ac.currentTime) * 1000 + 60));
+}
+function paceOnly(sylls, unit, onSyllable) {
+  return new Promise((resolve) => {
+    let wait = 0;
+    sylls.forEach((s, i) => {
+      wait += s.pause ?? unit;
+      if (!s.pause && onSyllable) setTimeout(() => onSyllable(i), wait * 1000);
+    });
+    setTimeout(resolve, wait * 1000 + 60);
+  });
+}
+function blip(ac, t, dur, f0, [f1, f2], timbre, loud, consonant) {
+  const osc = ac.createOscillator();
+  osc.type = timbre;
+  osc.frequency.setValueAtTime(f0, t);
+  osc.frequency.linearRampToValueAtTime(f0 * (0.97 + Math.random() * 0.06), t + dur);
+  const env = ac.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(0.5 * loud, t + 0.012);
+  env.gain.exponentialRampToValueAtTime(0.25 * loud, t + dur * 0.6);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  const b1 = ac.createBiquadFilter(); b1.type = 'bandpass'; b1.frequency.value = f1; b1.Q.value = 6;
+  const b2 = ac.createBiquadFilter(); b2.type = 'bandpass'; b2.frequency.value = f2; b2.Q.value = 8;
+  const mix = ac.createGain(); mix.gain.value = 2.2;
+  osc.connect(b1); osc.connect(b2); b1.connect(env); b2.connect(env); env.connect(mix); mix.connect(master);
+  osc.start(t); osc.stop(t + dur + 0.02);
+  if (consonant) {
+    const len = Math.floor(ac.sampleRate * 0.025);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const noise = ac.createBufferSource(); noise.buffer = buf;
+    const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+    const g = ac.createGain(); g.gain.value = 0.18 * loud;
+    noise.connect(hp); hp.connect(g); g.connect(master);
+    noise.start(Math.max(ac.currentTime, t - 0.015));
+  }
+}
+function chime(up) {
+  const ac = audio();
+  if (!ac || muted) return;
+  const t = ac.currentTime + 0.01;
+  const notes = up ? [660, 880, 1320] : [990, 740, 520];
+  [0, 0.07, 0.14].forEach((dt, i) => {
+    const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = notes[i];
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t + dt);
+    g.gain.exponentialRampToValueAtTime(0.3, t + dt + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.25);
+    o.connect(g); g.connect(master); o.start(t + dt); o.stop(t + dt + 0.3);
+  });
+}
+
+// ---------- The scripted debate (in the remix, the model writes this from the two inputs) ----------
+const SPEAKERS = {
+  example: { name: 'Example', pitch: 245, timbre: 'sawtooth' },
+  ui: { name: 'Your UI', pitch: 165, timbre: 'square' },
+};
+const SCRIPT = {
+  turns: [
+    { speaker: 'example', mood: 'insist', key: 'header', line: 'Your page is so pale! Let me paint the top in my deep forest green.', proposal: 'Add a dark green header' },
+    { speaker: 'ui', mood: 'question', key: 'white', line: 'Green everywhere? My planners read lists all day. Can my page stay white?', proposal: 'Keep the white background' },
+    { speaker: 'example', mood: 'joke', key: 'cards', line: 'Fine, but your list is a spreadsheet in disguise. Cards, darling, with round corners!', proposal: 'Turn the plans into rounded cards' },
+    { speaker: 'ui', mood: 'insist', key: 'search', line: 'My search bar stays on top. People find their plans with it every day!', proposal: 'Keep the search bar at the top' },
+    { speaker: 'example', mood: 'insist', key: 'chips', line: 'Then dress your tags as my chunky yellow chips. Bright and clickable!', proposal: 'Show tags as pill chips' },
+    { speaker: 'ui', mood: 'agree', key: 'photos', line: 'Okay, the chips are cute. But big photos would push my plans off the screen.', proposal: 'Leave out the big photos' },
+  ],
+  compromise: 'A green header, rounded cards and yellow chips from the example; the white page, the search bar and a compact list stay.',
+};
+const PLANS = [
+  { name: 'Hike at Pine Ridge', when: 'Saturday 9:00', tag: 'Outdoors', thumb: '' },
+  { name: 'Farmers market', when: 'Saturday 11:30', tag: 'Food', thumb: 't3' },
+  { name: 'Kayak on Mirror Lake', when: 'Sunday 10:00', tag: 'Outdoors', thumb: 't2' },
+  { name: 'Board games with Sam', when: 'Sunday 19:00', tag: 'Friends', thumb: 't3' },
+];
+
+let turns = SCRIPT.turns.map((t, i) => ({ ...t, id: 't' + i, ruling: null }));
+let status = 'idle'; // idle | playing | done | blended
+let runId = 0, shown = 0, speakingIdx = -1;
+let countdown = null, timer = null, touched = false, usedRulings = true;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function renderMine() {
+  $('mine').innerHTML = `<div class="u">
+    <div class="u-head">Weekend plans</div>
+    <input class="u-search" placeholder="Search plans" />
+    ${PLANS.map((p) => `<div class="u-row"><div class="txt"><b>${p.name}</b><small>${p.when} · ${p.tag}</small></div><button class="u-del">Delete</button></div>`).join('')}
+  </div>`;
+}
+
+// What each point means for the blend: agreed applies it, rejected goes against it,
+// and an unruled point follows the compromise (here, the compromise accepts all six).
+function decisions(withRulings) {
+  const d = {};
+  for (const t of turns) d[t.key] = withRulings && t.ruling ? t.ruling === 'keep' : true;
+  return d;
+}
+
+function renderBlend(withRulings) {
+  const d = decisions(withRulings);
+  const row = (p) => {
+    const tag = d.chips ? `<span class="chip" style="font-size:11px;padding:2px 9px">${p.tag}</span>` : `<small>${p.tag}</small>`;
+    const thumb = d.photos ? '' : `<div class="thumb ${p.thumb}"></div>`;
+    return `<div class="u-row ${d.cards ? 'b-row-card' : ''}">${thumb}<div class="txt"><b>${p.name}</b><small>${p.when}</small> ${d.chips ? '<br>' + tag : '· ' + tag}</div><button class="u-del">Delete</button></div>`;
+  };
+  $('blend').innerHTML = `<div class="b ${d.white ? '' : 'tinted'}">
+    ${d.header ? '<div class="b-head-green">Weekend plans</div>' : '<div class="u-head">Weekend plans</div>'}
+    ${d.search ? '<input class="u-search" placeholder="Search plans" />' : ''}
+    ${d.photos ? '' : '<div class="b-photo"></div>'}
+    ${d.cards ? '<div class="b-list-gap"></div>' : ''}
+    ${PLANS.map(row).join('')}
+    ${$('note').value.trim() ? `<div style="margin:12px;padding:8px 10px;border-radius:8px;background:#fff6d8;font-size:12px">Your note: “${esc($('note').value.trim())}”<br><span style="color:#6b6585">In the demo the note is only shown here; in the remix it goes to the model.</span></div>` : ''}
+  </div>`;
+  $('blend-tag').textContent = withRulings ? 'argued' : 'no rulings';
+  const label = (t) => esc(t.proposal.toLowerCase());
+  const kept = turns.filter((t) => withRulings && t.ruling === 'keep');
+  const rejected = turns.filter((t) => withRulings && t.ruling === 'reject');
+  const open = turns.filter((t) => !withRulings || !t.ruling);
+  $('changes').innerHTML = [
+    kept.length && `<div class="ok"><b>Agreed:</b> ${kept.map(label).join('; ')}</div>`,
+    rejected.length && `<div class="no"><b>Went against:</b> ${rejected.map(label).join('; ')}</div>`,
+    open.length && `<div class="judg"><b>Followed the compromise:</b> ${open.map(label).join('; ')}</div>`,
+  ].filter(Boolean).join('');
+}
+
+// The same text the remix appends to the blend prompt (rulingsForPrompt in src/lib/debate.js).
+function rulingsForPrompt() {
+  const list = (ts) => ts.map((t) => `  - ${t.proposal} (${SPEAKERS[t.speaker].name.toLowerCase()})`).join('\n');
+  const keep = turns.filter((t) => t.ruling === 'keep');
+  const reject = turns.filter((t) => t.ruling === 'reject');
+  const open = turns.filter((t) => !t.ruling).slice(0, shown);
+  let s = 'Before this blend, the reference and the current UI debated, and the user ruled on their proposals.';
+  if (keep.length) s += `\nThe user AGREED with these, so apply them:\n${list(keep)}`;
+  if (reject.length) s += `\nThe user DISAGREED with these points, so go against them (do not add what they propose, and feel free to change what they want to keep):\n${list(reject)}`;
+  if (open.length) s += `\nThe user did not rule on these; use your judgment:\n${list(open)}`;
+  if (shown >= turns.length) s += `\nThe proposed compromise was: ${SCRIPT.compromise}`;
+  const note = $('note').value.trim();
+  if (note) s += `\nThe user added: "${note}". Follow it.`;
+  return s + '\nMention the agreed proposals in categorizedChanges.';
+}
+
+function renderLines() {
+  const items = turns.slice(0, shown).map((t, i) => `
+    <li class="m-line m-line-${t.speaker} ${i === speakingIdx ? 'is-speaking' : ''}">
+      <p class="m-bubble">${esc(t.line)}</p>
+      <div class="m-ruling">
+        <span class="m-proposal">${esc(t.proposal)}</span>
+        <button class="m-rule m-rule-keep ${t.ruling === 'keep' ? 'is-on' : ''}" data-id="${t.id}" data-r="keep" aria-pressed="${t.ruling === 'keep'}" aria-label="Agree: ${esc(t.proposal)}">✔</button>
+        <button class="m-rule m-rule-reject ${t.ruling === 'reject' ? 'is-on' : ''}" data-id="${t.id}" data-r="reject" aria-pressed="${t.ruling === 'reject'}" aria-label="Reject: ${esc(t.proposal)}">✖</button>
+      </div>
+    </li>`);
+  if (shown >= turns.length && status !== 'playing') {
+    items.push(`<li class="m-line m-line-compromise"><p class="m-bubble">Compromise: ${esc(SCRIPT.compromise)}</p></li>`);
+  }
+  $('lines').innerHTML = items.join('');
+  $('prompt').textContent = rulingsForPrompt();
+}
+
+function renderSub() {
+  const kept = turns.filter((t) => t.ruling === 'keep').length;
+  const rejected = turns.filter((t) => t.ruling === 'reject').length;
+  $('sub').textContent =
+    status === 'playing' ? 'Side with a point using ✔ or ✖.'
+    : status === 'done' ? `${kept} agreed, ${rejected} rejected. Misty blends the compromise.`
+    : status === 'blended' ? (usedRulings ? `Blended with ${kept} agreed and ${rejected} rejected. Change a ruling and blend again.` : 'Blended without your rulings. Press Blend to use them.')
+    : 'Press start. Browsers only play sound after a click.';
+  const n = countdown !== null && countdown > 0 ? ` (${countdown})` : '';
+  $('go').textContent = `▶ ${status === 'blended' ? 'Blend again' : 'Blend'}${n}`;
+  $('go').disabled = status === 'idle';
+  $('replay').disabled = status === 'idle' || status === 'playing';
+}
+
+function setTalking(who, mood) {
+  for (const w of ['example', 'ui']) {
+    const el = $('char-' + w);
+    el.classList.toggle('is-active', w === who);
+    el.className = el.className.replace(/\bis-(talking|insist|question|agree|joke)\b/g, '').trim();
+    if (w === who && mood) el.classList.add('is-talking', 'is-' + mood);
+    el.querySelector('.m-char-mouth').style.transform = 'scaleY(.2)';
+  }
+}
+
+async function play() {
+  const id = ++runId;
+  stopCountdown();
+  touched = false;
+  status = 'playing';
+  shown = 0;
+  renderSub();
+  renderLines();
+  chime(true);
+  await wait(350);
+  for (let i = 0; i < turns.length; i++) {
+    if (id !== runId) return;
+    shown = i + 1;
+    speakingIdx = i;
+    renderLines();
+    $('lines').lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const t = turns[i];
+    setTalking(t.speaker, t.mood);
+    const mouth = $('char-' + t.speaker).querySelector('.m-char-mouth');
+    await speak(t.line, SPEAKERS[t.speaker], t.mood, (k) => {
+      if (id === runId) mouth.style.transform = `scaleY(${k % 2 ? 0.58 : 1.25})`;
+    });
+    if (id !== runId) return;
+    setTalking(t.speaker, null);
+    speakingIdx = -1;
+    renderLines();
+    await wait(420);
+  }
+  if (id !== runId) return;
+  setTalking(null, null);
+  status = 'done';
+  chime(false);
+  renderLines();
+  $('lines').lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (!touched) startCountdown();
+  renderSub();
+}
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// After the debate, blend automatically unless the user is still ruling (as in the remix).
+function startCountdown() {
+  countdown = 12;
+  timer = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) { stopCountdown(); blend(true); } else renderSub();
+  }, 1000);
+}
+function stopCountdown() { clearInterval(timer); timer = null; countdown = null; }
+function hold() { touched = true; if (timer) { stopCountdown(); renderSub(); } }
+
+function blend(withRulings) {
+  runId++; // stop any playback
+  stopCountdown();
+  setTalking(null, null);
+  speakingIdx = -1;
+  if (shown < turns.length) shown = turns.length; // the blend uses every point
+  status = 'blended';
+  usedRulings = withRulings;
+  renderLines();
+  renderBlend(withRulings);
+  renderSub();
+}
+
+$('start').addEventListener('click', () => { audio(); play(); });
+$('replay').addEventListener('click', () => { audio(); play(); });
+$('go').addEventListener('click', () => blend(true));
+$('skip').addEventListener('click', () => { audio(); blend(false); });
+$('stage').addEventListener('pointerdown', (e) => { if (!e.target.closest('#go, #skip, #replay, #start')) hold(); });
+$('note').addEventListener('input', () => { hold(); $('prompt').textContent = rulingsForPrompt(); });
+$('note').addEventListener('keydown', (e) => { if (e.key === 'Enter' && status !== 'idle') blend(true); });
+$('mute').addEventListener('click', () => {
+  setMuted(!muted);
+  $('mute').textContent = muted ? '🔇' : '🔊';
+  $('mute').title = muted ? 'Voices off' : 'Voices on';
+  $('mute').setAttribute('aria-label', muted ? 'Turn the voices on' : 'Mute the voices');
+});
+$('lines').addEventListener('click', (e) => {
+  const b = e.target.closest('.m-rule');
+  if (!b) return;
+  hold();
+  const t = turns.find((x) => x.id === b.dataset.id);
+  t.ruling = t.ruling === b.dataset.r ? null : b.dataset.r;
+  renderLines();
+  renderSub();
+});
+
+renderMine();
+renderSub();
+</script>
+</body>
+</html>

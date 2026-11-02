@@ -27,4 +27,8 @@ change: who, what changed, and what question it explores.
   their intent better than picking Color, Layout or Content from a menu? (In the paper's study,
   only 5 of 14 participants agreed that Misty supported them in expressing their intents.)
   And does a playful debate make the wait for a blend feel shorter?
+- **Demo:** `revibes/misty/demos/argue-demo.html` is a self-contained version to open in any
+  browser, with no server or model. It plays a scripted debate between a hiking app and a
+  weekend-plans list with the same voices and stage, and builds the blend from your rulings
+  in the page. It also shows the text the remix would add to the blend prompt.
 
