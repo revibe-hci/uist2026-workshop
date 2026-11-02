@@ -186,3 +186,11 @@ body {
 .detail-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; }
 .pin-btn, .more-btn { border: 1px solid #ccc; background: #fff; border-radius: 6px; padding: 3px 8px; cursor: pointer; font: inherit; font-size: 12px; }
 .more-btn { border-color: #6a3fc7; color: #6a3fc7; margin-left: auto; }
+
+/* ---------- remix: second protagonist ---------- */
+.protagonists { margin-top: 6px; }
+.lane.protagonist { border-color: #f3c2cc; }
+.lane.protagonist .lane-head { font-size: 14px; }
+.p-name { width: 110px; border: 1.5px solid #333; border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 14px; }
+.bullet.meet { background: #fdeef3; border-radius: 4px; }
+.bullet.meet .mark::before { content: "⇄"; color: #c2185b; font-size: 11px; margin-right: 1px; }

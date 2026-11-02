@@ -211,7 +211,8 @@ Rules:
 - Continue naturally from the sentences before each slot, and if written sentences come
   after a slot, lead plausibly into them (infilling).
 - Keep the same protagonist; refer to them by name or pronoun. Do not introduce a new
-  protagonist.
+  protagonist. If the outline lists a second protagonist, they are part of this story too:
+  follow their fortune targets, and let the two protagonists' paths cross where it fits.
 - If a slot gives a surprise level, follow it strictly and make the contrast obvious:
   low-surprise slots must be plain and predictable, high-surprise slots must contain an
   event the reader would never see coming. Surprise is independent of fortune: a
@@ -237,16 +238,25 @@ def dim_parts(slot, arc_dims):
     return parts
 
 
+def protagonist_line(name, arc_dims):
+    others = [d["person"] for d in (arc_dims or []) if d.get("person")]
+    main = name or "the protagonist"
+    if not others:
+        return f"Protagonist: {main}"
+    return (f"Protagonists: {main} (main; 'fortune' is {main}'s fortune) and "
+            + ", ".join(f"{p} (second protagonist; their fortune is the dimension \"{p}'s fortune\")" for p in others))
+
+
 def story_header(name, extra):
-    lines = [f"Protagonist: {name or 'the protagonist'}"]
     extra = extra or {}
+    lines = [protagonist_line(name, extra.get("arcDims"))]
     if extra.get("title"):
         lines.append(f"Title: {extra['title']}")
     settings = {k: v for k, v in (extra.get("settings") or {}).items() if v}
     if settings:
         lines.append("Story settings (the whole story must follow them): "
                      + "; ".join(f"{k}: {v}" for k, v in settings.items()))
-    dims = extra.get("arcDims") or []
+    dims = [d for d in (extra.get("arcDims") or []) if not d.get("rateOnly")]
     if dims:
         lines.append("Other story dimensions (0 = low end, 1 = high end):")
         for d in dims:
@@ -421,6 +431,12 @@ two decimals.
 Answer with JSON only: {"scores": [{"id": <item id>, "values": {"<dimension id>": <number>, ...}}, ...]}"""
 
 
+def missing_value(d):
+    """A rating the model left out: neutral on a scale, but "no" for a rating-only flag
+    such as whether the protagonists interact (0.5 would read as a false "yes")."""
+    return 0.0 if d.get("rateOnly") else 0.5
+
+
 def recognize_dims(name, sentences, indices, dims):
     """One call: every target sentence rated on every dimension (fortune included when asked)."""
     dims = [FORTUNE_DIM if d.get("id") == "fortune" else d for d in dims]
@@ -431,7 +447,7 @@ def recognize_dims(name, sentences, indices, dims):
     if STUB:
         return {"values": {str(i): {d["id"]: stub_fortune(s) if d["id"] == "fortune" else round(random.random(), 2)
                                     for d in dims} for i, _, s in items}, "stub": True}
-    lines = [f"Protagonist: {name or 'the protagonist'}", "", "Dimensions:"]
+    lines = [protagonist_line(name, dims), "", "Dimensions:"]
     lines += [f"- {d['id']}: {d['name']} (0 = {d.get('low', 'low')}, 1 = {d.get('high', 'high')})" for d in dims]
     lines.append("")
     for i, ctx, s in items:
@@ -440,10 +456,10 @@ def recognize_dims(name, sentences, indices, dims):
     got = {}
     for e in out.get("scores", []):
         try:
-            got[str(int(e["id"]))] = {d["id"]: clamp01(e["values"].get(d["id"], 0.5)) for d in dims}
+            got[str(int(e["id"]))] = {d["id"]: clamp01(e["values"].get(d["id"], missing_value(d))) for d in dims}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
-    return {"values": {str(i): got.get(str(i), {d["id"]: 0.5 for d in dims}) for i, _, _ in items},
+    return {"values": {str(i): got.get(str(i), {d["id"]: missing_value(d) for d in dims}) for i, _, _ in items},
             "stub": STUB}
 
 
@@ -472,7 +488,7 @@ def dimensions(payload):
                         {"name": "Confidence", "low": "doubt", "high": "certainty"}],
                 "setting": [{"name": "Genre", "values": ["literary", "comedy", "noir", "magical realism"]}],
                 "stub": True}
-    lines = [f"Protagonist: {name or 'the protagonist'}"]
+    lines = [protagonist_line(name, payload.get("arcDims"))]
     if payload.get("title"):
         lines.append(f"Title: {payload['title']}")
     lines.append("Opening sentences: " + (" ".join(sentences) if sentences else "(none yet)"))
@@ -509,6 +525,8 @@ Follow every requirement:
   sentence must put the story at that level, and the level must change between lines the way
   the targets change. "free" means anything that fits.
 - Continue from earlier lines and lead plausibly into later written lines. Keep the protagonist.
+  If a second protagonist is listed, follow their fortune targets too and let the two
+  protagonists' paths cross where it fits.
 Then rate EVERY line of the finished outline (written and new) on every listed dimension, 0-1.
 Answer with JSON only:
 {"title": "<3-6 word title>", "logline": "<one sentence>",
@@ -535,8 +553,8 @@ def plan_requirements(payload, n):
     slots = payload["slots"]
     arc_dims = [FORTUNE_DIM] + list(payload.get("arcDims") or [])
     settings = payload.get("settingDims") or []
-    open_dims = [d for d in arc_dims
-                 if all((s.get("fortune") if d["id"] == "fortune" else (s.get("dims") or {}).get(d["id"])) is None
+    open_dims = [d for d in arc_dims if not d.get("rateOnly") and
+                 all((s.get("fortune") if d["id"] == "fortune" else (s.get("dims") or {}).get(d["id"])) is None
                         for s in slots)]
     fixed = payload.get("fixed") or {}
     shape_picks = {d["id"]: balanced(SHAPE_NAMES, n) for d in open_dims}
@@ -578,7 +596,8 @@ def variant_once(payload, req):
                 "sentences": [{"index": i, "text": stub_sentence(name, targets[(i, "fortune")], None)} for i in idx],
                 "values": {str(i): {d["id"]: targets[(i, d["id"])] if targets[(i, d["id"])] is not None else 0.5
                                     for d in arc_dims} for i in idx}}
-    lines = story_header(name, {"title": payload.get("title"), "settings": req["settings"]})
+    lines = story_header(name, {"title": payload.get("title"), "settings": req["settings"],
+                                "arcDims": [d for d in arc_dims if d.get("person")]})
     lines.append("Dimensions (id: name, 0 = low end, 1 = high end):")
     lines += [f"- {d['id']}: {d['name']} (0 = {d.get('low', 'low')}, 1 = {d.get('high', 'high')})" for d in arc_dims]
     lines += ["", "Story outline:"]
@@ -587,6 +606,8 @@ def variant_once(payload, req):
         if i in idx:
             parts = []
             for d in arc_dims:
+                if d.get("rateOnly"):
+                    continue
                 t = targets[(i, d["id"])]
                 parts.append(f"{d['id']} {'free' if t is None else f'{t:.2f}'}")
             sur = next((s.get("surprise") for s in slots if int(s["index"]) == i), None)
@@ -608,7 +629,7 @@ def variant_once(payload, req):
         if i in idx and e.get("text"):
             texts[i] = str(e["text"]).strip()
         if isinstance(e.get("values"), dict):
-            values[str(i)] = {d["id"]: clamp01(e["values"].get(d["id"], 0.5)) for d in arc_dims}
+            values[str(i)] = {d["id"]: clamp01(e["values"].get(d["id"], missing_value(d))) for d in arc_dims}
     return {"title": str(out.get("title", "")).strip() or "Untitled", "logline": str(out.get("logline", "")).strip(),
             "sentences": [{"index": i, "text": texts.get(i, "...")} for i in idx], "values": values}
 

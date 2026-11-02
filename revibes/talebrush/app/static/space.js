@@ -191,6 +191,11 @@ function sparkline(v, w, h) {
     for (const p of pts) { if (!p) { open = false; continue; } d += (open ? "L" : "M") + p[0] + "," + p[1] + " "; open = true; }
     if (d) el("path", { d, fill: "none", stroke: dimColor(id), "stroke-width": id === "fortune" ? 2 : 1.4, "stroke-linejoin": "round" }, svg);
   }
+  // Ticks where the two protagonists interact.
+  bullets.forEach((b, i) => {
+    if (i < n && typeof meetsAt === "function" && meetsAt(b))
+      el("rect", { x: 3 + i * (w - 6) / Math.max(1, n - 1) - 2, y: h - 4, width: 4, height: 4, rx: 1, fill: "#e0457b" }, svg);
+  });
   return svg;
 }
 

@@ -166,7 +166,7 @@ function renderEditor(focus) {
   $("previewNote").hidden = !preview;
   bullets.forEach((b, i) => {
     const row = document.createElement("div");
-    row.className = "bullet" + (b.kind === "gen" ? " gen" : "");
+    row.className = "bullet" + (b.kind === "gen" ? " gen" : "") + (typeof meetsAt === "function" && meetsAt(b) ? " meet" : "");
     row.dataset.index = i;
     const idx = document.createElement("span"); idx.className = "idx"; idx.textContent = i + 1;
     const mark = document.createElement("span"); mark.className = "mark"; mark.textContent = ">";
@@ -199,6 +199,7 @@ function renderEditorMarks() {
     if (!b) return;
     row.classList.toggle("gen", b.kind === "gen");
     row.classList.toggle("pending", !!state.pendingSlots && state.pendingSlots.has(i));
+    row.classList.toggle("meet", typeof meetsAt === "function" && meetsAt(b));
   });
 }
 
@@ -295,6 +296,9 @@ function renderCanvas() {
   if (highlighted !== null && highlighted < n) {
     el("rect", { x: PAD_L + highlighted * slotW(n), y: 0, width: slotW(n), height: H, fill: "#3b8beb", "fill-opacity": 0.06 }, canvas);
   }
+
+  // Remix: where the two protagonists interact.
+  if (typeof drawInteractions === "function") drawInteractions(canvas, H, state.preview ? state.preview.bullets : state.bullets, n);
 
   // Stored stories, faint (Section 4.2.3); the hovered one highlighted.
   for (const h of state.history) {
@@ -554,13 +558,20 @@ $("generateBtn").addEventListener("click", () => {
 // ---------------------------------------------------------------------------
 // Generation
 // ---------------------------------------------------------------------------
-async function generate(slotIdx, { label, avoidCurrent }) {
+async function generate(slotIdx, { label, avoidCurrent, keepArc = false }) {
   if (state.busy) return;
   const n = slotCount();
   while (state.bullets.length < Math.max(...slotIdx) + 1) state.bullets.push(newBullet());
   // Store the writer's starting point once, so it can be compared and rolled back to.
   if (!state.history.length && state.bullets.some(isWritten)) pushHistory("Initial");
   const specs = slotIdx.map(i => slotSpec(i, n));
+  // Remix: when only a setting changes, keep each sentence's current levels as its targets.
+  if (keepArc) for (const sp of specs) {
+    const b = state.bullets[sp.index];
+    if (sp.target === null && b && b.fortune !== null && b.fortune !== undefined) { sp.target = b.fortune; sp.tol = 0.2; sp.retries = 0; }
+    // Every lane's level, and whether the protagonists interact, carry over.
+    for (const [k, v] of Object.entries((b && b.values) || {})) if (sp.dims[k] === undefined && v !== null) sp.dims[k] = v;
+  }
   const sentences = state.bullets.map(b => b.text.trim());
   const fortunes = {};
   state.bullets.forEach((b, i) => { if (isWritten(b) && b.fortune !== null && !slotIdx.includes(i)) fortunes[i] = b.fortune; });

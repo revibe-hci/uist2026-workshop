@@ -29,6 +29,7 @@
     <section class="canvas-pane">
       <div class="canvas-head">
         <label class="name-wrap"><input id="name" class="name" placeholder="Name" aria-label="Protagonist name"><span>'s fortune</span></label>
+        <button id="addProtagonist" class="dim-btn" title="Add a second protagonist with their own fortune panel">＋ Add protagonist</button>
         <button id="generateBtn" class="generate-btn" disabled>⟳ Generate Again</button>
       </div>
 
@@ -38,6 +39,9 @@
         <div class="axis-label bottom">worse</div>
         <div id="busy" class="busy" hidden><span class="spinner"></span><span id="busyText">Generating…</span></div>
       </div>
+
+      <!-- Remix: a second protagonist's fortune, in its own aligned panel -->
+      <div id="protagonists" class="protagonists"></div>
 
       <div id="surpriseWrap" class="surprise-wrap" hidden>
         <svg id="surpriseCanvas" class="canvas surprise" viewBox="0 0 640 150" preserveAspectRatio="none" aria-label="Surprise canvas"></svg>
