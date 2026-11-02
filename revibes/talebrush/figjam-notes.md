@@ -99,3 +99,4 @@ One bullet = one sticky. Updated as we go; newest at the bottom of each section.
 - Meta-remix for the workshop: does seeing the rubric before building inflate revibe scores? Compare our build to Group 1's on the same tests.
 - Built on remix/talebrush-luminate: generated arc lanes + setting chips + streamed design space with axes, 5-level semantic zoom, linked hover, adopt, pin curve, more like this.
 
+\n- Remix: stories made before a dimension existed (History entries, design-space versions) had no graph on it; History was also stored before its lane ratings arrived.\n- Remix fix: every story is re-rated on every current dimension, missing pairs only, one call per story, 3 at a time (Luminate Fig. 7). Measured: 2 History stories + 6 versions went from 0/8 to 8/8 on 3 new dimensions in ~21 s.\n\n

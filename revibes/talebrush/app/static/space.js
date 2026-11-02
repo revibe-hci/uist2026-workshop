@@ -155,6 +155,7 @@ async function explore({ fixed = null, n = null, append = false } = {}) {
     sp.controller = null;
     setExploring(false);
     updateStatus(true);
+    if (typeof ensureRatings === "function") ensureRatings();
   }
 }
 

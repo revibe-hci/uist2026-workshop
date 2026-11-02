@@ -88,6 +88,7 @@ function addDims(arc, setting) {
   buildLanes(); renderSettings(); renderCanvas();
   if (typeof refreshAxes === "function") refreshAxes();
   rereadAll();
+  ensureRatings(800);
 }
 
 async function suggestDims() {
@@ -145,7 +146,7 @@ function renameProtagonist(d, person) {
   clearTimeout(p2Timer);
   p2Timer = setTimeout(() => {
     if (typeof refreshAxes === "function") refreshAxes();
-    if (d.person) rereadAll(0);
+    if (d.person) { rereadAll(0); ensureRatings(800); }
     renderCanvas();
   }, 900);
 }
@@ -299,6 +300,14 @@ function renderLanes() {
     el("line", { x1: 0, y1: yOf(0.5), x2: W, y2: yOf(0.5), stroke: isP ? "#c3c3c3" : "#d4d4d4", "stroke-width": isP ? 2 : 1.2 }, svg);
     if (isP) drawInteractions(svg, h, bullets, n);
 
+    // Stored stories (History), faint as on the fortune canvas; the hovered one strong.
+    for (const hst of state.history) {
+      if (hst.id === state.currentHistoryId && !state.preview) continue;
+      const hov = state.preview && state.preview.id === hst.id;
+      drawSeries(svg, seriesPoints(hst.bullets, hst.nSlots, d.id), yOf,
+        hov ? { color: "#1d5fc4", width: 2.5, opacity: 0.95, dots: true, r: 3 } : { color: "#6d8fbf", width: 1.2, opacity: 0.22 });
+    }
+
     // Versions in the design space: faint; the hovered one strong.
     if (typeof spaceVariantsForOverlay === "function") {
       for (const { bullets: vb, strong } of spaceVariantsForOverlay()) {
@@ -394,4 +403,90 @@ function pickSetting(s, v) {
   if (state.space && state.space.variants.length) {
     $("spaceStatus").textContent = `${s.name} is now pinned to ${v}: Explore versions again to see the space with it.`;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Every story gets a graph on every dimension
+// ---------------------------------------------------------------------------
+// The current story is re-read by runRecognition. Stored stories (History entries)
+// and design-space versions made before a dimension existed are rated on it here,
+// as Luminate re-evaluates existing responses when a dimension is added (Fig. 7).
+// Only the missing (sentence, dimension) pairs are asked for: one call per story.
+
+// Copy the current story's fresh ratings into its stored History entry.
+function syncCurrentHistory() {
+  const h = state.history.find(x => x.id === state.currentHistoryId);
+  if (!h) return;
+  state.bullets.forEach((b, i) => {
+    const hb = h.bullets[i];
+    if (!hb || !isWritten(b) || hb.text.trim() !== b.text.trim() || b.recText !== b.text.trim()) return;
+    hb.values = { ...(hb.values || {}), ...(b.values || {}) };
+    if (b.fortune !== null && b.fortune !== undefined) hb.fortune = b.fortune;
+  });
+}
+
+const ratingJobs = new Set();
+let ratingTimer = null;
+function ensureRatings(delay = 400) {
+  clearTimeout(ratingTimer);
+  ratingTimer = setTimeout(fillMissingRatings, delay);
+}
+
+function missingDims(bullets, indices) {
+  return arcDimDefs().filter(d => indices.some(i => {
+    const b = bullets[i];
+    return b && isWritten(b) && (b.values || {})[d.id] === undefined;
+  }));
+}
+
+async function rateStory(key, bullets, indices, apply) {
+  const dims = missingDims(bullets, indices);
+  if (!dims.length || ratingJobs.has(key)) return;
+  ratingJobs.add(key);
+  try {
+    const idx = indices.filter(i => bullets[i] && isWritten(bullets[i]));
+    const res = await api("/api/recognize", { name: state.name.trim(), sentences: bullets.map(b => (b && b.text) || ""),
+      indices: idx, dims });
+    apply(res.values || {});
+  } catch (e) {
+    // a failed fill is retried the next time ratings are checked
+  } finally {
+    ratingJobs.delete(key);
+  }
+}
+
+async function fillMissingRatings() {
+  if (!arcDimDefs().length) return;
+  const jobs = [];
+  const mergeInto = b => v => { if (b) b.values = { ...v, ...(b.values || {}) }; };
+  for (const h of state.history) {
+    if (h.id === state.currentHistoryId && recInFlight) continue;   // synced when recognition lands
+    const idx = h.bullets.map((_, i) => i);
+    jobs.push(() => rateStory("h" + h.id, h.bullets, idx, vals => {
+      for (const [i, v] of Object.entries(vals)) mergeInto(h.bullets[+i])(v);
+    }));
+  }
+  const bases = new Set();
+  for (const v of (state.space ? state.space.variants : [])) {
+    if (!bases.has(v.base)) {           // the writer's lines, shared by one exploration
+      bases.add(v.base);
+      const idx = v.base.map((_, i) => i);
+      jobs.push(() => rateStory("b" + v.id.split("-")[0], v.base, idx, vals => {
+        for (const [i, val] of Object.entries(vals)) mergeInto(v.base[+i])(val);
+      }));
+    }
+    jobs.push(() => rateStory("v" + v.id, versionBullets(v), v.slots, vals => {
+      for (const [i, val] of Object.entries(vals)) v.values[i] = { ...val, ...(v.values[i] || {}) };
+    }));
+  }
+  // At most 3 at a time: the browser shares ~6 connections per host with exploring.
+  let next = 0;
+  const worker = async () => {
+    while (next < jobs.length) {
+      await jobs[next++]();
+      renderCanvas();
+      if (typeof renderSpace === "function") renderSpace();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
 }

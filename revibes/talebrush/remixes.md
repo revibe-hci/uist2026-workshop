@@ -102,3 +102,24 @@ generator, a filter, or a way to adopt a curve they found?
   story in about 42 s, and both arcs mostly held. The first version dropped the
   existing interaction; it now carries interactions over as targets too. That
   fix wasn't re-run live.
+
+### Update: every story gets a graph on every dimension
+
+**Problem.** Stories were rated only on the dimensions that existed when they
+were made. History entries were also stored before their lane ratings
+arrived. So History stories and design-space versions had no graphs for
+dimensions added later (or for a second protagonist named later), and the
+lanes didn't draw History arcs at all.
+
+**What changed.** As in Luminate, where adding a dimension re-evaluates the
+existing responses (Fig. 7), every story is rated on every current dimension:
+the current story, each History entry, and each design-space version along
+with the writer's lines it was built on. Only the missing (sentence, dimension)
+pairs are requested: one recognition call per story, at most 3 at a time. The
+current story's fresh ratings are copied into its stored History entry. The
+lanes now draw History arcs faintly, and the hovered entry strongly, as the
+fortune canvas does.
+
+**Measured.** 2 History stories and 6 versions were made before any extra
+dimension existed. Right after "Suggest dimensions", all of them had 0/8
+sentences rated on the 3 new dimensions; about 21 s later all had 8/8.

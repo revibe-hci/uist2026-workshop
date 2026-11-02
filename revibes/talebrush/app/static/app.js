@@ -148,6 +148,9 @@ async function runRecognition() {
     showBanner("Fortune recognition failed: " + e.message, "error");
   } finally {
     recInFlight = false;
+    // Remix: the stored copy of this story gets the same ratings; other stories fill gaps.
+    if (typeof syncCurrentHistory === "function") syncCurrentHistory();
+    if (typeof ensureRatings === "function") ensureRatings();
     renderCanvas(); renderEditorMarks();
     if (recAgain) { recAgain = false; scheduleRecognition(50); }
   }

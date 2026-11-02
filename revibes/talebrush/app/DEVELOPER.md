@@ -142,3 +142,14 @@ Second protagonist and interactions:
 Setting chips: `pickSetting()` pins a value and calls
 `generate(slots, {keepArc: true})`. That turns each slot's current fortune,
 lane levels and interaction rating into targets.
+
+Ratings for every story: `ensureRatings()` (debounced) calls
+`fillMissingRatings()`.
+- It finds, per History entry and per design-space version (plus each
+  exploration's shared `base`), the dimensions that have no value yet. It
+  calls `/api/recognize` with only those, at most 3 at a time, and merges the
+  results without overwriting existing values.
+- It's triggered after recognition of the current story, after dimensions are
+  added, after the second protagonist is named, and after each exploration.
+- `syncCurrentHistory()` copies the current story's ratings into its History
+  entry.
