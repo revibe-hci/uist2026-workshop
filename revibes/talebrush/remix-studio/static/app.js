@@ -818,8 +818,13 @@ async function checkModel() {
   const note = $("#modelNote");
   try {
     const h = await (await fetch("/api/health")).json();
-    if (h.bridge && h.bridge.ok) {
-      note.innerHTML = `<b>TaleBrush Studio.</b> <b>Substitution:</b> every model call goes to <b>${h.bridge.backend} · ${h.bridge.model}</b> through the workshop LLM bridge, in place of the papers' models (TaleBrush: GPT‑Neo 2.7B + GeDi GPT2‑medium; Misty and VideoDiff: GPT‑4o; Luminate: text‑davinci‑003; Selenite: GPT‑4 + BART‑MNLI). Surprise is set in the prompt, not by sampling temperature.`;
+    const papers = `in place of the papers' models (TaleBrush: GPT‑Neo 2.7B + GeDi GPT2‑medium; Misty and VideoDiff: GPT‑4o; Luminate: text‑davinci‑003; Selenite: GPT‑4 + BART‑MNLI). Surprise is set in the prompt, not by sampling temperature.`;
+    if (window.ApiKey?.key()) {
+      note.innerHTML = `<b>TaleBrush Studio.</b> <b>Substitution:</b> every model call goes to <b>${ApiKey.model()}</b> with your API key, ${papers}`;
+    } else if (h.require_key) {
+      note.innerHTML = `<b>TaleBrush Studio.</b> The AI features need your own Anthropic API key: press <b>🔑 API key</b> at the top of the editor.`;
+    } else if (h.bridge && h.bridge.ok) {
+      note.innerHTML = `<b>TaleBrush Studio.</b> <b>Substitution:</b> every model call goes to <b>${h.bridge.backend} · ${h.bridge.model}</b> through the workshop LLM bridge, ${papers}`;
     } else {
       note.innerHTML = `<b style="color:#e5534b">LLM bridge not reachable at ${h.bridge_url}.</b> Start it from the repository root: <code>python3 llm-bridge/bridge.py claude</code>`;
     }

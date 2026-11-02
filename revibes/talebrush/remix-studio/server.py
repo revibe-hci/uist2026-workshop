@@ -12,8 +12,15 @@ Run from the repository root or from this folder:
 Environment:
     TALEBRUSH_PORT   port for this server (default 5059)
     BRIDGE_URL       LLM bridge base URL (default http://localhost:8787)
+    REQUIRE_API_KEY  "1" on a deployed copy: never use the bridge, only a visitor's key
+    LLM_MODEL        model used with a visitor's key (default claude-haiku-5-5)
+
+A visitor can paste their own Anthropic API key in the page (the "API key" button).
+The browser sends it with each request (X-Api-Key); the server uses it for that
+request only and never stores or logs it. Using a key needs `pip install anthropic`.
 """
 
+import contextvars
 import json
 import os
 import re
@@ -22,10 +29,22 @@ import urllib.error
 import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
+# When run as a script this module is __main__; let studio.py's `import server` find
+# this copy rather than load a second one with its own API_KEY.
+sys.modules.setdefault("server", sys.modules[__name__])
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(HERE, "static")
 PORT = int(os.environ.get("TALEBRUSH_PORT", "5059"))
 BRIDGE_URL = os.environ.get("BRIDGE_URL", "http://localhost:8787").rstrip("/")
+# On Vercel (VERCEL is set there) there is no bridge, so only visitors' keys are used.
+REQUIRE_KEY = os.environ.get("REQUIRE_API_KEY") == "1" or bool(os.environ.get("VERCEL"))
+DEFAULT_MODEL = os.environ.get("LLM_MODEL", "claude-haiku-5-5")
+MODELS = ("claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5")
+# The visitor's key and model for the current request (set in Handler.do_POST).
+# Context variables, so studio.py's worker threads can carry them over.
+API_KEY = contextvars.ContextVar("api_key", default=None)
+API_MODEL = contextvars.ContextVar("api_model", default=None)
 
 # Paper, Section 5.2.2: regenerate when |y - y_hat| > 0.2, keep the closest.
 REGEN_THRESHOLD = 0.2
@@ -40,7 +59,58 @@ class BridgeError(Exception):
 
 
 def chat_json(system, user):
-    """One chat completion through the bridge, parsed as a JSON object."""
+    """One model call, parsed as a JSON object: with the visitor's API key if they
+    gave one, otherwise through the workshop bridge."""
+    if API_KEY.get():
+        text = anthropic_text(API_KEY.get(), system, user)
+    elif REQUIRE_KEY:
+        raise BridgeError("Add your Anthropic API key first: press 🔑 API key at the top of the editor.")
+    else:
+        text = bridge_text(system, user)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        m = re.search(r"\{.*\}", text, re.S)
+        if not m:
+            raise BridgeError("Model did not return JSON: " + text[:200])
+        return json.loads(m.group(0))
+
+
+def anthropic_text(key, system, user):
+    """One Messages API call with the visitor's key."""
+    try:
+        import anthropic
+    except ImportError:
+        raise BridgeError("Using an API key needs the Anthropic SDK: pip install anthropic")
+    model = API_MODEL.get() or DEFAULT_MODEL
+    client = anthropic.Anthropic(api_key=key, max_retries=3)
+    kw = dict(model=model, max_tokens=16000,
+              output_config={"effort": "low"},  # short JSON answers; keeps each call fast
+              system=system + "\n\nRespond with one JSON object and nothing else.",
+              messages=[{"role": "user", "content": user}])
+    try:
+        if model == "claude-haiku-5-5":
+            r = client.messages.create(**kw)
+        else:  # Sonnet and Opus: if a safety classifier declines, retry on a fallback model
+            r = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"],
+                                            fallbacks="default", **kw)
+    except anthropic.AuthenticationError:
+        raise BridgeError("The API key was rejected. Check it with 🔑 API key.")
+    except anthropic.PermissionDeniedError:
+        raise BridgeError(f"This API key cannot use {model}.")
+    except anthropic.RateLimitError:
+        raise BridgeError("Rate limited by the Anthropic API. Wait a moment and try again.")
+    except anthropic.APIStatusError as e:
+        raise BridgeError(f"Anthropic API error {e.status_code}: {e.message}")
+    except anthropic.APIConnectionError:
+        raise BridgeError("Could not reach the Anthropic API.")
+    if r.stop_reason == "refusal":
+        raise BridgeError("The model declined this request.")
+    return "".join(b.text for b in r.content if b.type == "text")
+
+
+def bridge_text(system, user):
+    """One chat completion through the workshop LLM bridge."""
     body = json.dumps({
         "model": "bridge",
         "messages": [{"role": "system", "content": system},
@@ -54,15 +124,9 @@ def chat_json(system, user):
             data = json.loads(r.read())
     except urllib.error.URLError as e:
         raise BridgeError(f"LLM bridge not reachable at {BRIDGE_URL} ({e}). "
-                          "Start it with: python3 llm-bridge/bridge.py claude")
-    text = data["choices"][0]["message"]["content"]
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", text, re.S)
-        if not m:
-            raise BridgeError("Model did not return JSON: " + text[:200])
-        return json.loads(m.group(0))
+                          "Start it with: python3 llm-bridge/bridge.py claude, "
+                          "or add an Anthropic API key with 🔑 API key.")
+    return data["choices"][0]["message"]["content"]
 
 
 def clamp01(v):
@@ -409,15 +473,21 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/api/health":
+            info = {"ok": True, "require_key": REQUIRE_KEY, "models": MODELS, "default_model": DEFAULT_MODEL}
+            if REQUIRE_KEY:
+                return self.send_json(info)
             try:
                 with urllib.request.urlopen(BRIDGE_URL + "/health", timeout=3) as r:
                     bridge = json.loads(r.read())
             except Exception as e:  # noqa: BLE001
                 bridge = {"error": str(e)}
-            return self.send_json({"ok": True, "bridge_url": BRIDGE_URL, "bridge": bridge})
+            return self.send_json({**info, "bridge_url": BRIDGE_URL, "bridge": bridge})
         return super().do_GET()
 
     def do_POST(self):
+        API_KEY.set(self.headers.get("X-Api-Key") or None)
+        model = self.headers.get("X-Llm-Model")
+        API_MODEL.set(model if model in MODELS else None)
         try:
             body = self.read_json()
         except json.JSONDecodeError:

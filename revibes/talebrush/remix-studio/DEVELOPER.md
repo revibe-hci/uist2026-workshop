@@ -231,3 +231,26 @@ Shared helpers in `app.js`:
   tracking is not implemented.
 - VideoDiff's video, timeline and B-roll stages map to sentence slots. Its visually
   concrete keywords are approximated by each variant's keywords.
+
+## Visitors' API keys and deployment
+
+- **`static/apikey.js`** (loaded before `app.js`) adds the 🔑 API key button and
+  dialog. It wraps `window.fetch`, so every `/api/` request carries `X-Api-Key` and
+  `X-Llm-Model` headers; no other front-end code knows about keys. The key is in
+  `sessionStorage`, or in `localStorage` if *Remember on this device* is ticked.
+  Without a key on a deployed copy, the first AI action opens the dialog.
+- **`server.chat_json`** picks the model per request: the visitor's key (official
+  `anthropic` SDK, `anthropic_text`), else the bridge (`bridge_text`). When
+  `REQUIRE_API_KEY=1` or on Vercel, it never falls back to the bridge. Sonnet and Opus
+  calls send `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`), so a
+  classifier refusal is retried on another model. Every call uses `effort: "low"`,
+  because the answers are short JSON.
+- The key and model are **context variables** set in `Handler.do_POST`.
+  `studio.stream_variants` runs each worker in `contextvars.copy_context()`, so its
+  threads see them too. `server.py` registers itself as `sys.modules["server"]` so
+  that `studio.py`'s `import server` shares the same variables.
+- **Vercel:** `api/index.py` exposes `server.Handler` as Vercel's `handler`.
+  `vercel.json` sends `/api/*` to it and serves `static/` for everything else.
+  Vercel buffers Python responses, so the NDJSON streams (generation, design-space
+  variants) arrive all at once rather than line by line. The client's stream reader
+  handles both.

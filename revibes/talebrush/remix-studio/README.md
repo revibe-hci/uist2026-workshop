@@ -26,6 +26,21 @@ system it comes from. It runs next to the revibe (5057) and the Misty remix (505
 > **Language model:** every model call goes to Claude Haiku through the workshop LLM
 > bridge, in place of each paper's own model. The footer lists the substitutions.
 
+### Your own API key, and the online copy
+
+**🔑 API key** (top of the editor) lets anyone use their own Anthropic API key
+instead of the bridge, and pick Claude Haiku 5.5 (default), Sonnet 5.5 or Opus 5.5.
+The key stays in the browser (for the session, or on the device if *Remember* is
+ticked). The browser sends it with each AI request, and the server passes it to
+Anthropic for that request only, without storing or logging it. Using a key locally
+needs `pip install anthropic`. Without a key, the bridge is used as before.
+
+The online copy runs on Vercel (`vercel.json`, `api/index.py`, `requirements.txt`).
+There is no bridge there, so it asks every visitor for their own key. To deploy
+your own copy, run this from this folder:
+
+    vercel deploy --prod
+
 ## Use
 
 **TaleBrush (the "Fortune arc" tab).** Name the protagonist, write a beginning, and

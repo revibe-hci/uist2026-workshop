@@ -109,3 +109,10 @@ Code: `remix-studio/`, run on port 5059. It builds on the Misty remix, which sta
 - Variants rewrite the same slots TaleBrush would generate, and the writer's own
   sentences are kept.
 - A design space defaults to 6 variants (≈13 calls); 4 and 8 are offered.
+
+**Online copy with visitors' API keys** (added after the session)
+- A 🔑 API key button lets anyone use their own Anthropic key and choose Haiku,
+  Sonnet or Opus 5.5. It is deployed to Vercel, where there is no workshop bridge.
+- Question: which model do writers pick when they pay per call, and does a stronger
+  model change how well the generated sentences follow the sketched arc (the fit
+  values above were with Haiku)?

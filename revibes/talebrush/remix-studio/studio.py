@@ -7,6 +7,7 @@ unless noted. server.Handler dispatches /api/luminate/*, /api/videodiff/* and
 
 import json
 import random
+import contextvars
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import server
@@ -282,7 +283,8 @@ def stream_variants(h, protagonist, body):
 
     try:
         with ThreadPoolExecutor(max_workers=4) as pool:
-            futures = [pool.submit(write_variant, protagonist, base, slots, targets, r, body.get("prompt", ""))
+            # each worker gets a copy of this request's context, which holds the visitor's API key
+            futures = [pool.submit(contextvars.copy_context().run, write_variant, protagonist, base, slots, targets, r, body.get("prompt", ""))
                        for r in reqs]
             for f in as_completed(futures):
                 try:

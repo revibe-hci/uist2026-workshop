@@ -29,6 +29,11 @@
         <b>compare</b> them (VideoDiff) → <b>check</b> the story against what readers look for (Selenite).</p>`,
     },
 
+    { from: [], target: "#apiKeyBtn", title: "Your API key",
+      body: `<p>The AI features call Claude. Online, they run on <b>your own Anthropic API key</b>: paste it here and pick a model.
+        The key stays in your browser and is sent only with each AI request. At the workshop, calls can go through the LLM bridge instead.</p>
+        <p class="tour-note">This tour itself makes no AI calls.</p>` },
+
     // ---------------- TaleBrush
     { from: ["talebrush"], tab: "arc", target: ".protagonist", title: "Name the protagonist",
       body: `<p>Everything centres on one character's <b>fortune</b>: how good or bad things are for them. Type their name first.</p>` },
