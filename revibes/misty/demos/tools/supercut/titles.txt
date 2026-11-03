@@ -1,0 +1,8 @@
+# Supercut order and titles: <filename> | <title> | <names>
+# Lines starting with # are notes, not clips.
+OPENING | Table 7 remixes Misty | Revibing HCI, UIST 2026
+misty-inputs-argue-1080p.mp4 | Misty: the inputs argue | Jo Vermeulen
+misty-demo-kiki-with-audio.mp4 | Golden bridge rising through mist | Xinqi Zhang (Kiki)
+Misty Duo.MOV | Bend and blend | Leping Qiu
+Will it Blend.mp4 | Will it blend? | Tao Long and Weirui Peng
+Revibe_misty3d.mov | Misty 3D | Ning Zhang
